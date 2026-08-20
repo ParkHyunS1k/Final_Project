@@ -1,5 +1,5 @@
 .venv/
-weights/*.pt
+*.pt
 runs/
 outputs/
 __pycache__/
