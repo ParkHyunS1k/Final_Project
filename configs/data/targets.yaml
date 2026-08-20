@@ -1,0 +1,52 @@
+# 학습 타겟 정의. 안전난간과 안전고리는 별도 모델로 학습한다.
+#
+# 이유 (docs/phase0_results.md 1절, 7절):
+#   안전난간 SO-01 은 비계작업에만, 안전고리 WO-06 은 공통에만 라벨된다.
+#   두 파티션을 합치면 서로의 클래스가 "라벨 없는 positive" 가 되어
+#   모델이 그것을 배경으로 학습한다.
+#
+# situation 제약도 필수다. 같은 작업유형 안에서도 상황유형에 따라
+# 라벨 부착 여부가 갈린다. 실측 (507 Validation):
+#
+#   비계작업  UA 14,180프레임 SO-01 0건 | UC 5,070 SO-01 0건 | WS 6,916 SO-01 6,464건
+#   공통      UA 15,934프레임 WO-06 4,041건 | WS 2,664 WO-06 0건
+#
+# 상황유형을 안 거르면 UA/UC 프레임의 난간이 배경으로 학습된다.
+
+guardrail:
+  description: 안전난간 탐지. 비계작업 작업상황(WS) 프레임만 사용
+  label_root: data/raw/507/label_val
+  source_root: data/raw/507/source_val
+  process_id: A          # 비계작업
+  situations: [WS]       # SO-01 이 라벨되는 유일한 상황유형
+  classes:               # AI Hub 코드 -> YOLO 클래스명 (순서가 곧 클래스 ID)
+    SO-01: guardrail
+    SO-02: work_platform
+    WO-01: worker
+  require: [SO-01]       # 이 코드가 하나도 없는 프레임은 positive 가 아니다
+  # 주의: 비계작업 WS 프레임 중 SO-01 보유는 1,912/6,916 (27.6%) 뿐이다.
+  # 나머지 WS 프레임에 난간이 찍혀 있는데 라벨만 없을 가능성이 있다.
+  # 원천을 받은 뒤 배경 프레임을 눈으로 확인하고, 난간이 보이면 0 으로 내릴 것.
+  negative_ratio: 0.15
+
+hook:
+  description: 안전고리 미체결 탐지. 공통 불안전행동(UA) 프레임만 사용
+  label_root: data/raw/507/label_val
+  source_root: data/raw/507/source_val
+  process_id: F          # 공통
+  situations: [UA]
+  classes:
+    WO-06: hook_unfastened   # 부품 단위 (면적 중앙값 0.0114)
+    UA-01: worker_unfastened # 사람 단위 상태 (0.0323). WO-06 과 IoU 매칭 3.2% 로 별개
+  require: [WO-06]
+  # UA 프레임 중 WO-06 이 없는 것은 안전벨트/안전모 미착용 상황이다.
+  # 그 작업자들도 고리를 차고 있으나 라벨이 없으므로 배경으로 쓰면 안 된다.
+  negative_ratio: 0.0
+
+# 영상 단위 분할 설정 (README 8절). 프레임 단위 분할 금지.
+split:
+  ratios: [0.7, 0.15, 0.15]   # train / val / test
+  seed: 0
+  # 층화 기준. 촬영기기(device)는 실데이터에 0과 1 두 값만 존재한다.
+  # README 8절은 3종(CCTV/안전모캠/액션캠)을 기술하나 필드는 2종이다.
+  stratify_by: [situation, device]
