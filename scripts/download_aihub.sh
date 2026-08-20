@@ -38,9 +38,9 @@ K507_VL=68020,68021,68022,68023,68024,68025          # Validation 78MB
 #   안전난간 SO-01 58,614  -> 비계작업에만 (다른 5개 작업유형은 0건)
 #   안전고리 WO-06 36,454  -> 공통에만     (다른 5개 작업유형은 0건)
 # 따라서 개구부·로프·사다리·고소작업대는 받을 이유가 없다. 56GB -> 38GB.
-K507_VS_공통=68034                                    # 15GB, 안전고리
-K507_VS_비계=68036                                    # 23GB, 안전난간
-K507_VS="$K507_VS_공통,$K507_VS_비계"                  # 38GB
+K507_VS_COMMON=68034                                  # 15GB, 안전고리(공통)
+K507_VS_SCAFF=68036                                   # 23GB, 안전난간(비계)
+K507_VS="$K507_VS_COMMON,$K507_VS_SCAFF"              # 38GB
 
 # 9종 전체로 확장할 때 추가로 필요한 것 (지금은 받지 않는다)
 #   68033 고소작업대 14GB : WO-08 36,063
@@ -63,7 +63,7 @@ K71407_VS=487939,487940,487941,487949,487950,487951  # 1.3GB
 API=https://api.aihub.or.kr/down/0.6
 
 merge_parts() {  # merge_parts <루트디렉터리>
-  python3 - "$1" <<'PY'
+  "/c/Users/User/AppData/Local/Programs/Python/Python312/python.exe" - "$1" <<'PY'
 import pathlib, re, shutil, sys
 
 root = pathlib.Path(sys.argv[1])
