@@ -66,6 +66,64 @@ def split_videos(
     return assignment
 
 
+def kfold_videos(
+    videos: list[VideoInfo], k: int = 5, seed: int = 0
+) -> dict[str, int]:
+    """영상 ID -> 폴드 번호(0..k-1). 층화 기준 안에서 프레임 수를 고르게 나눈다.
+
+    영상이 15개뿐인 안전고리처럼 단일 분할의 분산이 큰 경우에 쓴다.
+    """
+    # k=2 면 test=fold0, val=fold1 이 되어 train 이 비어버린다.
+    # test/val/train 3분할 구조상 최소 3겹이 필요하다.
+    if k < 3:
+        raise ValueError(f"k는 3 이상이어야 합니다 (k=2면 train이 빈다): {k}")
+    n_vid = len(videos)
+    if n_vid < k:
+        raise ValueError(f"영상 {n_vid}개로 {k}겹을 나눌 수 없습니다")
+
+    by_strata: dict[tuple, list[VideoInfo]] = collections.defaultdict(list)
+    for v in videos:
+        by_strata[v.strata].append(v)
+
+    fold_of: dict[str, int] = {}
+    load = [0] * k  # 폴드별 누적 프레임 수
+    count = [0] * k  # 폴드별 누적 영상 수
+
+    for strata in sorted(by_strata):
+        group = by_strata[strata]
+        rng = random.Random(f"{seed}|kfold|" + "/".join(strata))
+        rng.shuffle(group)
+        for v in group:
+            # 프레임이 가장 적은 폴드에 넣되, 영상 수가 한쪽으로 쏠리지 않게
+            # 영상 수를 2차 기준으로 쓴다. 빈 폴드가 생기면 안 된다.
+            pick = min(range(k), key=lambda i: (load[i], count[i], i))
+            fold_of[v.video_id] = pick
+            load[pick] += v.n_frames
+            count[pick] += 1
+
+    empty = [i for i in range(k) if count[i] == 0]
+    if empty:
+        raise ValueError(f"폴드 {empty} 가 비었습니다. k를 줄이세요 (영상 {n_vid}개)")
+    return fold_of
+
+
+def fold_assignment(fold_of: dict[str, int], fold: int, k: int) -> dict[str, str]:
+    """폴드 번호 배정을 특정 폴드 기준의 train/val/test 배정으로 바꾼다.
+
+    test = fold, val = (fold+1) % k, 나머지 train.
+    test 를 val 로 겸용하면 조기종료가 test 를 보게 되어 지표가 낙관적으로 샌다.
+    """
+    out = {}
+    for vid, f in fold_of.items():
+        if f == fold:
+            out[vid] = "test"
+        elif f == (fold + 1) % k:
+            out[vid] = "val"
+        else:
+            out[vid] = "train"
+    return out
+
+
 def summarize(videos: list[VideoInfo], assignment: dict[str, str]) -> str:
     n_vid = collections.Counter()
     n_frm = collections.Counter()

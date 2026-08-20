@@ -257,18 +257,37 @@ scripts/download_aihub.sh phase2    # 원천 48 GB
 | `scripts/download_aihub.sh` | 선택 다운로드 (`phase0`/`phase2`) | 완료 |
 | `src/data/aihub.py` | 507/71407 라벨 파서 (포맷 자동 판별) | 완료 |
 | `scripts/label_stats.py` | 교차표·박스크기·중복률 산출 | 완료 |
-| `src/data/split.py` | 영상 단위 분할 | 완료 |
-| `scripts/build_dataset.py` | YOLO 변환 (`--dry-run` 지원) | 완료, 라벨 검증 |
+| `src/data/split.py` | 영상 단위 분할 + group k-fold | 완료 |
+| `scripts/build_dataset.py` | YOLO 변환 (`--dry-run`, `--kfold`) | 완료, 라벨 검증 |
+| `scripts/train_kfold.py` | 폴드별 학습·평가, mean ± std 집계 | 완료 |
+| `scripts/baseline_zeroshot.py` | 사전학습 모델 커버리지 공백 확인 | 완료 |
 | `configs/data/class_mapping.yaml` | 데이터셋별 코드 네임스페이스 | 2종만. 9종 확장 필요 |
 | `configs/data/targets.yaml` | 타겟별 필터·클래스 정의 | 완료 |
 | `configs/detect/rtx4070.yaml` | 학습 설정 | 완료 |
 
 ```bash
 scripts/download_aihub.sh phase2
+
+# 안전난간 — 영상 36개. 단일 분할로 충분
 python scripts/build_dataset.py guardrail
-python scripts/build_dataset.py hook
 yolo train cfg=configs/detect/rtx4070.yaml data=data/yolo/guardrail/data.yaml
+
+# 안전고리 — 영상 15개. 단일 분할의 test 가 장면 2~3개라 k-fold 로 평가
+python scripts/build_dataset.py hook --kfold 5
+python scripts/train_kfold.py data/yolo/hook
 ```
+
+### k-fold 설계
+
+`k=5` 기준 각 폴드에서 **test = fold i, val = fold (i+1)%k, 나머지 train**이다.
+test 를 val 로 겸용하면 조기종료가 test 를 보게 되어 지표가 낙관적으로 샌다.
+
+`k=2`는 train 이 비므로 **k는 3 이상**이어야 한다. 코드가 막아 둔다.
+영상 15개 / k=5 이면 폴드당 3영상, train 9 / val 3 / test 3 이 된다.
+
+`train_kfold.py`는 폴드별 mAP50, mAP50-95, precision, recall 과
+**클래스별 AP@0.5**(README 9절 필수 보고 항목)를 mean ± std 로 집계해
+`kfold_metrics.json`에 저장한다.
 
 ---
 
