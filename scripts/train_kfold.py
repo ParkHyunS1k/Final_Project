@@ -30,6 +30,17 @@ def mean_std(xs: list[float]) -> tuple[float, float]:
     return statistics.mean(xs), (statistics.stdev(xs) if len(xs) > 1 else 0.0)
 
 
+def weighted_mean(xs: list[float], ws: list[int]) -> float:
+    """폴드별 test 프레임 수로 가중한 평균.
+
+    현장 단위 leave-one-site-out 은 폴드마다 test 크기가 크게 다르다.
+    guardrail 실측으로 A21 이 test 인 폴드는 96프레임, A04 는 954프레임이다.
+    단순 평균은 96프레임으로 잰 값을 954프레임 값과 같은 무게로 취급한다.
+    둘 다 찍어서 어느 쪽으로 읽어도 결론이 같은지 확인한다.
+    """
+    return sum(x * w for x, w in zip(xs, ws)) / sum(ws)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("root", type=pathlib.Path, help="fold0..foldN 이 들어있는 디렉터리")
@@ -74,7 +85,8 @@ def main() -> int:
                         name=f"{fold}_test", exist_ok=True,
                         device=cfg.get("device"))
 
-        row = {"fold": fold}
+        n_test = sum(1 for _ in (data_yaml.parent / "images" / "test").iterdir())
+        row = {"fold": fold, "n_test": n_test}
         for label, key in METRICS:
             row[label] = float(res.results_dict.get(key, float("nan")))
         per_fold.append(row)
@@ -87,20 +99,26 @@ def main() -> int:
 
     # ---- 집계
     print(f"\n{'=' * 60}\n{prefix} — {len(per_fold)}-fold 집계\n{'=' * 60}")
-    print(f"{'fold':<10}" + "".join(f"{k:>12}" for k, _ in METRICS))
+    print(f"{'fold':<10}{'n_test':>8}" + "".join(f"{k:>12}" for k, _ in METRICS))
     for row in per_fold:
-        print(f"{row['fold']:<10}" + "".join(f"{row[k]:>12.4f}" for k, _ in METRICS))
+        print(f"{row['fold']:<10}{row['n_test']:>8}"
+              + "".join(f"{row[k]:>12.4f}" for k, _ in METRICS))
 
     summary = {}
-    print(f"\n{'':10}" + "".join(f"{k:>12}" for k, _ in METRICS))
-    line_m, line_s = f"{'mean':<10}", f"{'std':<10}"
+    print(f"\n{'':18}" + "".join(f"{k:>12}" for k, _ in METRICS))
+    weights = [r["n_test"] for r in per_fold]
+    line_m, line_s = f"{'mean':<18}", f"{'std':<18}"
+    line_w = f"{'weighted':<18}"
     for k, _ in METRICS:
         m, s = mean_std([r[k] for r in per_fold])
-        summary[k] = {"mean": m, "std": s}
+        w = weighted_mean([r[k] for r in per_fold], weights)
+        summary[k] = {"mean": m, "std": s, "weighted_mean": w}
         line_m += f"{m:>12.4f}"
         line_s += f"{s:>12.4f}"
+        line_w += f"{w:>12.4f}"
     print(line_m)
     print(line_s)
+    print(line_w)
 
     if class_ap:
         print(f"\n클래스별 AP@0.5 (README 9절: 클래스별 AP 필수 보고)")

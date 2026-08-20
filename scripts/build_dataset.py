@@ -15,6 +15,7 @@ import argparse
 import collections
 import json
 import pathlib
+import shutil
 import sys
 
 import yaml
@@ -23,10 +24,39 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.data.aihub import iter_frames  # noqa: E402
 from src.data.split import (  # noqa: E402
-    SPLITS, VideoInfo, fold_assignment, kfold_videos, split_videos, summarize,
+    SPLITS, GroupInfo, carve_val, fold_assignment, kfold_groups, split_groups,
+    summarize,
 )
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
+
+
+def group_id(video_id: str) -> str:
+    """분할 그룹 키 — 촬영 현장.
+
+    영상 ID 는 H-날짜_현장_공정_상황_카메라테이크 구조다. 클립 단위로 나누면
+    한 촬영 세션을 여러 카메라로 동시에 찍은 프레임이 train 과 test 에 나뉘어
+    들어간다. guardrail 실측: 촬영세션 26개 중 13개가 train/test 동시 등장했고,
+    H-211104_A04_A_WS-01 은 _101(train) / _201(val) / _301(test) 로 흩어져
+    같은 순간의 같은 작업자가 세 split 에 모두 들어가 있었다.
+
+    현장 단위로 묶어야 "안 본 현장에서 되는가" 를 재는 것이 된다 (README 8절
+    "영상 단위 또는 촬영 세션 단위"). SO-01 이 라벨된 현장은 A04/A08/A17/A21
+    네 곳뿐이라 단일 분할의 분산이 크므로 --kfold 로 평가한다.
+    """
+    return video_id.split("_")[1]
+
+
+def session_id(video_id: str) -> str:
+    """val 조달 단위 — 촬영 세션. 영상 ID 끝의 카메라·테이크 번호를 뗀다.
+
+    현장이 4곳뿐이라 val 까지 현장 단위로 빼면 train 이 2현장으로 줄어든다.
+    그래서 test 만 현장 단위로 분리하고 val 은 train 현장의 세션에서 뽑는다
+    (split.carve_val). 세션 단위로 떼는 이유는 H-211104_A04_A_WS-01 의
+    _101/_201/_301 이 같은 순간을 세 카메라로 찍은 것이기 때문이다. 클립 단위로
+    나누면 같은 작업자의 같은 동작이 train 과 val 에 나뉘어 들어간다.
+    """
+    return video_id.rsplit("_", 1)[0]
 
 
 def load_cfg(target: str, path: pathlib.Path | None = None) -> tuple[dict, dict]:
@@ -64,7 +94,10 @@ def collect(tc: dict) -> tuple[list, list, dict]:
         has_target = any(a.class_code in require for a in f.annotations)
         rec = (f, anns, situ, str(raw.get("device", "?")))
         (positives if has_target else negatives).append(rec)
-        meta.setdefault(f.video_id, {"situation": situ, "device": str(raw.get("device", "?"))})
+        # 층화 키는 그룹 안에서 상수여야 한다. 한 현장에 여러 상황·기기가
+        # 섞이므로 targets.yaml 의 stratify_by 는 비워 둔다.
+        meta.setdefault(group_id(f.video_id),
+                        {"situation": situ, "device": str(raw.get("device", "?"))})
 
     return positives, negatives, meta
 
@@ -77,7 +110,7 @@ def main() -> int:
     ap.add_argument("--copy", action="store_true", help="심볼릭 링크 대신 복사")
     ap.add_argument("--seed", type=int, help="targets.yaml 의 split.seed 를 덮어씀")
     ap.add_argument("--kfold", type=int, metavar="K",
-                    help="영상 단위 group k-fold. out/fold0..foldK-1 생성")
+                    help="현장 단위 group k-fold. out/fold0..foldK-1 생성")
     ap.add_argument("--targets", type=pathlib.Path,
                     help="기본 configs/data/targets.yaml 대신 쓸 정의 파일")
     args = ap.parse_args()
@@ -113,39 +146,49 @@ def main() -> int:
         if len(keep) < before:
             print(f"  원천 이미지 없는 프레임 {before - len(keep)}개 제외 -> {len(keep)}개")
 
-    # ---- 영상 단위 분할
-    per_video = collections.Counter(f.video_id for f, _, _, _ in keep)
+    # ---- 현장 단위 분할
+    per_group = collections.Counter(group_id(f.video_id) for f, _, _, _ in keep)
     strata_keys = sc.get("stratify_by", [])
-    videos = [
-        VideoInfo(vid, n, tuple(meta[vid][k] for k in strata_keys))
-        for vid, n in per_video.items()
+    groups = [
+        GroupInfo(gid, n, tuple(meta[gid][k] for k in strata_keys))
+        for gid, n in per_group.items()
     ]
+    # val 은 train 현장 안의 세션에서 뽑는다. 배정 키를 세션으로 통일해 두면
+    # 단일 분할과 k-fold 가 같은 조회 경로를 쓴다.
+    per_session = collections.Counter(session_id(f.video_id) for f, _, _, _ in keep)
+    subgroups = [GroupInfo(sid, n, ()) for sid, n in per_session.items()]
+    parent_of = {sid: group_id(sid) for sid in per_session}
     # ---- 클래스 매핑
     names = list(dict.fromkeys(tc["classes"].values()))
     code2id = {code: names.index(name) for code, name in tc["classes"].items()}
     print(f"\n클래스: {dict(enumerate(names))}")
 
-    # ---- 분할. 단일 분할 또는 영상 단위 group k-fold
+    # ---- 분할. 단일 분할 또는 현장 단위 group k-fold
+    val_ratio = float(sc["ratios"][1])
     if args.kfold:
-        fold_of = kfold_videos(videos, args.kfold, seed)
+        fold_of = kfold_groups(groups, args.kfold, seed)
         plans = [
-            (out / f"fold{i}", fold_assignment(fold_of, i, args.kfold), f"fold {i}")
+            (out / f"fold{i}",
+             carve_val(fold_assignment(fold_of, i), subgroups, parent_of, val_ratio),
+             f"fold {i}")
             for i in range(args.kfold)
         ]
-        print(f"\n=== 영상 단위 group {args.kfold}-fold (seed={seed}) ===")
-        print(f"폴드별 영상: {collections.Counter(fold_of.values())}")
-        print("각 폴드에서 test=fold i, val=fold (i+1)%k, 나머지 train")
+        print(f"\n=== 현장 단위 group {args.kfold}-fold (seed={seed}) ===")
+        print(f"폴드별 현장: {collections.Counter(fold_of.values())}")
+        print(f"각 폴드에서 test=fold i 현장, 나머지 현장이 train. "
+              f"val 은 train 현장의 세션에서 목표 {val_ratio:.0%} 만큼 뗀다")
     else:
-        plans = [(out, split_videos(videos, tuple(sc["ratios"]), seed),
+        site_split = split_groups(groups, tuple(sc["ratios"]), seed)
+        plans = [(out, {sid: site_split[parent] for sid, parent in parent_of.items()},
                   f"단일 분할 seed={seed}")]
 
     for dest, assignment, tag in plans:
         print(f"\n----- {tag} -----")
-        print(summarize(videos, assignment))
+        print(summarize(subgroups, assignment))
         counts = collections.defaultdict(collections.Counter)
         for f, anns, _, _ in keep:
             for a in anns:
-                counts[assignment[f.video_id]][tc["classes"][a.class_code]] += 1
+                counts[assignment[session_id(f.video_id)]][tc["classes"][a.class_code]] += 1
         print(f"{'split':<8}" + "".join(f"{n:>18}" for n in names))
         for s in SPLITS:
             print(f"{s:<8}" + "".join(f"{counts[s][n]:>18}" for n in names))
@@ -153,7 +196,8 @@ def main() -> int:
         if args.dry_run:
             continue
         _write(dest, keep, assignment, index, code2id, names, args.copy)
-        meta_out = {"target": args.target, "seed": seed,
+        meta_out = {"target": args.target, "seed": seed, "group_by": "site",
+                    "val_from": "session", "assign_key": "session",
                     "stratify_by": strata_keys, "assignment": assignment}
         if args.kfold:
             meta_out |= {"kfold": args.kfold, "fold": int(dest.name.removeprefix("fold"))}
@@ -180,6 +224,12 @@ def _index_images(src_root: pathlib.Path) -> dict[str, pathlib.Path]:
 
 
 def _write(out, keep, assignment, index, code2id, names, copy) -> None:
+    # 이전 분할의 잔재를 지운다. 파일을 덮어쓰기만 하면 옛 split 에 있던 사본이
+    # 그대로 남아 같은 프레임이 train 과 val 에 동시에 존재한다. 영상 단위 분할로
+    # 막으려던 누수가 재생성 한 번으로 되살아난다.
+    for sub in ("images", "labels"):
+        if (out / sub).exists():
+            shutil.rmtree(out / sub)
     for s in SPLITS:
         (out / "images" / s).mkdir(parents=True, exist_ok=True)
         (out / "labels" / s).mkdir(parents=True, exist_ok=True)
@@ -190,7 +240,7 @@ def _write(out, keep, assignment, index, code2id, names, copy) -> None:
         if img is None:
             missing.append(f.image_id)
             continue
-        s = assignment[f.video_id]
+        s = assignment[session_id(f.video_id)]
         dst = out / "images" / s / img.name
         if not dst.exists():
             dst.write_bytes(img.read_bytes()) if copy else dst.symlink_to(img.resolve())

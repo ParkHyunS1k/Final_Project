@@ -15,8 +15,8 @@
 
 guardrail:
   description: 안전난간 탐지. 비계작업 작업상황(WS) 프레임만 사용
-  label_root: data/raw/507/label_val
-  source_root: data/raw/507/source_val
+  label_root: D:/507/label_val
+  source_root: D:/507/source_val
   process_id: A          # 비계작업
   situations: [WS]       # SO-01 이 라벨되는 유일한 상황유형
   classes:               # AI Hub 코드 -> YOLO 클래스명 (순서가 곧 클래스 ID)
@@ -24,15 +24,18 @@ guardrail:
     SO-02: work_platform
     WO-01: worker
   require: [SO-01]       # 이 코드가 하나도 없는 프레임은 positive 가 아니다
-  # 주의: 비계작업 WS 프레임 중 SO-01 보유는 1,912/6,916 (27.6%) 뿐이다.
-  # 나머지 WS 프레임에 난간이 찍혀 있는데 라벨만 없을 가능성이 있다.
-  # 원천을 받은 뒤 배경 프레임을 눈으로 확인하고, 난간이 보이면 0 으로 내릴 것.
-  negative_ratio: 0.15
+  # 배경 프레임을 쓰지 않는다. 육안 확인 완료 (원천 확보 후):
+  #   H-211108_A19_A_WS-08_202_0292 는 라벨 0줄인 배경 프레임인데
+  #   이동식비계의 상부·중간 난간대와 작업발판이 화면에 명확히 보인다.
+  # SO-01 이 라벨된 현장은 A04/A08/A17/A21 네 곳뿐이고 (Training 파티션도 동일),
+  # 나머지 현장의 WS 프레임은 "난간이 없는 장면" 이 아니라 "난간에 라벨이 없는
+  # 장면" 이다. 배경으로 쓰면 모델에게 난간을 배경이라고 가르친다.
+  negative_ratio: 0.0
 
 hook:
   description: 안전고리 미체결 탐지. 공통 불안전행동(UA) 프레임만 사용
-  label_root: data/raw/507/label_val
-  source_root: data/raw/507/source_val
+  label_root: D:/507/label_val
+  source_root: D:/507/source_val
   process_id: F          # 공통
   situations: [UA]
   classes:
@@ -43,10 +46,22 @@ hook:
   # 그 작업자들도 고리를 차고 있으나 라벨이 없으므로 배경으로 쓰면 안 된다.
   negative_ratio: 0.0
 
-# 영상 단위 분할 설정 (README 8절). 프레임 단위 분할 금지.
+# 현장 단위 분할 설정 (README 8절). 프레임 단위 분할 금지.
 split:
   ratios: [0.7, 0.15, 0.15]   # train / val / test
   seed: 0
-  # 층화 기준. 촬영기기(device)는 실데이터에 0과 1 두 값만 존재한다.
-  # README 8절은 3종(CCTV/안전모캠/액션캠)을 기술하나 필드는 2종이다.
-  stratify_by: [situation, device]
+  # 층화 기준은 비운다. 분할 단위가 촬영 현장(build_dataset.py 의 group_id)이라
+  # 한 그룹 안에 여러 상황·기기가 섞이고, 층화 키는 그룹 안에서 상수여야 한다.
+  #
+  # device 를 층화 기준으로 두면 안 된다. 한 촬영 세션을 1인칭(device=0)과
+  # 3인칭(device=1) 카메라로 동시에 찍었기 때문에, 각 split 에 두 기기를 채우려면
+  # 같은 세션을 쪼개는 수밖에 없다. 실제로 그렇게 새고 있었다:
+  #   H-211104_A04_A_WS-01_101 (device 0) -> train
+  #   H-211104_A04_A_WS-01_201 (device 1) -> val
+  #   H-211104_A04_A_WS-01_301 (device 1) -> test
+  # 세 장 모두 같은 작업자가 같은 비계에서 실리콘을 시공하는 같은 순간이다.
+  #
+  # README 8절 "각 split 에 세 촬영 시점이 모두 포함" 은 현장 단위로 묶어도
+  # 대체로 충족된다. 한 현장을 두 기기로 함께 찍기 때문이다.
+  # 재생성 후 split.json 으로 실제 기기 구성을 확인할 것.
+  stratify_by: []
