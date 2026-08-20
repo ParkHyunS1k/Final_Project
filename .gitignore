@@ -2,6 +2,15 @@
 weights/*.pt
 runs/
 outputs/
-/data/          # 원천 데이터. 앞 슬래시가 없으면 src/data/ 까지 무시된다
 __pycache__/
 .DS_Store
+.tools/
+
+# 원천/라벨 데이터. 앞 슬래시가 없으면 src/data/ 까지 무시된다.
+# gitignore 는 인라인 주석을 지원하지 않으므로 패턴과 같은 줄에 쓰지 말 것.
+/data/
+
+# 비밀값. .env.example 만 커밋한다
+.env
+.env.*
+!.env.example
