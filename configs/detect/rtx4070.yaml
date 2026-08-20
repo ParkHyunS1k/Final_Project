@@ -1,0 +1,55 @@
+# RTX 4070 12GB 학습 설정 (Ultralytics)
+#
+#   yolo train cfg=configs/detect/rtx4070.yaml data=<변환 단계가 생성한 data.yaml>
+#
+# data.yaml은 손으로 쓰지 않는다. 영상 단위 분할(src/data/split.py)의 결과로
+# 생성되며, 분할 seed가 바뀌면 같이 바뀐다.
+#
+# 맥북(M3 Pro)에서 실측한 YOLOv8s/640/batch16 = 12.7 img/s 대비
+# 4070은 약 110 img/s로 8~9배. 본 학습은 4070에서 한다.
+# 맥북은 포맷 변환, 소규모 sanity run, 추론/데모 용도.
+
+model: yolo26s.pt   # 10.0M params. NMS-free라 README 5절의 30fps 1차 계층에 유리
+                    # 불안정하면 yolo11s.pt(9.5M)로 교체. 드롭인 대체 가능
+
+# ---- 해상도
+# 원본이 1920x1080이다. imgsz=640이면 1/3로 줄어들어 작은 객체가 뭉갠다.
+# 안전난간은 크므로 640으로 충분하고, 안전고리는 작아서 960이 필요할 수 있다.
+# Phase 0 박스 면적 통계(scripts/label_stats.py)를 보고 확정할 것.
+#   면적비 > 0.01  -> 640 유지
+#   면적비 < 0.005 -> 960 으로 올리고 batch 16으로 내린다
+imgsz: 640
+
+# ---- 배치
+# 12GB에서 yolo26s/640/AMP 기준 batch 32가 약 9-10GB. 안전 마진 포함.
+# batch=-1(auto)은 실행마다 값이 달라져 seed 3회 반복의 재현성을 깨므로 쓰지 않는다.
+batch: 32           # imgsz 960으로 올릴 경우 16
+amp: true
+
+# ---- 데이터 로딩
+# 원천이 65GB라 RAM에 캐시할 수 없다. SSD에 두고 워커를 늘린다.
+cache: false
+workers: 8
+
+# ---- 학습
+epochs: 100
+patience: 30        # 30 epoch 개선 없으면 조기 종료
+optimizer: auto
+seed: 0             # 실험 스크립트에서 0/1/2로 3회 반복 (README 8절)
+deterministic: true
+val: true
+plots: true
+
+# ---- 증강
+# AI Hub는 시나리오를 연출해 촬영한 데이터라 배경 다양성이 낮다.
+# 외부 검증셋(SODA 등)으로의 일반화를 위해 기본값보다 색상 증강을 유지한다.
+hsv_h: 0.015
+hsv_s: 0.7
+hsv_v: 0.4
+fliplr: 0.5
+flipud: 0.0         # 건설현장 영상은 상하 반전이 비현실적
+mosaic: 1.0
+close_mosaic: 10    # 마지막 10 epoch은 mosaic 끄고 실제 분포로 마무리
+scale: 0.5
+
+project: outputs/detect

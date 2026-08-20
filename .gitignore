@@ -1,0 +1,7 @@
+.venv/
+weights/*.pt
+runs/
+outputs/
+/data/          # 원천 데이터. 앞 슬래시가 없으면 src/data/ 까지 무시된다
+__pycache__/
+.DS_Store

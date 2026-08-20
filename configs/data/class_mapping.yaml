@@ -1,0 +1,85 @@
+# 데이터셋별 클래스 코드 매핑
+#
+# 507과 71407은 같은 WO-xx / SO-xx 코드를 서로 다른 의미로 쓴다.
+# 예: WO-04 = 507에서는 "안전모 미착용", 71407에서는 "이동식비계".
+# 코드 문자열로 두 데이터셋을 병합하면 조용히 틀린다. 반드시 이 파일을 거쳐
+# 통합 클래스(unified)로 변환한 뒤에만 합칠 것.
+#
+# verified: 샘플 데이터의 바운딩박스를 직접 잘라 눈으로 확인한 항목
+# unverified: AI Hub 설명 페이지 기재값만 있고 실데이터 확인 전인 항목
+
+unified:
+  0: guardrail          # 안전난간
+  1: hook_unfastened    # 안전고리 미체결 — A안 채택 시에만 사용
+  2: worker             # 작업자 (안전고리 판정 앵커)
+
+# ---------------------------------------------------------------- 507
+# 고소작업 현장 실시간 영상 데이터 (dataSetSn=507)
+aihub_507:
+  target:
+    SO-01: {name: 안전 난간,        unified: guardrail, instances: 65086, status: unverified}
+    UA-01: {name: 안전고리 미체결,  unified: hook_unfastened, instances: 40499, status: unverified}
+    WO-06: {name: 안전고리 미착용,  unified: hook_unfastened, instances: 40496, status: unverified}
+    WO-01: {name: 작업자,           unified: worker, instances: 137005, status: verified}
+
+  # 학습 클래스로 쓰지 않는다. 물체가 없는 상태에 박스를 그린 라벨이라
+  # 탐지 대상으로 부적합. guardrail 탐지 + 룰 판정의 "평가 정답"으로만 사용.
+  eval_only:
+    UC-01: {name: 안전 난간 미설치,     instances: 17185, status: unverified}
+    UC-04: {name: 안전난간 미설치,      instances: 9309,  status: unverified}
+    UC-03: {name: 안전 난간 위 발판 설치, instances: 8156,  status: unverified}
+    UC-06: {name: 안전 난간 위 발판 설치, instances: 9228,  status: unverified}
+
+  context:
+    SO-02: {name: 안전 발판, instances: 58094, status: unverified}
+    SO-08: {name: 안전 덮개, instances: 5377,  status: verified}
+    SO-12: {name: 망치,      instances: 18907, status: verified}
+    SO-15: {name: 렌치,      instances: 10221, status: verified}
+
+  notes:
+    - "WO-06(40496)과 UA-01(40499)은 동일 인스턴스를 두 체계로 라벨링한 것으로 추정.
+       둘 다 쓰면 데이터가 두 배라고 착각하게 된다. Phase 0에서 좌표 중복률로 검증 후 택1."
+    - "UC-01/UC-04, UC-03/UC-06은 명칭이 중복이다. AI Hub 페이지 기재 오류이거나
+       작업유형별로 코드가 갈린 것. Phase 0에서 실데이터 검증 필요."
+    - "안전고리의 positive(체결 상태) 클래스가 존재하지 않는다.
+       WO-06/UA-01 박스가 작업자 전신인지 고리 영역인지에 따라 설계가 갈린다.
+       docs/data_plan.md 2절 및 Phase 1 참조."
+
+# ---------------------------------------------------------------- 71407
+# 건설 현장 위험 상태 판단 데이터 (dataSetSn=71407)
+aihub_71407:
+  target:
+    SO-01: {name: 개구부 안전난간,      unified: guardrail, status: verified}
+    SO-04: {name: 단부 안전난간(청색 패널), unified: guardrail, status: verified}
+    SO-06: {name: 비계 난간,            unified: guardrail, status: verified}
+    WO-01: {name: 작업자,               unified: worker,    status: verified}
+
+  context:
+    DO-03: {name: 개구부,        status: verified}
+    SO-05: {name: 개구부 덮개,   status: verified}
+    SO-07: {name: 개구부 덮개,   status: verified}
+    SO-19: {name: 개구부 덮개,   status: verified}
+    SO-03: {name: 비계,          status: verified}
+    WO-03: {name: 사다리,        status: verified}
+    WO-04: {name: 이동식비계,    status: verified}   # 507의 WO-04(안전모 미착용)와 다름
+
+  # 이미지 단위 시나리오 라벨. 객체가 아니라 장면 상태를 나타낸다.
+  scenario:
+    Y-03: {name: 개구부 덮개 설치,        status: unverified}
+    N-03: {name: 개구부 덮개 불량,        status: unverified}
+    Y-04: {name: 개구부 안전난간 설치,    status: unverified}
+    N-04: {name: 개구부 안전난간 불량,    status: unverified}
+    Y-05: {name: 단부 안전난간 설치,      status: unverified}
+    N-05: {name: 단부 안전난간 불량,      status: unverified}
+
+  # 전량 제외. 박스 확인 결과 라바콘/경광봉/방독마스크/안전표지/위험테이프 등
+  # 보조용품이며 안전난간·안전고리가 아니다.
+  excluded:
+    SO-35: {name: 안전방호대(황색 바리케이드), status: verified}
+    SO-41: {name: 라바콘,          status: verified}
+    SO-42: {name: 경광봉,          status: verified}
+    SO-43: {name: 방독마스크,      status: verified}
+    SO-44: {name: 계측장비,        status: verified}
+    SO-45: {name: 안전표지(추락주의), status: verified}
+    SO-46: {name: 위험 테이프,     status: verified}
+    SO-47: {name: 이동식 안전펜스, status: verified}
