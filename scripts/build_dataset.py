@@ -111,9 +111,14 @@ def main() -> int:
     ap.add_argument("--seed", type=int, help="targets.yaml 의 split.seed 를 덮어씀")
     ap.add_argument("--kfold", type=int, metavar="K",
                     help="현장 단위 group k-fold. out/fold0..foldK-1 생성")
+    ap.add_argument("--all-train", action="store_true",
+                    help="분할 없이 전량 train. 홀드아웃이 성립하지 않는 타겟용")
     ap.add_argument("--targets", type=pathlib.Path,
                     help="기본 configs/data/targets.yaml 대신 쓸 정의 파일")
     args = ap.parse_args()
+
+    if args.all_train and args.kfold:
+        sys.exit("--all-train 과 --kfold 는 같이 쓸 수 없습니다.")
 
     tc, sc = load_cfg(args.target, args.targets)
     seed = args.seed if args.seed is not None else sc["seed"]
@@ -165,7 +170,15 @@ def main() -> int:
 
     # ---- 분할. 단일 분할 또는 현장 단위 group k-fold
     val_ratio = float(sc["ratios"][1])
-    if args.kfold:
+    if args.all_train:
+        # 홀드아웃 없이 전량 학습한다. hook 실측: WO-06 이 라벨된 프레임 4,041 장이
+        # 전부 현장 A03 한 곳, 촬영일 3일, 클립 15개에서 나온다. 현장 단위 분할이
+        # 성립하지 않고, 클립 단위로 나누면 같은 날 같은 순간을 여러 카메라로 찍은
+        # 프레임이 train 과 test 에 함께 들어가 지표가 부풀려진다 (guardrail 에서
+        # mAP50 0.898 -> 0.385 로 드러난 그 누수다). 내부 지표를 만들지 않고
+        # 외부 검증셋으로 평가한다 (docs/data_plan.md 8절).
+        plans = [(out, {sid: "train" for sid in parent_of}, "전량 train (홀드아웃 없음)")]
+    elif args.kfold:
         fold_of = kfold_groups(groups, args.kfold, seed)
         plans = [
             (out / f"fold{i}",
@@ -195,11 +208,14 @@ def main() -> int:
 
         if args.dry_run:
             continue
-        _write(dest, keep, assignment, index, code2id, names, args.copy)
+        _write(dest, keep, assignment, index, code2id, names, args.copy,
+               args.all_train)
         meta_out = {"target": args.target, "seed": seed, "group_by": "site",
                     "val_from": "session", "assign_key": "session",
                     "stratify_by": strata_keys, "assignment": assignment}
-        if args.kfold:
+        if args.all_train:
+            meta_out |= {"holdout": "none"}
+        elif args.kfold:
             meta_out |= {"kfold": args.kfold, "fold": int(dest.name.removeprefix("fold"))}
         else:
             meta_out["ratios"] = sc["ratios"]
@@ -223,7 +239,7 @@ def _index_images(src_root: pathlib.Path) -> dict[str, pathlib.Path]:
     return index
 
 
-def _write(out, keep, assignment, index, code2id, names, copy) -> None:
+def _write(out, keep, assignment, index, code2id, names, copy, all_train=False) -> None:
     # 이전 분할의 잔재를 지운다. 파일을 덮어쓰기만 하면 옛 split 에 있던 사본이
     # 그대로 남아 같은 프레임이 train 과 val 에 동시에 존재한다. 영상 단위 분할로
     # 막으려던 누수가 재생성 한 번으로 되살아난다.
@@ -260,16 +276,20 @@ def _write(out, keep, assignment, index, code2id, names, copy) -> None:
         (out / "labels" / s / f"{f.image_id}.txt").write_text("\n".join(lines))
         written[s] += 1
 
-    (out / "data.yaml").write_text(yaml.safe_dump({
-        "path": str(out.resolve()),
-        "train": "images/train", "val": "images/val", "test": "images/test",
-        "names": dict(enumerate(names)),
-    }, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    # 전량 train 이면 val 이 없다. Ultralytics 는 data.yaml 에 val 키를 요구하므로
+    # train 을 가리킨다. 이때 나오는 지표는 학습셋 자기평가라 보고에 쓸 수 없다.
+    spec = {"path": str(out.resolve()), "train": "images/train",
+            "val": "images/train" if all_train else "images/val"}
+    if not all_train:
+        spec["test"] = "images/test"
+    spec["names"] = dict(enumerate(names))
+    (out / "data.yaml").write_text(
+        yaml.safe_dump(spec, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
     print(f"  기록: {dict(written)}")
     if missing:
         print(f"  경고: 원천 이미지를 못 찾은 프레임 {len(missing)}개 (예: {missing[:3]})")
-    empty = [s for s in SPLITS if written[s] == 0]
+    empty = [s for s in (["train"] if all_train else SPLITS) if written[s] == 0]
     if empty:
         # 빈 train 으로 학습을 걸면 Ultralytics 가 한참 뒤에 FileNotFoundError 를 뱉는다.
         raise SystemExit(f"  오류: {empty} 스플릿이 비었습니다. "

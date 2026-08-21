@@ -213,7 +213,7 @@ AI Hub 데이터는 시나리오를 연출해 촬영한 것이다. 시나리오�
 |---|---|---|
 | SHWD | 안전모 미착용 | https://github.com/njvisionpower/Safety-Helmet-Wearing-Dataset |
 | Construction-PPE | 보호구 전반 | https://docs.ultralytics.com/datasets/detect/construction-ppe |
-| SODA | 안전난간, 비계 (fence, scaffold) | https://arxiv.org/abs/2202.09554 |
+| SODA | ~~안전난간, 비계~~ **매핑 불가**. `hook`은 타워크레인 후크, `fence`는 가설 울타리, `scaffold`는 비계다. 실제 현장 사진이라 정성 확인용으로만 쓴다 (`docs/data_plan.md` 8절) | https://arxiv.org/abs/2202.09554 |
 
 클래스 하나만 매핑하면 되므로 각 하루면 충분하다. 학습에 섞으면 클래스 통합에만 1-2주가 소요되므로 하지 않는다.
 

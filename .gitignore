@@ -14,3 +14,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# 문서와 에이전트 지침은 저장소에 올리지 않는다 (로컬에만 둔다)
+/CLAUDE.md
+/docs/*.md

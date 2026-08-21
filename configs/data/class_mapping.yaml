@@ -18,8 +18,8 @@ unified:
 aihub_507:
   target:
     SO-01: {name: 안전 난간,        unified: guardrail, instances: 65086, status: unverified}
-    UA-01: {name: 안전고리 미체결,  unified: hook_unfastened, instances: 40499, status: unverified}
-    WO-06: {name: 안전고리 미착용,  unified: hook_unfastened, instances: 40496, status: unverified}
+    UA-01: {name: 안전고리 미체결(작업자 전신), unified: hook_unfastened, instances: 40499, status: verified}
+    WO-06: {name: 안전고리 미착용(작업자 몸통), unified: hook_unfastened, instances: 40496, status: verified}
     WO-01: {name: 작업자,           unified: worker, instances: 137005, status: verified}
 
   # 학습 클래스로 쓰지 않는다. 물체가 없는 상태에 박스를 그린 라벨이라
@@ -41,17 +41,25 @@ aihub_507:
        둘 다 쓰면 데이터가 두 배라고 착각하게 된다. Phase 0에서 좌표 중복률로 검증 후 택1."
     - "UC-01/UC-04, UC-03/UC-06은 명칭이 중복이다. AI Hub 페이지 기재 오류이거나
        작업유형별로 코드가 갈린 것. Phase 0에서 실데이터 검증 필요."
-    - "안전고리의 positive(체결 상태) 클래스가 존재하지 않는다.
-       WO-06/UA-01 박스가 작업자 전신인지 고리 영역인지에 따라 설계가 갈린다.
-       docs/data_plan.md 2절 및 Phase 1 참조."
+    - "WO-06 은 고리 부품이 아니라 작업자 몸통(어깨~허벅지)이다. UA-01 은 전신이다.
+       박스를 겹쳐 그려 확인했다. 507 라벨에는 고리 자체를 잡은 박스가 없다."
+    - "안전고리의 positive(체결 상태) 클래스가 존재하지 않는다. 미체결만 라벨돼
+       있으므로 이 데이터만으로는 체결/미체결을 구분하는 모델을 만들 수 없다."
+    - "위 unified 의 hook_unfastened 는 507 라벨에 대응물이 없다. 학습에 쓰는
+       hook_stage1 타겟은 UA-01 을 worker 단일 클래스로만 쓰며, 체결 여부는
+       VLM 이 판단한다 (docs/data_plan.md 5절)."
 
 # ---------------------------------------------------------------- 71407
 # 건설 현장 위험 상태 판단 데이터 (dataSetSn=71407)
 aihub_71407:
   target:
+    # SO-01 만 원천 crop 으로 확인했다 (Y-04, 개구부를 둘러싼 사각 파이프 난간을
+    # 타이트하게 잡은 정상 박스). SO-04/SO-06 은 N-01/N-02 에만 있는데 그 원천을
+    # 받은 적이 없다. 이름만 보고 verified 로 둘 수 없다 — Y-05 의 SO-02 도
+    # 이름은 "단부 안전난간" 이었지만 실제로는 화면 전체를 덮는 장면 박스였다.
     SO-01: {name: 개구부 안전난간,      unified: guardrail, status: verified}
-    SO-04: {name: 단부 안전난간(청색 패널), unified: guardrail, status: verified}
-    SO-06: {name: 비계 난간,            unified: guardrail, status: verified}
+    SO-04: {name: 단부 안전난간(청색 패널), unified: guardrail, status: unverified}
+    SO-06: {name: 비계 난간,            unified: guardrail, status: unverified}
     WO-01: {name: 작업자,               unified: worker,    status: verified}
 
   context:
@@ -64,13 +72,23 @@ aihub_71407:
     WO-04: {name: 이동식비계,    status: verified}   # 507의 WO-04(안전모 미착용)와 다름
 
   # 이미지 단위 시나리오 라벨. 객체가 아니라 장면 상태를 나타낸다.
+  # 전체 20종의 주 클래스·현장 구성은 scripts/scan_71407_scenarios.py 로 재현한다
+  # (출력 보관: outputs/scan_71407_scenarios.log). 난간 코드가 있는 시나리오는 셋뿐이다.
   scenario:
     Y-03: {name: 개구부 덮개 설치,        status: unverified}
     N-03: {name: 개구부 덮개 불량,        status: unverified}
-    Y-04: {name: 개구부 안전난간 설치,    status: unverified}
-    N-04: {name: 개구부 안전난간 불량,    status: unverified}
-    Y-05: {name: 단부 안전난간 설치,      status: unverified}
+    Y-04: {name: 개구부 안전난간 설치,    main: SO-01, sites: [18, 26], status: unverified}
+    N-04: {name: 개구부 안전난간 불량,    main: DO-03, sites: [32, 35], status: unverified}
+    Y-05: {name: 단부 안전난간 설치,      main: SO-02, sites: [31], status: unverified}
     N-05: {name: 단부 안전난간 불량,      status: unverified}
+    N-01: {name: 단부 안전난간 불량(추정), main: SO-04, sites: [26], status: unverified}
+    N-02: {name: 비계 난간 불량(추정),    main: SO-06, sites: [26, 32, 34], status: unverified}
+
+  # 라벨은 있으나 탐지 정답으로 쓸 수 없다. 박스가 물체가 아니라 장면 영역이다.
+  # Y-05 의 SO-02 는 난간이 화면 상단에 걸쳐 있는데 박스가 철근·슬래브까지 포함한
+  # 화면 전체를 덮는다. 박스를 잘라 확인했다 (docs/data_plan.md 1.3절).
+  scene_box:
+    SO-02: {name: 단부 안전난간(장면 영역 박스), status: verified}
 
   # 전량 제외. 박스 확인 결과 라바콘/경광봉/방독마스크/안전표지/위험테이프 등
   # 보조용품이며 안전난간·안전고리가 아니다.
