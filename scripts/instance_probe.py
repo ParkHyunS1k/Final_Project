@@ -81,6 +81,9 @@ def main() -> int:
     ap.add_argument("--conf", type=float, default=0.01)
     ap.add_argument("--op-conf", type=float, default=0.25,
                     help="운용 시점 비교용 conf. 이 값 이상만 남겼을 때의 개수·회수율도 같이 찍는다")
+    ap.add_argument("--sweep", action="store_true",
+                    help="conf 를 훑어 guardrail 단일 클래스의 P/R/F1 을 찍는다. "
+                         "운용점을 다시 고르면 회수율이 얼마나 오르는지 본다")
     args = ap.parse_args()
 
     from PIL import Image
@@ -145,7 +148,64 @@ def main() -> int:
 
     print("\n  회수율이 임계를 낮출 때 크게 오르고 합집합 IoU 가 높으면, "
           "난간을 못 찾는 게 아니라 칸 경계를 못 맞추는 것이다.")
+    if args.sweep:
+        sweep(args, YOLO, Image)
     return 0
+
+
+def sweep(args, YOLO, Image) -> None:
+    """conf 별 guardrail P/R/F1. 매칭은 신뢰도 순 탐욕(IoU>=0.5, 정답 1개당 1회).
+
+    운용점을 다시 고르는 것만으로 회수율이 얼마나 오르는지 본다. 재학습이 없으니
+    공짜다. 다만 test 현장으로 운용점을 고르면 그 현장에 맞춘 값이 되므로,
+    여기서 나온 conf 를 그대로 배포에 쓰면 안 된다 — 폭이 얼마인지만 본다.
+    """
+    confs = [0.01, 0.05, 0.10, 0.15, 0.20, 0.25, 0.35, 0.50]
+    print("\n=== conf 운용점 재선택 (guardrail, IoU 0.5) ===")
+    for fold_dir in sorted(args.root.glob("fold*")):
+        weights = args.root / "runs" / fold_dir.name / "weights" / "best.pt"
+        if not (fold_dir / "images" / "test").is_dir() or not weights.exists():
+            continue
+        site = sorted({s.split("_")[1] for s, v in json.loads(
+            (fold_dir / "split.json").read_text(encoding="utf-8"))["assignment"].items()
+            if v == "test"})[0]
+        imgs = sorted((fold_dir / "images" / "test").glob("*.jpg"))
+        model = YOLO(str(weights))
+        tp, fp = collections.Counter(), collections.Counter()
+        n_gt = 0
+        for i in range(0, len(imgs), 16):
+            chunk = imgs[i:i + 16]
+            res = model.predict([str(q) for q in chunk], conf=min(confs), imgsz=640,
+                                verbose=False, classes=[0])
+            for path, r in zip(chunk, res):
+                w, h = Image.open(path).size
+                gt = load_gt(fold_dir / "labels" / "test" / f"{path.stem}.txt", w, h)
+                n_gt += len(gt)
+                scored = sorted(((tuple(float(v) for v in b), float(c))
+                                 for b, c in zip(r.boxes.xyxy, r.boxes.conf)),
+                                key=lambda t: -t[1])
+                for c in confs:
+                    taken = set()
+                    for b, sc in scored:
+                        if sc < c:
+                            break
+                        j, best = -1, 0.5
+                        for k, g in enumerate(gt):
+                            v = iou(g, b)
+                            if k not in taken and v >= best:
+                                j, best = k, v
+                        if j >= 0:
+                            taken.add(j)
+                            tp[c] += 1
+                        else:
+                            fp[c] += 1
+        print(f"\n  {fold_dir.name} / {site}  (정답 {n_gt})")
+        print(f"    {'conf':>6}{'precision':>11}{'recall':>9}{'F1':>8}")
+        for c in confs:
+            pr = tp[c] / max(1, tp[c] + fp[c])
+            rc = tp[c] / max(1, n_gt)
+            f1 = 2 * pr * rc / (pr + rc) if pr + rc else 0.0
+            print(f"    {c:>6.2f}{pr:>11.3f}{rc:>9.3f}{f1:>8.3f}")
 
 
 if __name__ == "__main__":
