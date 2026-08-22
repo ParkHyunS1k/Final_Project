@@ -18,8 +18,12 @@ from __future__ import annotations
 
 import pathlib
 
-CONFS = (0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15, 0.20,
-         0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70)
+# 하한을 0.001 까지 내린다. 0.01 을 하한으로 두면 F1 최적점이 그리드 경계에
+# 걸려 "여기가 천장" 인지 "더 내려갈 수 있는지" 를 구분할 수 없다. 실제로
+# guardrail 은 네 폴드 전부 최저점이 선택돼 경계에 걸려 있었다.
+# Ultralytics val 도 conf 0.001 을 쓰므로 AP 와 같은 구간이 된다.
+CONFS = (0.001, 0.003, 0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15,
+         0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70)
 
 
 def iou(a, b) -> float:
@@ -48,8 +52,13 @@ def load_gt(path: pathlib.Path, w: int, h: int) -> list[tuple[int, tuple]]:
 
 
 def count(model, images: list[pathlib.Path], labels: pathlib.Path, n_cls: int,
-          confs=CONFS, iou_thr: float = 0.5, batch: int = 16) -> dict:
-    """conf x 클래스별 (tp, fp) 와 클래스별 정답 수를 센다."""
+          confs=CONFS, iou_thr: float = 0.5, batch: int = 16,
+          imgsz: int = 640) -> dict:
+    """conf x 클래스별 (tp, fp) 와 클래스별 정답 수를 센다.
+
+    `imgsz` 는 학습 때 쓴 값과 반드시 같아야 한다. 640 으로 학습한 모델을
+    960 으로 재거나 그 반대로 하면 비교가 성립하지 않는다.
+    """
     from PIL import Image
 
     tp = {(c, k): 0 for c in confs for k in range(n_cls)}
@@ -58,7 +67,7 @@ def count(model, images: list[pathlib.Path], labels: pathlib.Path, n_cls: int,
 
     for i in range(0, len(images), batch):
         chunk = images[i:i + batch]
-        res = model.predict([str(p) for p in chunk], conf=min(confs), imgsz=640,
+        res = model.predict([str(p) for p in chunk], conf=min(confs), imgsz=imgsz,
                             verbose=False)
         for path, r in zip(chunk, res):
             w, h = Image.open(path).size

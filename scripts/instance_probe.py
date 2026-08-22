@@ -79,6 +79,8 @@ def main() -> int:
     # 폴드가 프레임당 0.00개를 내는 모순이 생긴다 (실제로 그렇게 나왔다).
     # 탐지 능력을 보려면 낮은 conf 로, 운용 시점을 보려면 높은 conf 로 봐야 한다.
     ap.add_argument("--conf", type=float, default=0.01)
+    ap.add_argument("--imgsz", type=int, default=640,
+                    help="학습 때 쓴 값과 같아야 한다. 다르면 비교가 성립하지 않는다")
     ap.add_argument("--op-conf", type=float, default=0.25,
                     help="운용 시점 비교용 conf. 이 값 이상만 남겼을 때의 개수·회수율도 같이 찍는다")
     ap.add_argument("--sweep", action="store_true",
@@ -115,8 +117,8 @@ def main() -> int:
         uious = []
         for i in range(0, len(imgs), 16):
             chunk = imgs[i:i + 16]
-            res = model.predict([str(p) for p in chunk], conf=args.conf, imgsz=640,
-                                verbose=False, classes=[0])
+            res = model.predict([str(p) for p in chunk], conf=args.conf,
+                                imgsz=args.imgsz, verbose=False, classes=[0])
             for path, r in zip(chunk, res):
                 w, h = Image.open(path).size
                 gt = load_gt(fold_dir / "labels" / "test" / f"{path.stem}.txt", w, h)
@@ -160,7 +162,7 @@ def sweep(args, YOLO, Image) -> None:
     공짜다. 다만 test 현장으로 운용점을 고르면 그 현장에 맞춘 값이 되므로,
     여기서 나온 conf 를 그대로 배포에 쓰면 안 된다 — 폭이 얼마인지만 본다.
     """
-    confs = [0.01, 0.05, 0.10, 0.15, 0.20, 0.25, 0.35, 0.50]
+    confs = [0.001, 0.003, 0.005, 0.01, 0.05, 0.10, 0.15, 0.20, 0.25, 0.35, 0.50]
     print("\n=== conf 운용점 재선택 (guardrail, IoU 0.5) ===")
     for fold_dir in sorted(args.root.glob("fold*")):
         weights = args.root / "runs" / fold_dir.name / "weights" / "best.pt"
@@ -175,8 +177,8 @@ def sweep(args, YOLO, Image) -> None:
         n_gt = 0
         for i in range(0, len(imgs), 16):
             chunk = imgs[i:i + 16]
-            res = model.predict([str(q) for q in chunk], conf=min(confs), imgsz=640,
-                                verbose=False, classes=[0])
+            res = model.predict([str(q) for q in chunk], conf=min(confs),
+                                imgsz=args.imgsz, verbose=False, classes=[0])
             for path, r in zip(chunk, res):
                 w, h = Image.open(path).size
                 gt = load_gt(fold_dir / "labels" / "test" / f"{path.stem}.txt", w, h)
@@ -205,7 +207,7 @@ def sweep(args, YOLO, Image) -> None:
             pr = tp[c] / max(1, tp[c] + fp[c])
             rc = tp[c] / max(1, n_gt)
             f1 = 2 * pr * rc / (pr + rc) if pr + rc else 0.0
-            print(f"    {c:>6.2f}{pr:>11.3f}{rc:>9.3f}{f1:>8.3f}")
+            print(f"    {c:>6.3f}{pr:>11.3f}{rc:>9.3f}{f1:>8.3f}")
 
 
 if __name__ == "__main__":

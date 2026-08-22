@@ -120,10 +120,13 @@ def main() -> int:
         # 0.00개/프레임). val 에서 F1 최대 conf 를 고르고 test 에서 잰다.
         # test 로 고르면 test 현장에 맞춘 값이 되어 leave-one-site-out 이 무너진다.
         names_l = [names[i] for i in sorted(names)]
+        # imgsz 는 학습 설정에서 가져온다. 하드코딩하면 960 으로 학습한 모델을
+        # 640 으로 재게 되어 비교가 조용히 망가진다.
+        imgsz = int(cfg.get("imgsz", 640))
         val_c = op.count(model, sorted((data_yaml.parent / "images" / "val").glob("*.jpg")),
-                         data_yaml.parent / "labels" / "val", len(names_l))
+                         data_yaml.parent / "labels" / "val", len(names_l), imgsz=imgsz)
         test_c = op.count(model, sorted((data_yaml.parent / "images" / "test").glob("*.jpg")),
-                          data_yaml.parent / "labels" / "test", len(names_l))
+                          data_yaml.parent / "labels" / "test", len(names_l), imgsz=imgsz)
         row["operating_point"] = {}
         for i, name in enumerate(names_l):
             c = op.select(val_c, i)
@@ -141,8 +144,8 @@ def main() -> int:
 
         print(f"  {fold}: " + "  ".join(f"{k}={row[k]:.4f}" for k, _ in METRICS))
         for name, d in row["operating_point"].items():
-            print(f"    운용점 {name:<16} val선택 conf={d['conf']:.2f} F1={d['f1']:.3f}"
-                  f"   |  고정 conf={d['fixed_conf']:.2f} F1={d['fixed_f1']:.3f}")
+            print(f"    운용점 {name:<16} val선택 conf={d['conf']:.3f} F1={d['f1']:.3f}"
+                  f"   |  고정 conf={d['fixed_conf']:.3f} F1={d['fixed_f1']:.3f}")
 
     # ---- 집계
     print(f"\n{'=' * 60}\n{prefix} — {len(per_fold)}-fold 집계\n{'=' * 60}")
@@ -185,9 +188,9 @@ def main() -> int:
                            "fixed_precision", "fixed_recall", "fixed_f1")}
             summary.setdefault("operating_point", {})[name] = {
                 "mean": m, "per_fold": rows}
-            print(f"{name:<18}{m['conf']:>6.2f}{m['precision']:>8.3f}"
+            print(f"{name:<18}{m['conf']:>6.3f}{m['precision']:>8.3f}"
                   f"{m['recall']:>8.3f}{m['f1']:>8.3f}{'  |':>4}"
-                  f"{rows[0]['fixed_conf']:>9.2f}{m['fixed_precision']:>8.3f}"
+                  f"{rows[0]['fixed_conf']:>9.3f}{m['fixed_precision']:>8.3f}"
                   f"{m['fixed_recall']:>8.3f}{m['fixed_f1']:>8.3f}")
         print("  val 선택이 고정 임계보다 나쁘면, val 이 train 현장에서 나온 탓이다 "
               "(split.carve_val). 안 본 현장에는 너무 높은 임계를 고르게 된다.")
