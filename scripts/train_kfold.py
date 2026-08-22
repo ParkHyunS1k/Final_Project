@@ -94,6 +94,10 @@ def main() -> int:
         names = res.names if isinstance(res.names, dict) else dict(enumerate(res.names))
         for i, ap50 in enumerate(getattr(res.box, "ap50", [])):
             class_ap.setdefault(names.get(i, str(i)), []).append(float(ap50))
+        # 폴드별로도 남긴다. 현장 간 편차가 커서 mean±std 만으로는 ablation 을
+        # 짝지어 비교할 수 없다 (docs/HANDOFF.md ②).
+        row["class_ap50"] = {names.get(i, str(i)): float(a)
+                             for i, a in enumerate(getattr(res.box, "ap50", []))}
 
         print(f"  {fold}: " + "  ".join(f"{k}={row[k]:.4f}" for k, _ in METRICS))
 

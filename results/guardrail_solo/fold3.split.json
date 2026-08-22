@@ -1,0 +1,22 @@
+{
+  "target": "guardrail_solo",
+  "seed": 0,
+  "group_by": "site",
+  "val_from": "session",
+  "assign_key": "session",
+  "stratify_by": [],
+  "assignment": {
+    "H-210726_A04_A_WS-04": "test",
+    "H-210727_A04_A_WS-01": "test",
+    "H-210819_A08_A_WS-02": "train",
+    "H-211103_A04_A_WS-01": "test",
+    "H-211104_A04_A_WS-01": "test",
+    "H-211104_A04_A_WS-04": "test",
+    "H-211116_A17_A_WS-03": "val",
+    "H-211116_A21_A_WS-01": "val",
+    "H-211116_A21_A_WS-02": "train",
+    "H-211209_A17_A_WS-04": "train"
+  },
+  "kfold": 4,
+  "fold": 3
+}

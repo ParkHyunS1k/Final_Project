@@ -1,0 +1,14 @@
+{
+  "target": "hook_stage1",
+  "seed": 0,
+  "group_by": "site",
+  "val_from": "session",
+  "assign_key": "session",
+  "stratify_by": [],
+  "assignment": {
+    "H-210821_A03_F_UA-01": "train",
+    "H-210823_A03_F_UA-01": "train",
+    "H-210826_A03_F_UA-01": "train"
+  },
+  "holdout": "none"
+}

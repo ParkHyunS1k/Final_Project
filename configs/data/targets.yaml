@@ -32,6 +32,26 @@ guardrail:
   # 장면" 이다. 배경으로 쓰면 모델에게 난간을 배경이라고 가르친다.
   negative_ratio: 0.0
 
+# guardrail 의 보조 클래스 제거 ablation (docs/HANDOFF.md ②).
+#
+# 4-fold 전체 mAP50 0.523 은 `worker` AP 0.889 가 끌어올린 값이고 주 클래스
+# `guardrail` 은 0.365 다 (docs/train_results.md 1절). 보조 클래스가 주 클래스에
+# 도움인지 방해인지 분리해야 다음 수를 정할 수 있다.
+#
+# `require` 를 그대로 두는 것이 이 실험의 핵심이다. 프레임 집합이 바뀌지 않아야
+# 현장 단위 fold 배정이 baseline 과 글자 그대로 같아지고, 그래야 폴드를 짝지어
+# 비교할 수 있다. `classes` 만 줄인다.
+guardrail_solo:
+  description: guardrail 단일 클래스 ablation. 프레임은 guardrail 과 동일
+  label_root: D:/507/label_val
+  source_root: D:/507/source_val
+  process_id: A
+  situations: [WS]
+  classes:
+    SO-01: guardrail
+  require: [SO-01]
+  negative_ratio: 0.0
+
 # 안전고리 파이프라인 1단계 — VLM 에 넘길 작업자 크롭을 만든다.
 #
 # YOLO 로 고리 자체를 탐지하지 않는다. 원본 1920x1080 에서 고리(카라비너)는
