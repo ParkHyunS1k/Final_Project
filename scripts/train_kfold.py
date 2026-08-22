@@ -49,6 +49,8 @@ def main() -> int:
     ap.add_argument("--device", default=None, help="미지정 시 ultralytics 자동 선택")
     ap.add_argument("--epochs", type=int, default=None, help="설정 파일 값을 덮어씀")
     ap.add_argument("--name", default=None, help="실행 이름 접두사")
+    ap.add_argument("--val-only", action="store_true",
+                    help="학습을 건너뛰고 runs/fold*/weights/best.pt 로 test 평가만 다시 한다")
     args = ap.parse_args()
 
     folds = sorted(args.root.glob("fold*/data.yaml"))
@@ -74,10 +76,18 @@ def main() -> int:
         fold = data_yaml.parent.name
         print(f"\n{'=' * 60}\n{prefix} / {fold}\n{'=' * 60}")
 
-        model = YOLO(model_name)
-        model.train(data=str(data_yaml.resolve()),
-                    project=str((args.root / "runs").resolve()),
-                    name=fold, exist_ok=True, **cfg)
+        if args.val_only:
+            # 이미 학습된 가중치로 지표만 다시 만든다. 폴드별 클래스 AP 가
+            # kfold_metrics.json 에 없던 예전 실행을 재학습 없이 채울 때 쓴다.
+            w = args.root / "runs" / fold / "weights" / "best.pt"
+            if not w.exists():
+                sys.exit(f"가중치가 없습니다: {w}")
+            model = YOLO(str(w))
+        else:
+            model = YOLO(model_name)
+            model.train(data=str(data_yaml.resolve()),
+                        project=str((args.root / "runs").resolve()),
+                        name=fold, exist_ok=True, **cfg)
 
         # 조기종료가 val 을 보므로 평가는 반드시 test 스플릿으로 한다
         res = model.val(data=str(data_yaml.resolve()), split="test",
