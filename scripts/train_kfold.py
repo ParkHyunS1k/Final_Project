@@ -18,6 +18,10 @@ import pathlib
 import statistics
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
+from src.eval import operating_point as op  # noqa: E402
+
 METRICS = [
     ("mAP50", "metrics/mAP50(B)"),
     ("mAP50-95", "metrics/mAP50-95(B)"),
@@ -49,6 +53,8 @@ def main() -> int:
     ap.add_argument("--device", default=None, help="미지정 시 ultralytics 자동 선택")
     ap.add_argument("--epochs", type=int, default=None, help="설정 파일 값을 덮어씀")
     ap.add_argument("--name", default=None, help="실행 이름 접두사")
+    ap.add_argument("--fixed-conf", type=float, default=0.01,
+                    help="비교용 고정 임계. val 선택이 안 본 현장에서 통하는지 본다")
     ap.add_argument("--val-only", action="store_true",
                     help="학습을 건너뛰고 runs/fold*/weights/best.pt 로 test 평가만 다시 한다")
     args = ap.parse_args()
@@ -70,7 +76,7 @@ def main() -> int:
         cfg["device"] = args.device
 
     prefix = args.name or args.root.name
-    per_fold, class_ap = [], {}
+    per_fold, class_ap, op_rows = [], {}, {}
 
     for data_yaml in folds:
         fold = data_yaml.parent.name
@@ -95,13 +101,13 @@ def main() -> int:
                         name=f"{fold}_test", exist_ok=True,
                         device=cfg.get("device"))
 
+        names = res.names if isinstance(res.names, dict) else dict(enumerate(res.names))
         n_test = sum(1 for _ in (data_yaml.parent / "images" / "test").iterdir())
         row = {"fold": fold, "n_test": n_test}
         for label, key in METRICS:
             row[label] = float(res.results_dict.get(key, float("nan")))
         per_fold.append(row)
 
-        names = res.names if isinstance(res.names, dict) else dict(enumerate(res.names))
         for i, ap50 in enumerate(getattr(res.box, "ap50", [])):
             class_ap.setdefault(names.get(i, str(i)), []).append(float(ap50))
         # 폴드별로도 남긴다. 현장 간 편차가 커서 mean±std 만으로는 ablation 을
@@ -109,7 +115,34 @@ def main() -> int:
         row["class_ap50"] = {names.get(i, str(i)): float(a)
                              for i, a in enumerate(getattr(res.box, "ap50", []))}
 
+        # ---- 운용 임계. AP 만으로는 "어느 conf 로 돌릴 것인가" 를 알 수 없고,
+        # guardrail 에서는 그 차이가 컸다 (AP 0.42 인 폴드가 conf 0.25 에서
+        # 0.00개/프레임). val 에서 F1 최대 conf 를 고르고 test 에서 잰다.
+        # test 로 고르면 test 현장에 맞춘 값이 되어 leave-one-site-out 이 무너진다.
+        names_l = [names[i] for i in sorted(names)]
+        val_c = op.count(model, sorted((data_yaml.parent / "images" / "val").glob("*.jpg")),
+                         data_yaml.parent / "labels" / "val", len(names_l))
+        test_c = op.count(model, sorted((data_yaml.parent / "images" / "test").glob("*.jpg")),
+                          data_yaml.parent / "labels" / "test", len(names_l))
+        row["operating_point"] = {}
+        for i, name in enumerate(names_l):
+            c = op.select(val_c, i)
+            p_, r_, f_ = op.prf(test_c, c, i)
+            # 고정 낮은 conf 와 나란히 둔다. val 이 train 현장에서 나온 것이라
+            # (split.carve_val) 낙관적이고, 그래서 안 본 현장에는 너무 높은
+            # 임계를 고를 수 있다. 둘을 같이 찍어야 그게 보인다.
+            fp_, fr_, ff_ = op.prf(test_c, args.fixed_conf, i)
+            row["operating_point"][name] = {
+                "conf": c, "precision": p_, "recall": r_, "f1": f_,
+                "val_f1": op.prf(val_c, c, i)[2], "n_gt": test_c["n_gt"][i],
+                "fixed_conf": args.fixed_conf, "fixed_precision": fp_,
+                "fixed_recall": fr_, "fixed_f1": ff_}
+            op_rows.setdefault(name, []).append(row["operating_point"][name])
+
         print(f"  {fold}: " + "  ".join(f"{k}={row[k]:.4f}" for k, _ in METRICS))
+        for name, d in row["operating_point"].items():
+            print(f"    운용점 {name:<16} val선택 conf={d['conf']:.2f} F1={d['f1']:.3f}"
+                  f"   |  고정 conf={d['fixed_conf']:.2f} F1={d['fixed_f1']:.3f}")
 
     # ---- 집계
     print(f"\n{'=' * 60}\n{prefix} — {len(per_fold)}-fold 집계\n{'=' * 60}")
@@ -141,6 +174,23 @@ def main() -> int:
             m, s = mean_std(xs)
             summary.setdefault("class_ap50", {})[name] = {"mean": m, "std": s}
             print(f"{name:<20}{m:>10.4f}{s:>10.4f}")
+
+    if op_rows:
+        print("\n운용 임계 (val 에서 F1 최대 conf 선택 -> test 에서 측정)")
+        print(f"{'클래스':<18}{'conf':>6}{'P':>8}{'R':>8}{'F1':>8}"
+              f"{'  |':>4}{'고정conf':>9}{'P':>8}{'R':>8}{'F1':>8}")
+        for name, rows in op_rows.items():
+            m = {k: statistics.mean([r[k] for r in rows])
+                 for k in ("conf", "precision", "recall", "f1",
+                           "fixed_precision", "fixed_recall", "fixed_f1")}
+            summary.setdefault("operating_point", {})[name] = {
+                "mean": m, "per_fold": rows}
+            print(f"{name:<18}{m['conf']:>6.2f}{m['precision']:>8.3f}"
+                  f"{m['recall']:>8.3f}{m['f1']:>8.3f}{'  |':>4}"
+                  f"{rows[0]['fixed_conf']:>9.2f}{m['fixed_precision']:>8.3f}"
+                  f"{m['fixed_recall']:>8.3f}{m['fixed_f1']:>8.3f}")
+        print("  val 선택이 고정 임계보다 나쁘면, val 이 train 현장에서 나온 탓이다 "
+              "(split.carve_val). 안 본 현장에는 너무 높은 임계를 고르게 된다.")
 
     out = args.root / "kfold_metrics.json"
     out.write_text(json.dumps(
