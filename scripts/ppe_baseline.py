@@ -174,6 +174,10 @@ def main() -> int:
     ap.add_argument("--rag", type=pathlib.Path,
                     help="`산업안전RAG/` 경로. 주면 법령 연결까지 붙인다")
     ap.add_argument("--site", default="미상", help="구역명. 사진은 이걸 모른다")
+    ap.add_argument("--person", type=pathlib.Path,
+                    help="사람 탐지를 별도 COCO 모델로 한다 (예: yolo26s.pt). "
+                         "PPE 모델의 `human` 대신 쓴다")
+    ap.add_argument("--person-conf", type=float, default=0.25)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -195,14 +199,31 @@ def main() -> int:
         print("  ⚠ 이 모델에는 `no-helmet` 클래스가 없다. "
               "helmet 부재로 추론해야 하므로 이 스크립트로는 직접 채점할 수 없다.")
         return 1
-    if not ids["human"]:
+    person_model = None
+    if args.person:
+        person_model = YOLO(str(args.person))
+        pid = [i for i, n in person_model.names.items() if n.lower() == "person"]
+        if not pid:
+            print(f"  ⚠ {args.person} 에 person 클래스가 없다.")
+            return 1
+        print(f"사람 탐지 {args.person} (COCO person, conf {args.person_conf})")
+    elif not ids["human"]:
         print("  ⚠ 이 모델에는 사람 클래스가 없다. 2단계 판정을 쓸 수 없다.")
         return 1
+
+    def humans(img_path, ppe_boxes):
+        """사람 박스를 낸다. `--person` 이 있으면 COCO 로, 없으면 PPE 모델로."""
+        if person_model is None:
+            return ppe_boxes["human"]
+        r = person_model.predict(str(img_path), conf=args.person_conf,
+                                 verbose=False, classes=pid)[0]
+        return [tuple(float(v) for v in b) for b in r.boxes.xyxy]
 
     # ---- 리포트 한 장 모드
     if args.report:
         r = model.predict(str(args.report), conf=args.conf, verbose=False)[0]
         bx = parse_boxes(r, ids)
+        bx["human"] = humans(args.report, bx)
         conf_of = {tuple(float(v) for v in b): float(c)
                    for b, c in zip(r.boxes.xyxy, r.boxes.conf)}
         # 사람을 먼저 세고 한 명씩 판정한다. 판정불가는 위반으로 계상하지 않는다.
@@ -260,6 +281,7 @@ def main() -> int:
             for img, box, clip in picks[site][kind]:
                 r = model.predict(str(img), conf=args.conf, verbose=False)[0]
                 bx = parse_boxes(r, ids)
+                bx["human"] = humans(img, bx)
 
                 # 1단계 — 기존 방식
                 if kind == "pos":
