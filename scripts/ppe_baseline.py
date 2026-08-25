@@ -57,6 +57,7 @@ MODELS = {
 }
 NO_HELMET = {"no-helmet", "no_helmet", "head"}
 HELMET = {"helmet", "hardhat"}
+HUMAN = {"human", "person", "worker"}
 
 POS_SITU = "UA-04"                    # 미착용
 NEG_SITU = ("UA-02", "UA-03")         # 착용 (다른 위반 상황)
@@ -124,6 +125,40 @@ def macro(byclip: dict) -> tuple[float, list]:
     return (sum(vals) / len(vals) if vals else float("nan")), vals
 
 
+def center_in(box, outer) -> bool:
+    cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    return outer[0] <= cx <= outer[2] and outer[1] <= cy <= outer[3]
+
+
+def classify(human, helmets: list, no_helmets: list) -> str:
+    """작업자 한 명의 착용 여부. `판정불가` 를 별도로 낸다.
+
+    **이것이 2단계 구조의 이유다.** 1단계(`no-helmet` 만 보기)에서는 머리가
+    가려지거나 뒤통수만 보이는 작업자가 탐지에도 정답에도 안 잡혀 **분모에서
+    통째로 사라진다.** 사람을 먼저 세면 그 작업자가 `판정불가` 로 남아,
+    "모델이 못 찾은 것" 과 "애초에 판정할 수 없는 것" 이 갈린다.
+
+    머리 위치를 따로 추정하지 않는다 — PPE 박스 중심이 작업자 박스 안에 있으면
+    그 사람 것으로 본다. 안전모는 어차피 머리에만 달린다.
+    """
+    if any(center_in(b, human) for b in no_helmets):
+        return "미착용"
+    if any(center_in(b, human) for b in helmets):
+        return "착용"
+    return "판정불가"
+
+
+def parse_boxes(result, ids: dict) -> dict:
+    """예측을 클래스 계열별로 나눈다. `{'human': [...], 'helmet': [...], ...}`"""
+    out = {k: [] for k in ids}
+    for b, k in zip(result.boxes.xyxy, result.boxes.cls):
+        box = tuple(float(v) for v in b)
+        for name, idset in ids.items():
+            if int(k) in idset:
+                out[name].append(box)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="melihuzunoglu/ppe-detection",
@@ -151,20 +186,38 @@ def main() -> int:
     names = model.names
     print(f"모델 {args.model} ({MODELS[args.model]})  클래스 {list(names.values())}")
 
-    nh_ids = [i for i, n in names.items() if n.lower() in NO_HELMET]
-    if not nh_ids:
+    ids = {
+        "no_helmet": {i for i, n in names.items() if n.lower() in NO_HELMET},
+        "helmet": {i for i, n in names.items() if n.lower() in HELMET},
+        "human": {i for i, n in names.items() if n.lower() in HUMAN},
+    }
+    if not ids["no_helmet"]:
         print("  ⚠ 이 모델에는 `no-helmet` 클래스가 없다. "
               "helmet 부재로 추론해야 하므로 이 스크립트로는 직접 채점할 수 없다.")
+        return 1
+    if not ids["human"]:
+        print("  ⚠ 이 모델에는 사람 클래스가 없다. 2단계 판정을 쓸 수 없다.")
         return 1
 
     # ---- 리포트 한 장 모드
     if args.report:
         r = model.predict(str(args.report), conf=args.conf, verbose=False)[0]
-        dets = []
-        for b, c, k in zip(r.boxes.xyxy, r.boxes.conf, r.boxes.cls):
-            if int(k) in nh_ids:
-                dets.append({"violation": VIOLATIONS["UA-04"], "conf": float(c),
-                             "box": [float(v) for v in b]})
+        bx = parse_boxes(r, ids)
+        conf_of = {tuple(float(v) for v in b): float(c)
+                   for b, c in zip(r.boxes.xyxy, r.boxes.conf)}
+        # 사람을 먼저 세고 한 명씩 판정한다. 판정불가는 위반으로 계상하지 않는다.
+        dets, unresolved = [], []
+        for i, h in enumerate(bx["human"], 1):
+            verdict = classify(h, bx["helmet"], bx["no_helmet"])
+            if verdict == "미착용":
+                nh = next(b for b in bx["no_helmet"] if center_in(b, h))
+                dets.append({"violation": VIOLATIONS["UA-04"],
+                             "conf": conf_of.get(nh, 0.0), "box": list(nh)})
+            elif verdict == "판정불가":
+                x1, y1, x2, y2 = (int(v) for v in h)
+                unresolved.append(
+                    f"작업자 {i} — 머리 부위에서 안전모 착용 여부를 판정하지 못함 "
+                    f"(작업자 박스 [{x1}, {y1}, {x2}, {y2}])")
         arts = None
         if args.rag and dets:
             # 법령 검색은 교차 확인용이다. 조항 이름만 받고 조문 전문은 안 싣는다.
@@ -177,54 +230,113 @@ def main() -> int:
             arts = retrieved_articles(res["s2_report"])
             (args.out / "rag_s2_full.md").write_text(res["s2_report"], encoding="utf-8")
 
-        md = render(args.report.name, dets, site=args.site, rag_articles=arts)
+        md = render(args.report.name, dets, site=args.site, rag_articles=arts,
+                    unresolved=unresolved)
         (args.out / "report.md").write_text(md, encoding="utf-8")
         print(md)
         print(f"\n저장: {args.out / 'report.md'}  ({len(md):,}자)")
         return 0
 
-    # ---- 평가
+    # ---- 평가. 1단계(no-helmet 만)와 2단계(사람 먼저)를 같은 표본에서 나란히 낸다
     zones = collect()
     picks = sample(zones, args.per_clip, args.seed)
     sites = sorted(s for s in picks if picks[s]["pos"] and picks[s]["neg"])
     print(f"\n미착용·착용이 모두 있는 현장 {len(sites)}곳: {sites}")
-    print(f"판정 = `no-helmet` 예측이 정답 머리 박스와 IoU >= {args.iou}")
+    print(f"1단계 = `no-helmet` 예측이 정답과 겹침 (IoU >= {args.iou})")
+    print("2단계 = 사람을 먼저 찾고 그 안의 PPE 박스로 판정. **판정불가를 따로 센다**")
     print("주지표는 **클립 macro**. 대괄호는 클립 bootstrap 95%\n")
 
-    print(f"  {'현장':<6}{'미착용':>8}{'착용':>7}{'적발':>9}{'오경보':>9}{'J':>8}")
     rows = []
     for site in sites:
-        agg = {"pos": collections.defaultdict(lambda: [0, 0]),
+        # [적발/오경보 수, 대상 수] — 1단계와 2단계를 따로 집계한다
+        one = {"pos": collections.defaultdict(lambda: [0, 0]),
                "neg": collections.defaultdict(lambda: [0, 0])}
+        two = {"pos": collections.defaultdict(lambda: [0, 0]),
+               "neg": collections.defaultdict(lambda: [0, 0])}
+        alls = {"pos": collections.defaultdict(lambda: [0, 0]),
+                "neg": collections.defaultdict(lambda: [0, 0])}
+        tally = collections.Counter()      # 2단계에서 무슨 일이 있었나
         for kind in ("pos", "neg"):
             for img, box, clip in picks[site][kind]:
                 r = model.predict(str(img), conf=args.conf, verbose=False)[0]
-                pred = [tuple(float(v) for v in b)
-                        for b, k in zip(r.boxes.xyxy, r.boxes.cls) if int(k) in nh_ids]
+                bx = parse_boxes(r, ids)
+
+                # 1단계 — 기존 방식
                 if kind == "pos":
-                    hit = any(iou(box, p) >= args.iou for p in pred)
+                    hit1 = any(iou(box, p) >= args.iou for p in bx["no_helmet"])
                 else:
-                    # 착용 프레임: 전신 박스 안에 no-helmet 예측이 있으면 오경보
-                    hit = any(iou(box, p) >= 0.05 for p in pred)
-                cell = agg[kind][clip]
-                cell[1] += 1
-                cell[0] += hit
-        rec, recv = macro(agg["pos"])
-        fa, fav = macro(agg["neg"])
-        rci, fci = boot_ci(recv), boot_ci(fav)
+                    hit1 = any(iou(box, p) >= 0.05 for p in bx["no_helmet"])
+                c1 = one[kind][clip]
+                c1[1] += 1
+                c1[0] += hit1
+
+                # 2단계 — 정답에 해당하는 사람을 먼저 찾는다
+                if kind == "pos":
+                    # 정답은 맨머리 박스다. 그 머리를 품은 작업자를 찾는다
+                    who = [h for h in bx["human"] if center_in(box, h)]
+                else:
+                    # 정답은 전신 박스다. 겹치는 작업자를 찾는다
+                    who = [h for h in bx["human"] if iou(box, h) >= 0.3]
+                verdict = "사람미탐" if not who else classify(
+                    who[0], bx["helmet"], bx["no_helmet"])
+                tally[f"{kind}/{verdict}"] += 1
+
+                # 전수 — 사람미탐·판정불가를 **분모에 남긴다.** 이쪽이 제품 수치다
+                ca = alls[kind][clip]
+                ca[1] += 1
+                ca[0] += (verdict == "미착용")
+
+                if verdict in ("판정불가", "사람미탐"):
+                    continue               # 기권. 조건부 분모에서만 뺀다 (3.8)
+                c2 = two[kind][clip]
+                c2[1] += 1
+                c2[0] += (verdict == "미착용")
+
+        r1, r1v = macro(one["pos"])
+        f1, f1v = macro(one["neg"])
+        r2, r2v = macro(two["pos"])
+        f2, f2v = macro(two["neg"])
+        ra, rav = macro(alls["pos"])
+        fa_, fav = macro(alls["neg"])
+        rci, fci = boot_ci(r2v), boot_ci(f2v)
         rs = f"[{rci[0]:.0%}-{rci[1]:.0%}]" if rci else "[구간불가]"
         fs = f"[{fci[0]:.0%}-{fci[1]:.0%}]" if fci else "[구간불가]"
-        print(f"  {site:<6}{len(picks[site]['pos']):>8}{len(picks[site]['neg']):>7}"
-              f"{rec:>8.1%} {rs:<12}{fa:>6.1%} {fs:<12}{rec - fa:>7.3f}")
-        rows.append({"site": site, "recall": round(rec, 4), "false_alarm": round(fa, 4),
-                     "j": round(rec - fa, 4), "n_pos": len(picks[site]["pos"]),
-                     "n_neg": len(picks[site]["neg"]),
-                     "clips_pos": len(agg["pos"]), "clips_neg": len(agg["neg"])})
+        npos, nneg = len(picks[site]["pos"]), len(picks[site]["neg"])
+        miss = tally["pos/사람미탐"] + tally["neg/사람미탐"]
+        abst = tally["pos/판정불가"] + tally["neg/판정불가"]
+        print(f"  [{site}]  미착용 {npos} / 착용 {nneg}"
+              f"   사람미탐 {miss} · 판정불가 {abst}")
+        print(f"    1단계  적발 {r1:>6.1%}                오경보 {f1:>6.1%}"
+              f"                J {r1 - f1:>6.3f}")
+        print(f"    2단계  적발 {r2:>6.1%} {rs:<12} 오경보 {f2:>6.1%} {fs:<12}"
+              f" J {r2 - f2:>6.3f}   <- 판정 가능한 경우만 (조건부)")
+        print(f"    전수   적발 {ra:>6.1%}                오경보 {fa_:>6.1%}"
+              f"                J {ra - fa_:>6.3f}   <- 미탐·기권 포함 (제품 수치)")
+        rows.append({"site": site, "n_pos": npos, "n_neg": nneg,
+                     "stage1": {"recall": round(r1, 4), "false_alarm": round(f1, 4)},
+                     "stage2": {"recall": round(r2, 4), "false_alarm": round(f2, 4)},
+                     "overall": {"recall": round(ra, 4), "false_alarm": round(fa_, 4)},
+                     "tally": dict(tally)})
 
     if rows:
-        mr = sum(r["recall"] for r in rows) / len(rows)
-        mf = sum(r["false_alarm"] for r in rows) / len(rows)
-        print(f"\n  현장 macro   적발 {mr:.1%}  오경보 {mf:.1%}  J {mr - mf:.3f}")
+        def m(key, fld):
+            v = [r[key][fld] for r in rows if r[key][fld] == r[key][fld]]
+            return sum(v) / len(v) if v else float("nan")
+        print()
+        print(f"  현장 macro  1단계  적발 {m('stage1','recall'):.1%}"
+              f"  오경보 {m('stage1','false_alarm'):.1%}")
+        print(f"              2단계  적발 {m('stage2','recall'):.1%}"
+              f"  오경보 {m('stage2','false_alarm'):.1%}   (조건부)")
+        print(f"              전수   적발 {m('overall','recall'):.1%}"
+              f"  오경보 {m('overall','false_alarm'):.1%}   (제품 수치)")
+        tot = collections.Counter()
+        for r in rows:
+            tot.update(r["tally"])
+        print()
+        print("  2단계 내역 (구역 수):")
+        for k in sorted(tot):
+            print(f"    {k:<18}{tot[k]:>5}")
+        print()
         print("  퇴화 해: '전부 미착용' 적발 100% / 오경보 100% (J 0.000)")
         print("           '전부 착용'   적발   0% / 오경보   0% (J 0.000)")
     (args.out / "metrics.json").write_text(
