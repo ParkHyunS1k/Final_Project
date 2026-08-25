@@ -38,7 +38,8 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from src.report.ppe_law import VIOLATIONS  # noqa: E402
-from src.report.rag_adapter import CAVEAT, Observation, run_pipeline, to_event  # noqa: E402
+from src.report.rag_adapter import (Observation, retrieved_articles,  # noqa: E402
+                                    run_pipeline, to_event)
 from src.report.render import render  # noqa: E402
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -164,21 +165,21 @@ def main() -> int:
             if int(k) in nh_ids:
                 dets.append({"violation": VIOLATIONS["UA-04"], "conf": float(c),
                              "box": [float(v) for v in b]})
-        md = render(args.report.name, dets, site=args.site)
-
+        arts = None
         if args.rag and dets:
-            # 법령 연결. `detected_hazard` 는 어댑터 표에서 온다 — 지어내지 않는다.
+            # 법령 검색은 교차 확인용이다. 조항 이름만 받고 조문 전문은 안 싣는다.
+            # `detected_hazard` 는 어댑터 표에서 온다 — 지어내지 않는다.
             obs = Observation(dets[0]["violation"].code,
                               tuple(dets[0]["box"]), dets[0]["conf"],
                               args.report.name, site=args.site)
             ev = to_event(obs, event_id=f"EVT_{args.report.stem}")
             res = run_pipeline(args.rag, ev)
-            head = "\n\n---\n\n## 법령 연결 (rag 브랜치 파이프라인)\n\n"
-            md += head + CAVEAT + "\n\n" + res["s2_report"]
-            (args.out / "s3_tbm.md").write_text(res["s3_tbm_report"], encoding="utf-8")
+            arts = retrieved_articles(res["s2_report"])
+            (args.out / "rag_s2_full.md").write_text(res["s2_report"], encoding="utf-8")
 
+        md = render(args.report.name, dets, site=args.site, rag_articles=arts)
         (args.out / "report.md").write_text(md, encoding="utf-8")
-        print(md[:1500] + ("\n...(생략)" if len(md) > 1500 else ""))
+        print(md)
         print(f"\n저장: {args.out / 'report.md'}  ({len(md):,}자)")
         return 0
 

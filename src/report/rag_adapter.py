@@ -126,3 +126,16 @@ def run_pipeline(rag_root, event: dict) -> dict:
             raise RuntimeError(
                 f"rag 파이프라인 실패 (exit {r.returncode})\n{r.stderr[-2000:]}")
         return json.loads(out_p.read_text(encoding="utf-8"))
+
+
+def retrieved_articles(s2_report: str) -> list[str]:
+    """S2 리포트에서 **검색된 조항 이름만** 뽑는다.
+
+    저쪽 파이프라인은 조문 전문을 통째로 실은 서술형 리포트를 돌려준다.
+    사진 한 장에 4,516자가 나오고 그중 28%가 조문 전문이며, **틀린 조항의
+    전문까지 실린다** (`train_results.md` 5.1). 우리 리포트는 고정 표 형식이라
+    조항 이름만 필요하다.
+    """
+    import re
+
+    return re.findall(r"^### \[법령 근거 \d+\]\s+(.+?)\s*\[API", s2_report, re.M)
