@@ -1,7 +1,7 @@
 # 평가 프로토콜 — 무엇을 어떻게 재고, 무엇을 주장할 수 있는가
 
 `README.md` 9절의 합격 기준을 실제로 실행 가능한 형태로 고정한다.
-실측치는 [`train_results.md`](train_results.md), 현재 상태는 [`HANDOFF.md`](HANDOFF.md).
+실측치는 [`train_results.md`](train_results.md), 현재 상태는 `HANDOFF.md`(로컬 전용).
 
 **이 문서를 쓰는 이유.** 1단계 탐지가 원래 기준에 미달했고, 그 원인을 분석하다
 평가 단위 자체가 제품 질문과 어긋나 있음을 확인했다. 기준을 바꾸는 것은 정당하지만
