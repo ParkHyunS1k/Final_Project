@@ -39,37 +39,17 @@ import collections
 import json
 import pathlib
 import random
-import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from zone_eval import boot_ci, collect_zones, judge, per_clip  # noqa: E402
 
-MODEL = "Qwen/Qwen2.5-VL-7B-Instruct"
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from src.vlm import model as vlm_model  # noqa: E402
+from src.vlm.prompt import GUARDRAIL_BINARY, alarm, parse  # noqa: E402
 
 # 현장별 oracle conf — `train_results.md` 1.7 의 기준 B 표에서 온다.
 ORACLE_CONF = {"A17": 0.005, "A04": 0.001, "A21": 0.001}
-
-PROMPT = """이 사진은 건설현장 비계의 작업발판 한 칸이다. 안전난간을 판정하라.
-
-- 상부 난간대: 작업발판에서 약 90cm 높이에 가로로 설치된 난간대
-- 중간 난간대: 상부 난간대와 발판 사이 중간 높이의 가로 난간대
-
-비계를 지탱하는 구조재나 대각선 가새는 난간대가 아니다.
-가려지거나 화질 때문에 확신할 수 없으면 "판정불가" 로 답하라.
-
-각각 "있음" / "없음" / "판정불가" 중 하나로만 답하고, JSON 만 출력하라.
-{"상부난간대": "...", "중간난간대": "..."}"""
-
-
-def parse(text: str) -> tuple[str, str]:
-    """모델 출력에서 두 요소를 뽑는다. 못 뽑으면 판정불가로 센다."""
-    def one(key: str) -> str:
-        m = re.search(rf'"{key}"\s*:\s*"([^"]*)"', text)
-        v = m.group(1).strip() if m else ""
-        return v if v in ("있음", "없음", "판정불가") else "판정불가"
-    return one("상부난간대"), one("중간난간대")
-
 
 def sample(zones: dict, sites: list, per_clip_n: int, seed: int) -> dict:
     """현장 x 정상/미설치 x 클립으로 층화하고 클립당 균등 추출한다."""
@@ -131,17 +111,14 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
-    import torch
     from PIL import Image
-    from transformers import (AutoProcessor, BitsAndBytesConfig,
-                              Qwen2_5_VLForConditionalGeneration)
 
     args.out.mkdir(parents=True, exist_ok=True)
     zones = collect_zones()
     sites = [s for s in sorted(zones) if zones[s]["neg"] and s in ORACLE_CONF]
     picks = sample(zones, sites, args.per_clip, args.seed)
 
-    print(f"모델 {MODEL} (4bit) / crop 여백 {args.context} / 클립당 {args.per_clip}구역")
+    print(f"모델 {vlm_model.DEFAULT_MODEL} (4bit) / crop 여백 {args.context} / 클립당 {args.per_clip}구역")
     print("**oracle ROI** — 구역이 정답 박스에서 온다. '구역이 주어졌을 때' 조건부다.\n")
     for s in sites:
         print(f"  {s}: 정상 {len(picks[s]['pos'])}구역 "
@@ -150,23 +127,10 @@ def main() -> int:
               f"({len({z[2] for z in picks[s]['neg']})}클립)")
     print()
 
-    proc = AutoProcessor.from_pretrained(MODEL, max_pixels=args.max_pixels)
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        MODEL, dtype=torch.bfloat16, device_map="cuda:0",
-        quantization_config=BitsAndBytesConfig(
-            load_in_4bit=True, bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16))
-    model.eval()
+    proc, model = vlm_model.load(max_pixels=args.max_pixels)
 
-    def ask(im) -> str:
-        msg = [{"role": "user", "content": [{"type": "image", "image": im},
-                                            {"type": "text", "text": PROMPT}]}]
-        text = proc.apply_chat_template(msg, tokenize=False, add_generation_prompt=True)
-        inp = proc(text=[text], images=[im], return_tensors="pt").to(model.device)
-        with torch.inference_mode():
-            out = model.generate(**inp, max_new_tokens=48, do_sample=False)
-        return proc.batch_decode(out[:, inp.input_ids.shape[1]:],
-                                 skip_special_tokens=True)[0]
+    def ask(im):
+        return vlm_model.ask(proc, model, im, GUARDRAIL_BINARY)
 
     rows, raw = [], []
     for site in sites:
@@ -190,8 +154,7 @@ def main() -> int:
         json.dumps(raw, ensure_ascii=False, indent=1), encoding="utf-8")
 
     # ---- 규칙 (실행 전에 고정된 것)
-    def primary(top, mid):
-        return None if top == "판정불가" else (top == "없음")
+    primary = alarm      # src/vlm/prompt.py 가 유일한 정의다
 
     def abstain_alarm(top, mid):
         return True if top == "판정불가" else (top == "없음")
