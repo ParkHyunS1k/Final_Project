@@ -28,3 +28,6 @@ __pycache__/
 # 쓴다. 실측치는 docs/train_results.md, 결정은 docs/decisions.md 에 남으므로
 # 팀이 공유해야 할 내용은 추적되는 쪽에 있다.
 /docs/HANDOFF.md
+
+# rag 파이프라인 실행 중 생기는 런타임 산물
+*/qdrant_db/.lock
