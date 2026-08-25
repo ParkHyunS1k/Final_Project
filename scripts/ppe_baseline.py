@@ -38,6 +38,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from src.report.ppe_law import VIOLATIONS  # noqa: E402
+from src.report.rag_adapter import CAVEAT, Observation, run_pipeline, to_event  # noqa: E402
 from src.report.render import render  # noqa: E402
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -134,6 +135,9 @@ def main() -> int:
                     default=pathlib.Path("outputs/ppe_baseline"))
     ap.add_argument("--report", type=pathlib.Path,
                     help="이 이미지 한 장으로 리포트만 낸다")
+    ap.add_argument("--rag", type=pathlib.Path,
+                    help="`산업안전RAG/` 경로. 주면 법령 연결까지 붙인다")
+    ap.add_argument("--site", default="미상", help="구역명. 사진은 이걸 모른다")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -160,9 +164,22 @@ def main() -> int:
             if int(k) in nh_ids:
                 dets.append({"violation": VIOLATIONS["UA-04"], "conf": float(c),
                              "box": [float(v) for v in b]})
-        md = render(args.report.name, dets)
+        md = render(args.report.name, dets, site=args.site)
+
+        if args.rag and dets:
+            # 법령 연결. `detected_hazard` 는 어댑터 표에서 온다 — 지어내지 않는다.
+            obs = Observation(dets[0]["violation"].code,
+                              tuple(dets[0]["box"]), dets[0]["conf"],
+                              args.report.name, site=args.site)
+            ev = to_event(obs, event_id=f"EVT_{args.report.stem}")
+            res = run_pipeline(args.rag, ev)
+            head = "\n\n---\n\n## 법령 연결 (rag 브랜치 파이프라인)\n\n"
+            md += head + CAVEAT + "\n\n" + res["s2_report"]
+            (args.out / "s3_tbm.md").write_text(res["s3_tbm_report"], encoding="utf-8")
+
         (args.out / "report.md").write_text(md, encoding="utf-8")
-        print(md)
+        print(md[:1500] + ("\n...(생략)" if len(md) > 1500 else ""))
+        print(f"\n저장: {args.out / 'report.md'}  ({len(md):,}자)")
         return 0
 
     # ---- 평가
