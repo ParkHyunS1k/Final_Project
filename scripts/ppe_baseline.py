@@ -148,6 +148,28 @@ def classify(human, helmets: list, no_helmets: list) -> str:
     return "판정불가"
 
 
+SWEEP = (0.25, 0.10, 0.05, 0.01, 0.001)
+
+
+def parse_conf(result, ids: dict) -> dict:
+    """`{계열: [(box, conf)]}`. 한 번 추론하고 임계는 나중에 건다.
+
+    운용점을 바꿔 가며 재려면 추론을 반복하면 안 된다 — `zone_eval.judge` 와
+    같은 방식이다.
+    """
+    out = {k: [] for k in ids}
+    for b, c, k in zip(result.boxes.xyxy, result.boxes.conf, result.boxes.cls):
+        item = (tuple(float(v) for v in b), float(c))
+        for name, idset in ids.items():
+            if int(k) in idset:
+                out[name].append(item)
+    return out
+
+
+def at_conf(bx: dict, c: float) -> dict:
+    return {k: [b for b, cf in v if cf >= c] for k, v in bx.items()}
+
+
 def parse_boxes(result, ids: dict) -> dict:
     """예측을 클래스 계열별로 나눈다. `{'human': [...], 'helmet': [...], ...}`"""
     out = {k: [] for k in ids}
@@ -178,6 +200,8 @@ def main() -> int:
                     help="사람 탐지를 별도 COCO 모델로 한다 (예: yolo26s.pt). "
                          "PPE 모델의 `human` 대신 쓴다")
     ap.add_argument("--person-conf", type=float, default=0.25)
+    ap.add_argument("--sweep", action="store_true",
+                    help="PPE 임계를 쓸어 보며 적발·오경보 트레이드오프를 낸다")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -256,6 +280,63 @@ def main() -> int:
         (args.out / "report.md").write_text(md, encoding="utf-8")
         print(md)
         print(f"\n저장: {args.out / 'report.md'}  ({len(md):,}자)")
+        return 0
+
+    # ---- 임계 스윕. 추론은 한 번만 하고 임계는 나중에 건다
+    if args.sweep:
+        zones = collect()
+        picks = sample(zones, args.per_clip, args.seed)
+        sites = sorted(s for s in picks if picks[s]["pos"] and picks[s]["neg"])
+        print(f"\n임계 스윕 — 현장 {len(sites)}곳. "
+              f"**전수 기준**(사람미탐·기권을 분모에 남김)")
+        print("판정불가는 위반이 아니므로 적발에 안 들어간다\n")
+        cache = collections.defaultdict(dict)   # (site,kind) -> [(clip, gt, bx, humans)]
+        for site in sites:
+            for kind in ("pos", "neg"):
+                rowsx = []
+                for img, box, clip in picks[site][kind]:
+                    r = model.predict(str(img), conf=min(SWEEP), verbose=False)[0]
+                    bx = parse_conf(r, ids)
+                    hs = humans(img, {"human": [b for b, _ in bx["human"]]})
+                    rowsx.append((clip, box, bx, hs))
+                cache[(site, kind)] = rowsx
+
+        print(f"  {'conf':>7}{'적발':>9}{'오경보':>9}{'J':>8}{'판정불가':>10}")
+        sweep_rows = []
+        for c in SWEEP:
+            per_site = []
+            abst = tot = 0
+            for site in sites:
+                agg = {"pos": collections.defaultdict(lambda: [0, 0]),
+                       "neg": collections.defaultdict(lambda: [0, 0])}
+                for kind in ("pos", "neg"):
+                    for clip, box, bx, hs in cache[(site, kind)]:
+                        f = at_conf(bx, c)
+                        if kind == "pos":
+                            who = [h for h in hs if center_in(box, h)]
+                        else:
+                            who = [h for h in hs if iou(box, h) >= 0.3]
+                        v = "사람미탐" if not who else classify(
+                            who[0], f["helmet"], f["no_helmet"])
+                        tot += 1
+                        abst += v in ("판정불가", "사람미탐")
+                        cell = agg[kind][clip]
+                        cell[1] += 1
+                        cell[0] += (v == "미착용")
+                r, _ = macro(agg["pos"])
+                fa, _ = macro(agg["neg"])
+                per_site.append((r, fa))
+            mr = sum(x for x, _ in per_site) / len(per_site)
+            mf = sum(y for _, y in per_site) / len(per_site)
+            print(f"  {c:>7.3f}{mr:>9.1%}{mf:>9.1%}{mr - mf:>8.3f}{abst / tot:>10.1%}")
+            sweep_rows.append({"conf": c, "recall": round(mr, 4),
+                               "false_alarm": round(mf, 4), "abstain": round(abst / tot, 4)})
+        print("\n합격 기준: 적발 >= 0.80 이면서 오경보 <= 0.20 (eval_protocol 3.4)")
+        (args.out / "sweep.json").write_text(
+            json.dumps({"model": args.model, "person": str(args.person),
+                        "sweep": sweep_rows}, ensure_ascii=False, indent=1),
+            encoding="utf-8")
+        print(f"\n저장: {args.out / 'sweep.json'}")
         return 0
 
     # ---- 평가. 1단계(no-helmet 만)와 2단계(사람 먼저)를 같은 표본에서 나란히 낸다
