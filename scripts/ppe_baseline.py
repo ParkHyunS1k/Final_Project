@@ -174,7 +174,10 @@ def classify(human, helmets: list, no_helmets: list, *,
     return "착용" if hm else "판정불가"
 
 
-SWEEP = (0.25, 0.10, 0.05, 0.01, 0.001)
+# 운용점 격자. conf 는 고유 confidence 전부를 쓰므로 여기 없다.
+MARGINS = (-1.0, 0.0, 0.05, 0.10, 0.20)
+TOPS = (1.0, 0.5, 0.35)
+FA_CAP = 0.20                          # eval_protocol 3.4 오경보 상한
 
 
 def parse_conf(result, ids: dict) -> dict:
@@ -328,13 +331,16 @@ def main() -> int:
                     for k in ("helmet", "no_helmet"):
                         confs |= {round(c, 4) for _, c in bx[k]}
         grid = sorted(confs)
-        print(f"\n운용점 스윕 — 현장 {len(sites)}곳. **전수 기준**"
+        combos = [(c, mg, tp) for mg in MARGINS for tp in TOPS for c in grid]
+        print()
+        print(f"운용점 스윕 — 현장 {len(sites)}곳. **전수 기준**"
               f"(사람미탐·기권을 분모에 남김)")
-        print(f"고유 confidence {len(grid)}개를 전부 분기점으로 쓴다 "
-              f"(성긴 격자로 '임계 없음' 을 단정하지 않기 위해서다)")
+        print(f"고유 confidence {len(grid)}개 x margin {len(MARGINS)} x "
+              f"top {len(TOPS)} = {len(combos):,} 조합")
 
-        def evaluate(c, mg, tp):
-            per = []
+        def per_site(c, mg, tp) -> dict:
+            """조합 하나를 현장별로 평가한다. `{site: (적발, 오경보)}`"""
+            out = {}
             for site in sites:
                 agg = {"pos": collections.defaultdict(lambda: [0, 0]),
                        "neg": collections.defaultdict(lambda: [0, 0])}
@@ -348,48 +354,81 @@ def main() -> int:
                         cell = agg[kind][clip]
                         cell[1] += 1
                         cell[0] += (v == "미착용")
-                per.append((macro(agg["pos"])[0], macro(agg["neg"])[0]))
-            return (sum(x for x, _ in per) / len(per),
-                    sum(y for _, y in per) / len(per))
+                out[site] = (macro(agg["pos"])[0], macro(agg["neg"])[0])
+            return out
 
-        # 합격 기준에 직접 맞춘 선택: 오경보 <= 0.20 중 적발 최대 (J 최대가 아니다)
-        best, rows_ = None, []
-        for mg in (-1.0, 0.0, 0.05, 0.10, 0.20):
-            for tp in (1.0, 0.5, 0.35):
-                for c in grid:
-                    rec, fa = evaluate(c, mg, tp)
-                    rows_.append({"conf": c, "margin": mg, "top": tp,
-                                  "recall": round(rec, 4), "fa": round(fa, 4)})
-                    if fa <= 0.20 and (best is None or rec > best["recall"]):
-                        best = rows_[-1]
-        print(f"\n  조합 {len(rows_)}개 평가")
-        print(f"  {'margin':>7}{'top':>6}{'conf':>8}{'적발':>9}{'오경보':>9}")
-        for mg in (-1.0, 0.0, 0.05, 0.10, 0.20):
-            for tp in (1.0, 0.5, 0.35):
-                sub = [r for r in rows_ if r["margin"] == mg and r["top"] == tp
-                       and r["fa"] <= 0.20]
-                if not sub:
-                    continue
-                b = max(sub, key=lambda r: r["recall"])
-                print(f"  {mg:>7.2f}{tp:>6.2f}{b['conf']:>8.4f}"
-                      f"{b['recall']:>9.1%}{b['fa']:>9.1%}")
-        print("\n  ** 오경보 <= 0.20 조건 아래 적발 최대 (J 최대가 아니라 "
-              "합격 조건에 직접 맞춘 선택) **")
-        if best:
-            print(f"  최선: margin {best['margin']} / top {best['top']} / "
-                  f"conf {best['conf']:.4f} → 적발 {best['recall']:.1%} / "
-                  f"오경보 {best['fa']:.1%}")
-            print(f"  합격(적발>=0.80): "
-                  f"{'통과' if best['recall'] >= 0.80 else '미달'}")
-        else:
-            print("  오경보 <= 0.20 을 만족하는 조합이 없다")
-        print("\n  이 값은 **평가와 같은 데이터에서 고른 oracle** 이다 "
-              "(eval_protocol 3.5)")
+        # 조합 x 현장 표를 한 번만 만든다. 이후 oracle 과 LOSO 는 집계일 뿐이다
+        table = [per_site(*cb) for cb in combos]
+
+        def agg_over(idx: int, subset: list) -> tuple:
+            v = [table[idx][s] for s in subset]
+            return (sum(x for x, _ in v) / len(v), sum(y for _, y in v) / len(v))
+
+        def pick(subset: list):
+            """합격 조건에 직접 맞춘 선택 — 오경보 <= 0.20 중 적발 최대.
+
+            J 최대가 아니다. J 는 단독 합격 지표가 아니다 (`eval_protocol.md` 3.4).
+            """
+            best = None
+            for i in range(len(combos)):
+                rec, fa = agg_over(i, subset)
+                if fa <= FA_CAP and (best is None or rec > best[1]):
+                    best = (i, rec, fa)
+            return best
+
+        print()
+        print("=== oracle (7현장 전부로 고르고 7현장에서 잰다) ===")
+        o = pick(sites)
+        if o:
+            c, mg, tp = combos[o[0]]
+            print(f"  margin {mg} / top {tp} / conf {c:.4f}"
+                  f" → 적발 {o[1]:.1%} / 오경보 {o[2]:.1%}")
+            print("  ** 같은 데이터에서 골랐다. 주장에 쓸 수 없다 "
+                  "(eval_protocol 3.5) **")
+            print()
+            print("  현장별 (같은 조합 고정):")
+            print(f"    {'현장':<7}{'미착용':>7}{'착용':>6}{'적발':>9}{'오경보':>9}")
+            for st in sites:
+                rec, fa = table[o[0]][st]
+                print(f"    {st:<7}{len(picks[st]['pos']):>7}"
+                      f"{len(picks[st]['neg']):>6}{rec:>9.1%}{fa:>9.1%}")
+
+        print()
+        print("=== cross-fitted LOSO (6현장에서 고르고 빠진 현장에서 잰다) ===")
+        print(f"  {'held-out':<10}{'margin':>7}{'top':>6}{'conf':>8}"
+              f"{'적발':>9}{'오경보':>9}")
+        loso = []
+        for s in sites:
+            rest = [x for x in sites if x != s]
+            b = pick(rest)
+            if not b:
+                print(f"  {s:<10}  (6현장에서 오경보 <= {FA_CAP} 조합 없음)")
+                continue
+            c, mg, tp = combos[b[0]]
+            rec, fa = table[b[0]][s]
+            print(f"  {s:<10}{mg:>7.2f}{tp:>6.2f}{c:>8.4f}{rec:>9.1%}{fa:>9.1%}")
+            loso.append({"site": s, "margin": mg, "top": tp, "conf": c,
+                         "recall": round(rec, 4), "fa": round(fa, 4)})
+        if loso:
+            mr = sum(r["recall"] for r in loso) / len(loso)
+            mf = sum(r["fa"] for r in loso) / len(loso)
+            print()
+            print(f"  현장 macro (held-out)  적발 {mr:.1%}  오경보 {mf:.1%}")
+            ok = mr >= 0.80 and mf <= FA_CAP
+            print(f"  합격 기준(적발>=0.80, 오경보<={FA_CAP:.2f}): "
+                  f"{'통과' if ok else '미달'}")
+            print("  ** 이쪽은 빠진 현장을 선택에 쓰지 않았다. "
+                  "다만 development 현장이므로 합격 선언은 아니다 (4.4절) **")
         (args.out / "sweep.json").write_text(
             json.dumps({"model": args.model, "person": str(args.person),
-                        "n_conf": len(grid), "best": best, "rows": rows_},
-                       ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"\n저장: {args.out / 'sweep.json'}")
+                        "n_conf": len(grid), "n_combo": len(combos),
+                        "oracle": ({"margin": combos[o[0]][1], "top": combos[o[0]][2],
+                                    "conf": combos[o[0]][0], "recall": round(o[1], 4),
+                                    "fa": round(o[2], 4)} if o else None),
+                        "loso": loso}, ensure_ascii=False, indent=1),
+            encoding="utf-8")
+        print()
+        print(f"저장: {args.out / 'sweep.json'}")
         return 0
 
     # ---- 평가. 1단계(no-helmet 만)와 2단계(사람 먼저)를 같은 표본에서 나란히 낸다
