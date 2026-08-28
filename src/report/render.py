@@ -2,7 +2,7 @@
 
 출력은 위반 1건당 표 한 줄씩이다.
 
-    위반사항 | 의무주체 | 관련조항 | 제재
+    위반사항 | 의무주체 | 관련조항 | 제재 근거 | 제재
 
 **주체를 열로 두는 이유**: 보호구 미착용은 사업주(지급)와 근로자(착용) 두
 의무가 걸리고 **제재 종류가 다르다**. 사업주는 형사처벌이라 "과태료" 로 쓰면
@@ -13,6 +13,13 @@
 
 조문 전문은 싣지 않는다. 조·항·호만 적는다 — 사진 한 장 리포트가 4,516자가
 되던 원인이 조문 전문이었다 (`train_results.md` 5.1).
+
+**"위반 확정" 이 아니라 "미착용 관측과 적용 후보 조항" 이다.** 규칙 제32조
+제1항은 **그 호에 해당하는 위험 작업**일 때 적용되고, 근로자 의무는 보호구를
+**받거나 착용 지시를 받은** 경우다. 사진은 둘 다 확인해 주지 않는다.
+
+**위반 0건이어도 조기 반환하지 않는다.** 사람은 찾았는데 착용 여부를 못 정한
+작업자가 수동 검토 대상이므로 판정 불가 목록은 항상 나가야 한다.
 """
 
 from __future__ import annotations
@@ -33,10 +40,16 @@ def _keys(s: str) -> set[str]:
 
 
 def _rows(v: Violation) -> list[str]:
+    """위반 1건 → 의무 주체별 한 줄.
+
+    **제재 근거 조항(`penalty_article`)을 함께 낸다.** 위반 조항만 적으면
+    "이 조항 위반이 왜 이 형량인가" 가 리포트에서 끊긴다.
+    """
     out = []
     for s in v.sanctions:
         pen = f"{s.penalty} ({s.amount})" if s.amount else s.penalty
-        out.append(f"| {v.name} | {s.subject} | {s.article} | {pen} |")
+        out.append(f"| {v.name} | {s.subject} | {s.article} | "
+                   f"{s.penalty_article} | {pen} |")
     return out
 
 
@@ -55,25 +68,27 @@ def render(photo: str, detections: list[dict], *, site: str = "미상",
         "",
     ]
 
+    # **조기 반환하지 않는다.** 위반이 0건이어도 판정 불가 목록은 나가야 한다 —
+    # 사람은 찾았는데 착용 여부를 못 정한 작업자가 수동 검토 대상이다.
     if not detections:
-        lines += ["**탐지된 보호구 미착용 없음.** 미탐지는 위반 없음이 아니다.", ""]
-        return "\n".join(lines)
+        lines += ["## 위반 사항", "",
+                  "**탐지된 보호구 미착용 없음.** 미탐지는 위반 없음이 아니다.", ""]
+    else:
+        lines += ["## 위반 사항", "",
+                  "| 위반사항 | 의무주체 | 관련조항 | 제재 근거 | 제재 |",
+                  "|---|---|---|---|---|"]
+        for d in detections:
+            lines += _rows(d["violation"])
+        lines.append("")
 
-    lines += ["## 위반 사항", "",
-              "| 위반사항 | 의무주체 | 관련조항 | 제재 |",
-              "|---|---|---|---|"]
-    for d in detections:
-        lines += _rows(d["violation"])
-    lines.append("")
-
-    lines += ["## 탐지 근거", "",
-              "| # | 관측 | 좌표 | 신뢰도 |",
-              "|---:|---|---|---:|"]
-    for i, d in enumerate(detections, 1):
-        x1, y1, x2, y2 = (int(t) for t in d["box"])
-        lines.append(f"| {i} | {d['violation'].observation} | "
-                     f"[{x1}, {y1}, {x2}, {y2}] | {d['conf']:.2f} |")
-    lines.append("")
+        lines += ["## 탐지 근거", "",
+                  "| # | 관측 | 좌표 | 신뢰도 |",
+                  "|---:|---|---|---:|"]
+        for i, d in enumerate(detections, 1):
+            x1, y1, x2, y2 = (int(t) for t in d["box"])
+            lines.append(f"| {i} | {d['violation'].observation} | "
+                         f"[{x1}, {y1}, {x2}, {y2}] | {d['conf']:.2f} |")
+        lines.append("")
 
     if rag_articles:
         lines += ["## 법령 검색 교차 확인 (`rag` 파이프라인)", "",
@@ -102,5 +117,7 @@ def render(photo: str, detections: list[dict], *, site: str = "미상",
         "| 정량 기준 | 단안 사진이라 길이 실측 불가. 존재 여부만 판정한다 |",
         "| 주체 판별 | 사진으로는 지급 미이행인지 착용 거부인지 갈리지 않는다 |",
         "| 과태료 정액 | 시행령 별표 35 의 1차 위반 기준이다 |",
+        "| 적용 요건 | 규칙 제32조 제1항은 해당 호의 위험 작업에 적용된다. "
+        "사진으로 작업 종류를 확인하지 않았다 |",
     ]
     return "\n".join(lines)

@@ -130,22 +130,48 @@ def center_in(box, outer) -> bool:
     return outer[0] <= cx <= outer[2] and outer[1] <= cy <= outer[3]
 
 
-def classify(human, helmets: list, no_helmets: list) -> str:
+def head_zone(human, top: float) -> tuple:
+    """작업자 박스의 상단 `top` 비율. `top >= 1.0` 이면 전신(제한 없음).
+
+    A03 에서 `no-helmet` 이 **등 뒤 안전대 버클**에 붙은 사례가 있다
+    (`train_results.md` 5.6). 안전모는 머리에만 달리므로 상단으로 제한하면
+    그런 위치 오류가 걸린다. 다만 **몸을 숙인 작업자는 머리가 아래로 내려오므로**
+    비율을 너무 낮게 잡으면 정상 검출을 잃는다. 값은 스윕으로 정한다.
+    """
+    if top >= 1.0:
+        return human
+    x1, y1, x2, y2 = human
+    return (x1, y1, x2, y1 + (y2 - y1) * top)
+
+
+def classify(human, helmets: list, no_helmets: list, *,
+             margin: float = -1.0, top: float = 1.0) -> str:
     """작업자 한 명의 착용 여부. `판정불가` 를 별도로 낸다.
 
-    **이것이 2단계 구조의 이유다.** 1단계(`no-helmet` 만 보기)에서는 머리가
-    가려지거나 뒤통수만 보이는 작업자가 탐지에도 정답에도 안 잡혀 **분모에서
-    통째로 사라진다.** 사람을 먼저 세면 그 작업자가 `판정불가` 로 남아,
-    "모델이 못 찾은 것" 과 "애초에 판정할 수 없는 것" 이 갈린다.
+    **2단계 구조의 이유.** `no-helmet` 만 보면 머리가 가려진 작업자가 탐지에도
+    정답에도 안 잡혀 **분모에서 통째로 사라진다.** 사람을 먼저 세면 그 작업자가
+    `판정불가` 로 남아 "못 찾은 것" 과 "판정할 수 없는 것" 이 갈린다.
 
-    머리 위치를 따로 추정하지 않는다 — PPE 박스 중심이 작업자 박스 안에 있으면
-    그 사람 것으로 본다. 안전모는 어차피 머리에만 달린다.
+    **점수를 쓴다.** `helmets`/`no_helmets` 는 `(box, conf)` 다. 예전 구현은
+    박스 존재만 보고 `no-helmet` 이 하나라도 있으면 `helmet` 이 아무리 강해도
+    미착용이라 했다. 그런데 실측 오경보의 정체가 **"쓴 안전모를 no-helmet 으로
+    오인"** 이므로, 그 순간 `helmet` 도 함께 검출됐다면 그 정보를 버리는 셈이었다.
+
+    - `margin < 0` 이면 예전 규칙(존재만 본다). 기본값이라 동작이 안 바뀐다.
+    - `margin >= 0` 이면 **`no_helmet - helmet >= margin` 일 때만 미착용**이고,
+      둘 다 있는데 마진에 못 미치면 **미착용이 아니라 `판정불가`** 로 보낸다.
+      충돌을 위반 쪽으로 밀지 않는다 (`eval_protocol.md` 3.8).
     """
-    if any(center_in(b, human) for b in no_helmets):
+    zone = head_zone(human, top)
+    nh = [c for b, c in no_helmets if center_in(b, zone)]
+    hm = [c for b, c in helmets if center_in(b, zone)]
+    if margin < 0:                       # 예전 규칙 — 존재만 본다
+        return "미착용" if nh else ("착용" if hm else "판정불가")
+    if not nh:
+        return "착용" if hm else "판정불가"
+    if max(nh) - max(hm, default=0.0) >= margin:
         return "미착용"
-    if any(center_in(b, human) for b in helmets):
-        return "착용"
-    return "판정불가"
+    return "착용" if hm else "판정불가"
 
 
 SWEEP = (0.25, 0.10, 0.05, 0.01, 0.001)
@@ -167,18 +193,8 @@ def parse_conf(result, ids: dict) -> dict:
 
 
 def at_conf(bx: dict, c: float) -> dict:
-    return {k: [b for b, cf in v if cf >= c] for k, v in bx.items()}
-
-
-def parse_boxes(result, ids: dict) -> dict:
-    """예측을 클래스 계열별로 나눈다. `{'human': [...], 'helmet': [...], ...}`"""
-    out = {k: [] for k in ids}
-    for b, k in zip(result.boxes.xyxy, result.boxes.cls):
-        box = tuple(float(v) for v in b)
-        for name, idset in ids.items():
-            if int(k) in idset:
-                out[name].append(box)
-    return out
+    """임계를 건다. **`(box, conf)` 를 유지한다** — `classify` 가 점수를 쓴다."""
+    return {k: [(b, cf) for b, cf in v if cf >= c] for k, v in bx.items()}
 
 
 def main() -> int:
@@ -200,6 +216,14 @@ def main() -> int:
                     help="사람 탐지를 별도 COCO 모델로 한다 (예: yolo26s.pt). "
                          "PPE 모델의 `human` 대신 쓴다")
     ap.add_argument("--person-conf", type=float, default=0.25)
+    ap.add_argument("--weights", type=pathlib.Path,
+                    help="PPE 가중치 파일 직접 지정. 주면 HF 허브를 안 탄다")
+    ap.add_argument("--margin", type=float, default=-1.0,
+                    help="no_helmet - helmet 이 이 값 이상일 때만 미착용. "
+                         "음수면 예전 규칙(점수 무시)")
+    ap.add_argument("--head-top", type=float, default=1.0,
+                    help="작업자 박스 상단 이 비율 안의 PPE 만 머리로 본다. "
+                         "1.0 이면 제한 없음")
     ap.add_argument("--sweep", action="store_true",
                     help="PPE 임계를 쓸어 보며 적발·오경보 트레이드오프를 낸다")
     ap.add_argument("--seed", type=int, default=0)
@@ -209,8 +233,11 @@ def main() -> int:
     from ultralytics import YOLO
 
     args.out.mkdir(parents=True, exist_ok=True)
-    pt = next(f for f in list_repo_files(args.model) if f.endswith(".pt"))
-    model = YOLO(hf_hub_download(args.model, pt))
+    if args.weights:
+        model = YOLO(str(args.weights))
+    else:
+        pt = next(f for f in list_repo_files(args.model) if f.endswith(".pt"))
+        model = YOLO(hf_hub_download(args.model, pt))
     names = model.names
     print(f"모델 {args.model} ({MODELS[args.model]})  클래스 {list(names.values())}")
 
@@ -246,16 +273,18 @@ def main() -> int:
     # ---- 리포트 한 장 모드
     if args.report:
         r = model.predict(str(args.report), conf=args.conf, verbose=False)[0]
-        bx = parse_boxes(r, ids)
-        bx["human"] = humans(args.report, bx)
+        bx = parse_conf(r, ids)
+        bx["human"] = humans(args.report, {"human": [b for b, _ in bx["human"]]})
         conf_of = {tuple(float(v) for v in b): float(c)
                    for b, c in zip(r.boxes.xyxy, r.boxes.conf)}
         # 사람을 먼저 세고 한 명씩 판정한다. 판정불가는 위반으로 계상하지 않는다.
         dets, unresolved = [], []
         for i, h in enumerate(bx["human"], 1):
-            verdict = classify(h, bx["helmet"], bx["no_helmet"])
+            verdict = classify(h, bx["helmet"], bx["no_helmet"],
+                               margin=args.margin, top=args.head_top)
             if verdict == "미착용":
-                nh = next(b for b in bx["no_helmet"] if center_in(b, h))
+                nh = next(b for b, _ in bx["no_helmet"]
+                          if center_in(b, head_zone(h, args.head_top)))
                 dets.append({"violation": VIOLATIONS["UA-04"],
                              "conf": conf_of.get(nh, 0.0), "box": list(nh)})
             elif verdict == "판정불가":
@@ -282,60 +311,84 @@ def main() -> int:
         print(f"\n저장: {args.out / 'report.md'}  ({len(md):,}자)")
         return 0
 
-    # ---- 임계 스윕. 추론은 한 번만 하고 임계는 나중에 건다
+    # ---- 운용점 스윕. 추론은 한 번, 임계·마진·머리영역은 나중에 건다
     if args.sweep:
         zones = collect()
         picks = sample(zones, args.per_clip, args.seed)
         sites = sorted(s for s in picks if picks[s]["pos"] and picks[s]["neg"])
-        print(f"\n임계 스윕 — 현장 {len(sites)}곳. "
-              f"**전수 기준**(사람미탐·기권을 분모에 남김)")
-        print("판정불가는 위반이 아니므로 적발에 안 들어간다\n")
-        cache = collections.defaultdict(dict)   # (site,kind) -> [(clip, gt, bx, humans)]
+        cache = collections.defaultdict(list)
+        confs = set()
         for site in sites:
             for kind in ("pos", "neg"):
-                rowsx = []
                 for img, box, clip in picks[site][kind]:
-                    r = model.predict(str(img), conf=min(SWEEP), verbose=False)[0]
+                    r = model.predict(str(img), conf=0.001, verbose=False)[0]
                     bx = parse_conf(r, ids)
                     hs = humans(img, {"human": [b for b, _ in bx["human"]]})
-                    rowsx.append((clip, box, bx, hs))
-                cache[(site, kind)] = rowsx
+                    cache[(site, kind)].append((clip, box, bx, hs))
+                    for k in ("helmet", "no_helmet"):
+                        confs |= {round(c, 4) for _, c in bx[k]}
+        grid = sorted(confs)
+        print(f"\n운용점 스윕 — 현장 {len(sites)}곳. **전수 기준**"
+              f"(사람미탐·기권을 분모에 남김)")
+        print(f"고유 confidence {len(grid)}개를 전부 분기점으로 쓴다 "
+              f"(성긴 격자로 '임계 없음' 을 단정하지 않기 위해서다)")
 
-        print(f"  {'conf':>7}{'적발':>9}{'오경보':>9}{'J':>8}{'판정불가':>10}")
-        sweep_rows = []
-        for c in SWEEP:
-            per_site = []
-            abst = tot = 0
+        def evaluate(c, mg, tp):
+            per = []
             for site in sites:
                 agg = {"pos": collections.defaultdict(lambda: [0, 0]),
                        "neg": collections.defaultdict(lambda: [0, 0])}
                 for kind in ("pos", "neg"):
                     for clip, box, bx, hs in cache[(site, kind)]:
                         f = at_conf(bx, c)
-                        if kind == "pos":
-                            who = [h for h in hs if center_in(box, h)]
-                        else:
-                            who = [h for h in hs if iou(box, h) >= 0.3]
+                        who = ([h for h in hs if center_in(box, h)] if kind == "pos"
+                               else [h for h in hs if iou(box, h) >= 0.3])
                         v = "사람미탐" if not who else classify(
-                            who[0], f["helmet"], f["no_helmet"])
-                        tot += 1
-                        abst += v in ("판정불가", "사람미탐")
+                            who[0], f["helmet"], f["no_helmet"], margin=mg, top=tp)
                         cell = agg[kind][clip]
                         cell[1] += 1
                         cell[0] += (v == "미착용")
-                r, _ = macro(agg["pos"])
-                fa, _ = macro(agg["neg"])
-                per_site.append((r, fa))
-            mr = sum(x for x, _ in per_site) / len(per_site)
-            mf = sum(y for _, y in per_site) / len(per_site)
-            print(f"  {c:>7.3f}{mr:>9.1%}{mf:>9.1%}{mr - mf:>8.3f}{abst / tot:>10.1%}")
-            sweep_rows.append({"conf": c, "recall": round(mr, 4),
-                               "false_alarm": round(mf, 4), "abstain": round(abst / tot, 4)})
-        print("\n합격 기준: 적발 >= 0.80 이면서 오경보 <= 0.20 (eval_protocol 3.4)")
+                per.append((macro(agg["pos"])[0], macro(agg["neg"])[0]))
+            return (sum(x for x, _ in per) / len(per),
+                    sum(y for _, y in per) / len(per))
+
+        # 합격 기준에 직접 맞춘 선택: 오경보 <= 0.20 중 적발 최대 (J 최대가 아니다)
+        best, rows_ = None, []
+        for mg in (-1.0, 0.0, 0.05, 0.10, 0.20):
+            for tp in (1.0, 0.5, 0.35):
+                for c in grid:
+                    rec, fa = evaluate(c, mg, tp)
+                    rows_.append({"conf": c, "margin": mg, "top": tp,
+                                  "recall": round(rec, 4), "fa": round(fa, 4)})
+                    if fa <= 0.20 and (best is None or rec > best["recall"]):
+                        best = rows_[-1]
+        print(f"\n  조합 {len(rows_)}개 평가")
+        print(f"  {'margin':>7}{'top':>6}{'conf':>8}{'적발':>9}{'오경보':>9}")
+        for mg in (-1.0, 0.0, 0.05, 0.10, 0.20):
+            for tp in (1.0, 0.5, 0.35):
+                sub = [r for r in rows_ if r["margin"] == mg and r["top"] == tp
+                       and r["fa"] <= 0.20]
+                if not sub:
+                    continue
+                b = max(sub, key=lambda r: r["recall"])
+                print(f"  {mg:>7.2f}{tp:>6.2f}{b['conf']:>8.4f}"
+                      f"{b['recall']:>9.1%}{b['fa']:>9.1%}")
+        print("\n  ** 오경보 <= 0.20 조건 아래 적발 최대 (J 최대가 아니라 "
+              "합격 조건에 직접 맞춘 선택) **")
+        if best:
+            print(f"  최선: margin {best['margin']} / top {best['top']} / "
+                  f"conf {best['conf']:.4f} → 적발 {best['recall']:.1%} / "
+                  f"오경보 {best['fa']:.1%}")
+            print(f"  합격(적발>=0.80): "
+                  f"{'통과' if best['recall'] >= 0.80 else '미달'}")
+        else:
+            print("  오경보 <= 0.20 을 만족하는 조합이 없다")
+        print("\n  이 값은 **평가와 같은 데이터에서 고른 oracle** 이다 "
+              "(eval_protocol 3.5)")
         (args.out / "sweep.json").write_text(
             json.dumps({"model": args.model, "person": str(args.person),
-                        "sweep": sweep_rows}, ensure_ascii=False, indent=1),
-            encoding="utf-8")
+                        "n_conf": len(grid), "best": best, "rows": rows_},
+                       ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"\n저장: {args.out / 'sweep.json'}")
         return 0
 
@@ -361,14 +414,14 @@ def main() -> int:
         for kind in ("pos", "neg"):
             for img, box, clip in picks[site][kind]:
                 r = model.predict(str(img), conf=args.conf, verbose=False)[0]
-                bx = parse_boxes(r, ids)
-                bx["human"] = humans(img, bx)
+                bx = parse_conf(r, ids)
+                bx["human"] = humans(img, {"human": [b for b, _ in bx["human"]]})
 
                 # 1단계 — 기존 방식
                 if kind == "pos":
-                    hit1 = any(iou(box, p) >= args.iou for p in bx["no_helmet"])
+                    hit1 = any(iou(box, p) >= args.iou for p, _ in bx["no_helmet"])
                 else:
-                    hit1 = any(iou(box, p) >= 0.05 for p in bx["no_helmet"])
+                    hit1 = any(iou(box, p) >= 0.05 for p, _ in bx["no_helmet"])
                 c1 = one[kind][clip]
                 c1[1] += 1
                 c1[0] += hit1
@@ -381,7 +434,8 @@ def main() -> int:
                     # 정답은 전신 박스다. 겹치는 작업자를 찾는다
                     who = [h for h in bx["human"] if iou(box, h) >= 0.3]
                 verdict = "사람미탐" if not who else classify(
-                    who[0], bx["helmet"], bx["no_helmet"])
+                    who[0], bx["helmet"], bx["no_helmet"],
+                    margin=args.margin, top=args.head_top)
                 tally[f"{kind}/{verdict}"] += 1
 
                 # 전수 — 사람미탐·판정불가를 **분모에 남긴다.** 이쪽이 제품 수치다
