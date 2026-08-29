@@ -20,8 +20,10 @@
 `UA-02`/`UA-03` 상황에서는 작업자가 안전모를 쓰고 있다 — 상황×현장 13장을
 눈으로 확인했다. **표본이 작으므로 `--audit` 로 다시 볼 것.**
 
-집계는 `eval_protocol.md` 4.1 과 같다 — **클립 macro 가 주지표**, 대괄호는
-클립 bootstrap 95%. 구역/프레임 수는 표본 수가 아니다.
+집계는 `eval_protocol.md` 3.3 이다 — **site-macro-of-clip-macro**. 현장 **안**
+에서는 클립 macro 가 주지표이고 대괄호는 클립 bootstrap 95% 이지만, **현장을
+가로지르는 값(LOSO macro)의 구간은 현장 계층 bootstrap** 을 쓴다 (3.4).
+구역/프레임 수는 표본 수가 아니다.
 
     python scripts/ppe_baseline.py --limit 200
     python scripts/ppe_baseline.py --report <이미지경로>
@@ -158,9 +160,16 @@ def classify(human, helmets: list, no_helmets: list, *,
     오인"** 이므로, 그 순간 `helmet` 도 함께 검출됐다면 그 정보를 버리는 셈이었다.
 
     - `margin < 0` 이면 예전 규칙(존재만 본다). 기본값이라 동작이 안 바뀐다.
-    - `margin >= 0` 이면 **`no_helmet - helmet >= margin` 일 때만 미착용**이고,
-      둘 다 있는데 마진에 못 미치면 **미착용이 아니라 `판정불가`** 로 보낸다.
+    - `margin >= 0` 이면 **`no_helmet - helmet >= margin` 일 때만 미착용**이다.
+      마진에 못 미치면 **`helmet` 이 있으면 `착용`, 없으면 `판정불가`** 다.
       충돌을 위반 쪽으로 밀지 않는다 (`eval_protocol.md` 3.8).
+
+    **`판정불가` 는 머리 영역에 쓸 만한 PPE 박스가 하나도 없을 때만 나온다.**
+    helmet 과 no_helmet 이 함께 잡힌 충돌은 기권이 아니라 **`착용`** 으로 간다.
+    예전 docstring 은 이 경로를 `판정불가` 라고 적었지만 코드는 그런 적이 없다
+    (`train_results.md` 5.9 에서 실행으로 확인). 결론("충돌을 위반 쪽으로 밀지
+    않는다")은 같아도 **기권율을 회계하면 값이 달라진다** — `eval_protocol.md`
+    3.8 의 음성 기권율은 이 정의로 센다.
     """
     zone = head_zone(human, top)
     nh = [c for b, c in no_helmets if center_in(b, zone)]
@@ -177,7 +186,38 @@ def classify(human, helmets: list, no_helmets: list, *,
 # 운용점 격자. conf 는 고유 confidence 전부를 쓰므로 여기 없다.
 MARGINS = (-1.0, 0.0, 0.05, 0.10, 0.20)
 TOPS = (1.0, 0.5, 0.35)
-FA_CAP = 0.20                          # eval_protocol 3.4 오경보 상한
+FA_CAP = 0.20                          # eval_protocol 3.4 오경보(FPR) 상한
+REC_MIN = 0.80                         # eval_protocol 3.4 적발률 하한
+
+
+def fmt_ci(ci) -> str:
+    return "n/a" if ci is None else f"[{ci[0]:.1%}, {ci[1]:.1%}]"
+
+
+def verdict(rec_ci, fa_ci) -> str:
+    """합격 / 실패 / 불충분 3상태 (`eval_protocol.md` 3.4).
+
+    **점추정치로 단정하지 않는다.** 기준선이 신뢰구간 안에 있으면 그 지표는
+    "이 데이터로는 못 정한다" 이지 미달이 아니다 (`train_results.md` 6절 17번).
+    구간은 클립이 아니라 **현장** 단위로 재표집한 것을 쓴다 — 주장하려는 것이
+    "안 본 현장에서도 되는가" 이므로 최상위 군집이 현장이다.
+
+    전체 판정은 하나라도 실패면 실패, 아니면 하나라도 불충분이면 불충분이다.
+    **불충분의 대응은 모델 수정이 아니라 표본 확대다.**
+    """
+    def state(ci, thr, higher_is_better):
+        if ci is None:
+            return "불충분"
+        lo, hi = ci
+        if lo <= thr <= hi:
+            return "불충분"
+        return "합격" if ((lo > thr) if higher_is_better else (hi < thr)) else "실패"
+
+    a, b = state(rec_ci, REC_MIN, True), state(fa_ci, FA_CAP, False)
+    if a == b == "합격":
+        return "합격"
+    head = "실패" if "실패" in (a, b) else "불충분"
+    return f"{head} (적발 {a} / 오경보 {b})"
 
 
 def parse_conf(result, ids: dict) -> dict:
@@ -320,7 +360,9 @@ def main() -> int:
         picks = sample(zones, args.per_clip, args.seed)
         sites = sorted(s for s in picks if picks[s]["pos"] and picks[s]["neg"])
         cache = collections.defaultdict(list)
-        confs = set()
+        # conf 후보를 **현장별로** 들고 있는다. LOSO 에서 held-out 현장이 만든
+        # 후보를 빼려면 출처를 알아야 한다 (`train_results.md` 5.9).
+        site_confs = collections.defaultdict(set)
         for site in sites:
             for kind in ("pos", "neg"):
                 for img, box, clip in picks[site][kind]:
@@ -329,8 +371,8 @@ def main() -> int:
                     hs = humans(img, {"human": [b for b, _ in bx["human"]]})
                     cache[(site, kind)].append((clip, box, bx, hs))
                     for k in ("helmet", "no_helmet"):
-                        confs |= {round(c, 4) for _, c in bx[k]}
-        grid = sorted(confs)
+                        site_confs[site] |= {round(c, 4) for _, c in bx[k]}
+        grid = sorted(set().union(*site_confs.values()) if site_confs else set())
         combos = [(c, mg, tp) for mg in MARGINS for tp in TOPS for c in grid]
         print()
         print(f"운용점 스윕 — 현장 {len(sites)}곳. **전수 기준**"
@@ -364,13 +406,20 @@ def main() -> int:
             v = [table[idx][s] for s in subset]
             return (sum(x for x, _ in v) / len(v), sum(y for _, y in v) / len(v))
 
-        def pick(subset: list):
+        def pick(subset: list, allowed: set | None = None):
             """합격 조건에 직접 맞춘 선택 — 오경보 <= 0.20 중 적발 최대.
 
             J 최대가 아니다. J 는 단독 합격 지표가 아니다 (`eval_protocol.md` 3.4).
+
+            `allowed` 는 **후보 conf 를 만든 현장**을 제한한다. 이걸 안 걸면
+            grid 자체가 held-out 현장의 예측에서 나오므로, 라벨 누출은 아니어도
+            빠진 현장의 점수가 후보 임계에 영향을 준다 — 약한 transductive
+            누출이다 (`train_results.md` 5.9).
             """
             best = None
             for i in range(len(combos)):
+                if allowed is not None and combos[i][0] not in allowed:
+                    continue
                 rec, fa = agg_over(i, subset)
                 if fa <= FA_CAP and (best is None or rec > best[1]):
                     best = (i, rec, fa)
@@ -394,34 +443,46 @@ def main() -> int:
                       f"{len(picks[st]['neg']):>6}{rec:>9.1%}{fa:>9.1%}")
 
         print()
-        print("=== cross-fitted LOSO (6현장에서 고르고 빠진 현장에서 잰다) ===")
+        print(f"=== cross-fitted LOSO ({len(sites) - 1}현장에서 고르고 빠진 "
+              f"현장에서 잰다. conf 후보도 그 {len(sites) - 1}현장에서만 만든다) ===")
         print(f"  {'held-out':<10}{'margin':>7}{'top':>6}{'conf':>8}"
-              f"{'적발':>9}{'오경보':>9}")
+              f"{'적발':>9}{'오경보':>9}{'후보conf':>9}")
         loso = []
         for s in sites:
             rest = [x for x in sites if x != s]
-            b = pick(rest)
+            allowed = set().union(*(site_confs[x] for x in rest))
+            b = pick(rest, allowed)
             if not b:
-                print(f"  {s:<10}  (6현장에서 오경보 <= {FA_CAP} 조합 없음)")
+                print(f"  {s:<10}  (train 현장에서 오경보 <= {FA_CAP} 조합 없음)")
                 continue
             c, mg, tp = combos[b[0]]
             rec, fa = table[b[0]][s]
-            print(f"  {s:<10}{mg:>7.2f}{tp:>6.2f}{c:>8.4f}{rec:>9.1%}{fa:>9.1%}")
+            print(f"  {s:<10}{mg:>7.2f}{tp:>6.2f}{c:>8.4f}{rec:>9.1%}{fa:>9.1%}"
+                  f"{len(allowed):>9,}")
             loso.append({"site": s, "margin": mg, "top": tp, "conf": c,
+                         "n_conf_train": len(allowed),
                          "recall": round(rec, 4), "fa": round(fa, 4)})
+        rc = fc = None
+        vd = None
         if loso:
             mr = sum(r["recall"] for r in loso) / len(loso)
             mf = sum(r["fa"] for r in loso) / len(loso)
+            # 재표집 단위는 클립이 아니라 **현장**이다 (`eval_protocol.md` 3.4).
+            rc = boot_ci([r["recall"] for r in loso], seed=args.seed)
+            fc = boot_ci([r["fa"] for r in loso], seed=args.seed)
+            vd = verdict(rc, fc)
             print()
             print(f"  현장 macro (held-out)  적발 {mr:.1%}  오경보 {mf:.1%}")
-            ok = mr >= 0.80 and mf <= FA_CAP
-            print(f"  합격 기준(적발>=0.80, 오경보<={FA_CAP:.2f}): "
-                  f"{'통과' if ok else '미달'}")
-            print("  ** 이쪽은 빠진 현장을 선택에 쓰지 않았다. "
-                  "다만 development 현장이므로 합격 선언은 아니다 (4.4절) **")
+            print(f"  현장 bootstrap 95%    적발 {fmt_ci(rc)}  오경보 {fmt_ci(fc)}")
+            print(f"  판정(적발>={REC_MIN:.2f}, 오경보<={FA_CAP:.2f}): {vd}")
+            print(f"  ** 현장 {len(loso)}개짜리 percentile bootstrap 이다. "
+                  "'구간이 넓다' 는 사실만 읽을 것 **")
+            print("  ** 빠진 현장을 선택에 쓰지 않았지만 development 현장이므로 "
+                  "합격 선언은 아니다 (4.4절) **")
         (args.out / "sweep.json").write_text(
             json.dumps({"model": args.model, "person": str(args.person),
                         "n_conf": len(grid), "n_combo": len(combos),
+                        "recall_ci": rc, "fa_ci": fc, "verdict": vd,
                         "oracle": ({"margin": combos[o[0]][1], "top": combos[o[0]][2],
                                     "conf": combos[o[0]][0], "recall": round(o[1], 4),
                                     "fa": round(o[2], 4)} if o else None),
