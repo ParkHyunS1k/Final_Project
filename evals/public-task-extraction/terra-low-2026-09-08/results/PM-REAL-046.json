@@ -1,0 +1,62 @@
+{
+  "id": "PM-REAL-046",
+  "model_requested": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:20:08.043803+00:00",
+  "elapsed_seconds": 7.087,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "3f4da868439e6d55a30451f757e4362f4d161f1bd049e0190f4e43a06ced44e4",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 9236,
+    "cached_input_tokens": 8960,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 230,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-046",
+    "summary_ko": "피그마 디자인을 각 소셜 서비스 개발 가이드에 맞게 수정한 뒤 로그인 페이지의 소셜 로그인 버튼을 직접 구현할 예정입니다.",
+    "work_items": [
+      {
+        "description_ko": "피그마 디자인을 각 소셜 서비스 개발 가이드에 맞게 수정",
+        "target": "subtask",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "conditional",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "로그인 페이지의 소셜 로그인 버튼 직접 구현",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "conditional",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": null,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

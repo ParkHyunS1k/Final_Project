@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-023",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:16:37.683311+00:00",
+  "elapsed_seconds": 8.096,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "b4e321894ab6ac7b7298d2af042a758521aef5636e7fef46cb5a429bcc6e63c8",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7836,
+    "cached_input_tokens": 6912,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 274,
+    "reasoning_output_tokens": 126
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-023",
+    "summary_ko": "헤더 작업을 진행하겠다는 의사를 밝혔다. 작업 완료 보고는 없다.",
+    "work_items": [
+      {
+        "description_ko": "헤더 작업",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": "swp91",
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}
