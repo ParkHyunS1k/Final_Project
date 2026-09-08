@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-039",
+  "model_requested": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:22:05.666004+00:00",
+  "elapsed_seconds": 8.034,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "b36c69eebd400e9ac64459f09945eb8b53df820c34a87c20eda8605b2ab3af1b",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 9215,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 159,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-039",
+    "summary_ko": "JWT 토큰에서 이메일을 추출하도록 반영할 예정이며, 아직 완료되지 않은 계획으로 표시되어 있다.",
+    "work_items": [
+      {
+        "description_ko": "JWT 토큰에서 이메일을 추출하도록 반영",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

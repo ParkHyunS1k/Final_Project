@@ -1,0 +1,50 @@
+{
+  "id": "PM-REAL-008",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:42:18.834408+00:00",
+  "elapsed_seconds": 9.174,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "f22a1d47ef2df520a8ba4c7c0e2ded93d713a728cbfb664c8d1cd46486500bc2",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7907,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 306,
+    "reasoning_output_tokens": 103
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-008",
+    "summary_ko": "sebanimm에게 Pull Request 작성이 요청되었고, sebanimm이 완료했다고 응답했습니다. 해당 작업이 전체 이슈의 완료를 의미하는지는 확인되지 않습니다.",
+    "work_items": [
+      {
+        "description_ko": "Font & Style 설정 작업에 대한 Pull Request 작성",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "completed",
+        "modality": "asserted",
+        "assignee_login": "sebanimm",
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0,
+          1
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": null,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "Pull Request 작성 완료는 보고되었지만 전체 이슈 완료 여부와 릴리스 상태는 언급되지 않았습니다."
+  },
+  "parse_error": null,
+  "errors": []
+}

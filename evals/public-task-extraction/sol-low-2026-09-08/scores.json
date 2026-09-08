@@ -1,0 +1,1433 @@
+{
+  "model_requested": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "review_type": "provisional assistant-authored checks, NOT human-validated accuracy",
+  "evaluated_at": "2026-09-08T13:23:05.936265+00:00",
+  "planned_cases": 35,
+  "successful_structured_responses": 35,
+  "cases_passing_all_selected_checks": 34,
+  "selected_checks_passed": 176,
+  "selected_checks_total": 177,
+  "cases_requiring_review": [
+    "PM-REAL-025"
+  ],
+  "usage_totals": {
+    "input_tokens": 323353,
+    "cached_input_tokens": 65280,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 7418,
+    "reasoning_output_tokens": 191
+  },
+  "latency_includes_cli_startup_seconds": {
+    "median": 10.36,
+    "min": 7.321,
+    "max": 17.733
+  },
+  "holdout_cases_executed": 0,
+  "rubric_sha256": "94d803e039136de440ca02b34ee1db61addc53e19f44d3adc3ed8c5f8ca114c2",
+  "details": [
+    {
+      "id": "PM-REAL-001",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0,
+              1
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "토론이 일정 수준 이상 길어질 때 페이지로 나누는 작업은 진행 중이지만, 새로 추가된 기능과 맞지 않아 구현 방향을 고심 중이다."
+    },
+    {
+      "id": "PM-REAL-005",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_any_state",
+          "passed": true,
+          "actual": [
+            "blocked",
+            "deferred",
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "기존 U-Net 모델은 실패했으며, 3번 모델을 제외하고 4번 모델을 진행하겠다는 계획이 보고되었습니다. 전체 이슈의 완료 여부와 출시 상태는 확인할 수 없습니다."
+    },
+    {
+      "id": "PM-REAL-008",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "completed"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0,
+              1
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "sebanimm에게 풀 리퀘스트 제출을 요청했고, sebanimm이 완료했다고 보고했다. 다만 현재 이슈 전체의 완료 여부와 출시 여부는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-012",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_is",
+          "passed": true,
+          "actual": true
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "completed"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "localStorage를 이용해 아이템 클릭 시 해당 아이템으로 이동하는 기능을 구현 완료했다고 보고했다. 출시 여부는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-016",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "relation",
+          "passed": true,
+          "actual": "work_elsewhere"
+        },
+        {
+          "check": "target_suffix",
+          "passed": true,
+          "actual": "https://github.com/Zabee52/Wakfreeca/issues/41"
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재 이슈의 작업을 명시적으로 참조된 이슈 #41에서 진행하겠다고 보고했습니다. 완료 여부와 예상·잔여 시간, 출시 상태는 확인할 수 없습니다."
+    },
+    {
+      "id": "PM-REAL-017",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "ljjyu가 현재 이슈인 화면 꾸미기 방식 통일 작업을 맡겠다는 의사를 밝혔다. 실제 착수·완료·배포 여부는 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-019",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "오브젝트 제작 시 기존 느낌을 유지하면서 게임 요소의 가시성을 높이겠다는 작업 의도가 보고되었습니다. 완료 여부와 일정, 담당자는 확인되지 않습니다."
+    },
+    {
+      "id": "PM-REAL-020",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "minimum_items",
+          "passed": true,
+          "actual": 2
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "라플리 디버프 버전의 얼굴색 수정과 팩맘 기절 모션·타일맵 작업이 예정되어 있다. 완료 여부와 담당자, 일정 및 공수는 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-021",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_is",
+          "passed": true,
+          "actual": true
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "completed"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0,
+              1
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재 이슈의 언어를 한글로 통일하는 작업을 하겠다고 밝혔으며, 이후 작업 완료가 보고되었다."
+    },
+    {
+      "id": "PM-REAL-022",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재 이슈에서 리소스 적용 작업도 수행하겠다는 의도가 보고되었다. 담당자, 일정, 진행 및 완료 여부는 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-023",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "swp91이 현재 이슈의 헤더 작업을 수행하겠다는 의사를 밝혔다. 완료 여부와 예상·잔여 시간은 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-024",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_is",
+          "passed": true,
+          "actual": true
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "completed"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0,
+              1
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "GitHub Projects 관리 가이드 문서화 작업을 추후로 미뤘다가, 이후 완료했다고 보고했다."
+    },
+    {
+      "id": "PM-REAL-025",
+      "status": "checked",
+      "all_checks_passed": false,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "completed",
+            "in_progress"
+          ]
+        },
+        {
+          "check": "needs_clarification",
+          "passed": false,
+          "actual": false
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "버그 2번은 해결되었다고 보고되었고, 버그 1번은 아직 수정 중이다. 전체 이슈의 완료 여부와 릴리스 여부는 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-026",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "release_state",
+          "passed": true,
+          "actual": "not_released"
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "문제 추첨 UI는 아직 배포되지 않은 v1.2를 기준으로 개발 중이라고 보고되었다. 현재 이슈 전체의 완료 여부는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-027",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "not_implemented",
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "상품 조회(product get) 호출 코드는 아직 구현되지 않았으며, DetailPage에서 사용하는 타입을 가져와 활용할 계획이다. 현재 이슈 전체의 완료 여부와 출시 상태는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-028",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "회원정보 조회·수정의 views.py와 HTML 작업 및 마이페이지의 AJAX 전환은 완료되었다고 보고됐으나, 커밋 푸시는 아직 이루어지지 않았다. 전체 이슈 완료 여부와 릴리스 상태는 불분명하다."
+    },
+    {
+      "id": "PM-REAL-029",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "release_state",
+          "passed": true,
+          "actual": "not_released"
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "QA 배포 서버에는 아직 업데이트되지 않았다고 보고되었다. 구현 여부나 향후 작업 계획은 주어진 내용만으로 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-030",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "in_progress"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재 이슈는 FrancisTRdev가 맡아 작업 중이라고 보고되었습니다. 완료·배포 여부와 작업량은 확인할 수 없습니다."
+    },
+    {
+      "id": "PM-REAL-031",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "completed",
+            "in_progress"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "구현 자체는 완료되었다고 보고되었지만, 문서화와 기타 작업은 아직 진행 중이다. 따라서 현재 이슈 전체의 완료 여부와 릴리스 여부는 확정할 수 없다."
+    },
+    {
+      "id": "PM-REAL-032",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "release_state",
+          "passed": true,
+          "actual": "released"
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "completed"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재 이슈의 수정 사항이 v1.4.0으로 릴리스되었다고 보고되었다. 다만 이슈 전체의 완료 여부는 명시되지 않았다."
+    },
+    {
+      "id": "PM-REAL-034",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "relation",
+          "passed": true,
+          "actual": "none"
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "중복 파일 제거를 기억하기 위해 현재 이슈를 열린 상태로 유지하고 있다. 제거 작업은 아직 완료되지 않은 계획으로 해석된다."
+    },
+    {
+      "id": "PM-REAL-035",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "relation",
+          "passed": true,
+          "actual": "duplicate"
+        },
+        {
+          "check": "target_suffix",
+          "passed": true,
+          "actual": "https://github.com/microsoft/TypeScript/issues/44143"
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재 이슈는 #44143의 중복으로 보고되었다. 별도의 구현·완료·릴리스 정보는 없다."
+    },
+    {
+      "id": "PM-REAL-036",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "relation",
+          "passed": true,
+          "actual": "duplicate"
+        },
+        {
+          "check": "target_suffix",
+          "passed": true,
+          "actual": "https://github.com/json-parser/json-parser/issues/82"
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재 이슈는 #82의 중복으로 보고되었다. 별도의 작업이나 완료·릴리스 상태는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-037",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "relation",
+          "passed": true,
+          "actual": "possible_duplicate"
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": []
+        }
+      ],
+      "summary_ko": "현재 이슈와 명시적으로 참조된 이슈가 중복인지 질문하고 있으나, 중복 관계는 확정되지 않았다."
+    },
+    {
+      "id": "PM-REAL-038",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "remaining_minutes",
+          "passed": true,
+          "actual": [
+            280
+          ]
+        },
+        {
+          "check": "remaining_effort_total_once",
+          "passed": true,
+          "actual": [
+            280
+          ]
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "마스크 제작, 본 리깅, 텍스처링 작업이 남아 있으며 잔여 시간은 4시간 40분으로 보고되었다. 스레드 전체 완료나 릴리스 여부는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-039",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_any_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "JWT 토큰에서 이메일을 추출하도록 반영할 예정이며, 아직 완료되지 않은 계획으로 표시되어 있다."
+    },
+    {
+      "id": "PM-REAL-041",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_any_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "광고 시청 횟수(watched_ad_counts)가 3을 초과하면 오류를 발생시키는 작업이 미완료 체크리스트로 제시되어 있다. 담당자, 예상·잔여 시간, 출시 여부는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-043",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_modality",
+          "passed": true,
+          "actual": [
+            "conditional"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재는 LabelTag가 임시로 구현된 맥락이며, API가 완성되면 실제 데이터를 사용하도록 코드를 수정할 예정이다. API 완성 여부와 담당자는 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-044",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "SwiftLint 규칙을 Wiki에 업로드할 예정이라고 제안된 상태다. 담당자, 예상 소요 시간, 완료·릴리스 여부는 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-045",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "minimum_items",
+          "passed": true,
+          "actual": 2
+        },
+        {
+          "check": "has_state",
+          "passed": true,
+          "actual": [
+            "planned"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "통계 화면을 추가하고, 기존 React 구현을 HTML과 바닐라 JavaScript로 마이그레이션할 예정이라고 명시되어 있다. 완료·릴리스·담당자·공수 정보는 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-046",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "has_modality",
+          "passed": true,
+          "actual": [
+            "conditional"
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "피그마 디자인이 각 소셜 서비스의 개발 가이드에 맞게 수정 완료되면 소셜 로그인 버튼을 직접 구현할 예정이다. 디자인 수정의 현재 상태와 구현 담당자는 확인되지 않는다."
+    },
+    {
+      "id": "PM-REAL-047",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "도서 관리 인수인계 문서에 상시 유지보수 지침으로 책을 북스탠드에 세워 보관하고 새 책에 스티커를 부착하도록 명시되어 있다. 실제 수행 여부, 담당자, 공수 및 전체 이슈 완료 여부는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-048",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "conflicting_estimate_minutes",
+          "passed": true,
+          "actual": [
+            60,
+            180
+          ]
+        },
+        {
+          "check": "needs_clarification",
+          "passed": true,
+          "actual": true
+        },
+        {
+          "check": "no_single_estimate",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0,
+              1
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "관리자 레이아웃 관련 이름 없는 3시간 작업이 체크 완료로 표시됐지만, 전체 이슈 완료 여부는 불명확하다. 예상 소요 시간이 별도로 1시간으로 기재되어 추정치가 충돌한다."
+    },
+    {
+      "id": "PM-REAL-049",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": null
+        },
+        {
+          "check": "estimated_minutes",
+          "passed": true,
+          "actual": [
+            30
+          ]
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "현재 이슈의 예상 소요 시간으로 0.5시간(30분)이 표시되어 있으나, 프로필 등록 작업 자체의 완료 여부는 확인할 수 없다."
+    },
+    {
+      "id": "PM-REAL-050",
+      "status": "checked",
+      "all_checks_passed": true,
+      "checks": [
+        {
+          "check": "completion_not_true",
+          "passed": true,
+          "actual": false
+        },
+        {
+          "check": "minimum_items",
+          "passed": true,
+          "actual": 2
+        },
+        {
+          "check": "no_unstated_remaining_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "no_unstated_estimated_effort",
+          "passed": true,
+          "actual": []
+        },
+        {
+          "check": "evidence_indices_valid",
+          "passed": true,
+          "actual": [
+            [
+              0
+            ],
+            [
+              0
+            ]
+          ]
+        }
+      ],
+      "summary_ko": "QR 모달에 남은 시간을 표시하고 만료 시 재시도하는 로직과 하단 사용법 아이콘 추가가 필요하다고 명시되어 있다. 구현·완료·배포 여부와 담당자는 확인되지 않는다."
+    }
+  ]
+}

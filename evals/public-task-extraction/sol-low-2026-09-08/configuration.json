@@ -1,0 +1,11 @@
+{
+  "model": "gpt-5.6-sol",
+  "effort": "low",
+  "baseline": "evals/public-task-extraction/luna-low-2026-09-08",
+  "prompt_schema_rubric": "byte-identical to baseline",
+  "original_source_unchanged": true,
+  "excluded_from_interpreted_score": [
+    "PM-REAL-048"
+  ],
+  "exclusion_reason": "Missing section context identified before this comparison; keep raw original rubric score too."
+}
