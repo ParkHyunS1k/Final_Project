@@ -139,12 +139,22 @@ test('같은 수신자·같은 예정 시각만 한 통으로 묶는다', () => 
   );
 });
 
-test('전송 식별자는 재시도에도 같다', () => {
-  assert.equal(
-    idempotencyKey('p', 'u', due),
-    idempotencyKey('p', 'u', due),
+test('전송 식별자는 재시도에도 같고 수신자·예정 시각으로만 정해진다', () => {
+  assert.equal(idempotencyKey('u', due), idempotencyKey('u', due));
+  assert.notEqual(idempotencyKey('u', due), idempotencyKey('u2', due));
+});
+
+test('프로젝트가 다르면 업무 번호가 같아도 서로 다른 대상이다', () => {
+  const at = '2026-09-20T08:00:00.000Z';
+  const { send, skip } = selectDue(
+    [
+      item({ id: 'a', projectId: 'p1', taskId: 1, scheduledAt: at }),
+      item({ id: 'b', projectId: 'p2', taskId: 1, scheduledAt: at }),
+    ],
+    new Date('2026-09-20T08:05:00.000Z'),
   );
-  assert.notEqual(idempotencyKey('p', 'u', due), idempotencyKey('p', 'u2', due));
+  assert.equal(send.length, 2);
+  assert.equal(skip.length, 0);
 });
 
 test('잘못된 마감 값은 예약하지 않고 오류를 낸다', () => {

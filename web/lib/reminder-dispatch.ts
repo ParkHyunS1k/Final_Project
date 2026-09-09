@@ -73,6 +73,14 @@ async function validate(item: ClaimedRow, now: Date): Promise<Check> {
   return { ok: true, email, task };
 }
 
+async function projectTitle(projectId: string) {
+  const row = await database()
+    .prepare('SELECT title FROM sprints WHERE owner=?')
+    .bind(projectId)
+    .first<{ title: string }>();
+  return row?.title ?? projectId;
+}
+
 async function projectBody(projectId: string, now: Date, deadline: string) {
   const deliverables = await readDeliverables(projectId);
   const open = await database()
@@ -140,13 +148,15 @@ export async function dispatchReminders({
     }
     const link =
       origin + '/?project=' + encodeURIComponent(item.projectId) + '&view=plan';
+    const title = await projectTitle(item.projectId);
     valid.push({
       ...item,
       email: check.email,
       line:
-        item.kind === 'project'
+        `[${title}]\n` +
+        (item.kind === 'project'
           ? await projectBody(item.projectId, now, item.dueAt)
-          : taskBody(check.task!, item.dueAt, now, link),
+          : taskBody(check.task!, item.dueAt, now, link)),
       subjectPart:
         item.kind === 'project'
           ? '프로젝트 마감'
@@ -156,12 +166,25 @@ export async function dispatchReminders({
   const sent: string[] = [];
   const failed: string[] = [];
   for (const group of groupBatches(valid)) {
-    const rows = group.items as Ready[];
-    const projectId = rows[0].projectId;
-    const key = idempotencyKey(projectId, group.userId, group.scheduledAt);
+    let rows = group.items as Ready[];
+    // 보내기 직전에 최신 시각과 업무 상태를 다시 읽는다. 목록 검사 이후
+    // 완료·담당 변경·프로젝트 종료로 무효가 된 항목은 제외한다.
+    const still: Ready[] = [];
+    for (const row of rows) {
+      const check = await validate(row, new Date());
+      if (!check.ok) {
+        await resolveItems([row.id], 'skipped', check.reason, now);
+        continue;
+      }
+      still.push(row);
+    }
+    rows = still;
+    // 남은 항목이 없으면 빈 묶음을 보내지 않는다.
+    if (!rows.length) continue;
+    const key = idempotencyKey(group.userId, group.scheduledAt);
     const subject = `[ProjectMate] ${rows.map((r) => r.subjectPart).join(' · ')} 마감 ${Math.min(...rows.map((r) => r.stage))}분 전`;
     const batch = await openBatch(
-      projectId,
+      rows[0].projectId,
       group.userId,
       group.scheduledAt,
       rows[0].email,
@@ -184,6 +207,7 @@ export async function dispatchReminders({
       to: rows[0].email,
       subject,
       // 각자의 주소로 따로 보낸다. 다른 팀원의 이메일은 본문에 넣지 않는다.
+      // 여러 프로젝트가 섞이면 본문에서 프로젝트를 구분해 표시한다.
       text:
         rows.map((r) => r.line).join('\n\n') +
         '\n\n보고가 없다는 사실만으로 일을 하지 않았다고 판단하지 않습니다. ' +
@@ -199,6 +223,7 @@ export async function dispatchReminders({
       now,
     );
     if (result.status === 'sent') {
+      // 실제로 메일에 포함한 항목만 발송 완료로 기록한다.
       await resolveItems(
         rows.map((r) => r.id),
         'sent',

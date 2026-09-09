@@ -6,6 +6,7 @@ import {
   readPolicy,
   readMembers,
   readSprint,
+  bumpTaskVersion,
   save,
   Conflict,
 } from '@/lib/sprint-store';
@@ -455,27 +456,39 @@ async function writeApplication(
               .bind(c.taskId, d, projectId, m),
           ),
         );
+      // 한 업무에 여러 변경이 있으면 최종 상태를 먼저 계산한다.
+      // 항목마다 저장·취소·재예약을 반복하면 마지막 항목이 앞의 결과를 지운다.
+      const COLUMNS: Record<string, string> = {
+        dueAt: 'due_at',
+        person: 'person',
+        done: 'done',
+        evidence: 'evidence',
+        remaining: 'remaining',
+        status: 'status',
+      };
+      const merged = new Map<
+        number,
+        { fields: Record<string, unknown>; kinds: Set<string> }
+      >();
       for (const e of entries) {
         if (e.kind === 'createTask') continue;
+        const acc = merged.get(e.taskId) ?? {
+          fields: {},
+          kinds: new Set<string>(),
+        };
+        for (const [field, value] of Object.entries(e.after))
+          if (field in COLUMNS) acc.fields[field] = value;
+        acc.kinds.add(e.kind);
+        merged.set(e.taskId, acc);
+      }
+      for (const [taskId, acc] of merged) {
+        if (meta.deletions?.includes(taskId)) continue;
+        const task = s.tasks.find((t) => t.id === taskId);
         const sets: string[] = [];
         const args: unknown[] = [];
-        for (const [field, value] of Object.entries(e.after)) {
-          const column =
-            field === 'dueAt'
-              ? 'due_at'
-              : field === 'person'
-                ? 'person'
-                : field === 'done'
-                  ? 'done'
-                  : field === 'evidence'
-                    ? 'evidence'
-                    : field === 'remaining'
-                      ? 'remaining'
-                      : field === 'status'
-                        ? 'status'
-                        : null;
-          if (!column || field === 'deleted') continue;
-          // NOT NULL 컬럼은 빈 값으로 되돌린다. 알 수 없는 값은 건드리지 않는다.
+        for (const [field, value] of Object.entries(acc.fields)) {
+          const column = COLUMNS[field];
+          // NOT NULL 컬럼은 빈 값으로 되돌리고, 알 수 없는 값은 건드리지 않는다.
           if (value === null && (column === 'evidence' || column === 'status')) {
             if (column !== 'evidence') continue;
             sets.push('evidence=?');
@@ -486,18 +499,62 @@ async function writeApplication(
           sets.push(`${column}=?`);
           args.push(typeof value === 'boolean' ? Number(value) : value);
         }
-        if (e.kind === 'dueAt') {
-          sets.push('deadline_version=deadline_version+1');
+        // 마감 버전은 실제 마감이 바뀔 때만 올린다. 담당자만 바뀌면 그대로 둔다.
+        const finalDue =
+          'dueAt' in acc.fields
+            ? (acc.fields.dueAt as string | null)
+            : (task?.dueAt ?? null);
+        const dueChanged = (task?.dueAt ?? null) !== (finalDue ?? null);
+        const deadlineVersion =
+          (task?.deadlineVersion ?? 0) + (dueChanged ? 1 : 0);
+        if (dueChanged) {
+          sets.push('deadline_version=?');
+          args.push(deadlineVersion);
         }
-        if (!sets.length) continue;
+        if (sets.length)
+          out.push(
+            db
+              .prepare(
+                `UPDATE sprint_tasks SET ${sets.join(',')} WHERE owner=? AND id=?` +
+                  gate,
+              )
+              .bind(...args, projectId, taskId, projectId, m),
+          );
+        out.push(bumpTaskVersion(projectId, m, taskId));
+        // 마감·담당자·완료가 걸린 업무만 예약을 한 번씩 다시 계산한다.
+        if (![...acc.kinds].some((k) => ['dueAt', 'assignee', 'complete'].includes(k)))
+          continue;
+        const finalPerson =
+          'person' in acc.fields
+            ? Number(acc.fields.person)
+            : (task?.person ?? -1);
+        const finalDone =
+          'done' in acc.fields ? Boolean(acc.fields.done) : (task?.done ?? false);
+        const assignee = meta.members.find((x) => x.person === finalPerson);
         out.push(
-          db
-            .prepare(
-              `UPDATE sprint_tasks SET ${sets.join(',')} WHERE owner=? AND id=?` +
-                gate,
-            )
-            .bind(...args, projectId, e.taskId, projectId, m),
+          ...cancelStatements(projectId, m, {
+            kind: 'task',
+            taskId,
+            reason: 'AI 승인/되돌리기로 재검토',
+          }),
         );
+        if (finalDue && !finalDone && assignee && !assignee.leftAt)
+          out.push(
+            ...scheduleStatements(
+              projectId,
+              m,
+              [
+                {
+                  kind: 'task' as const,
+                  taskId,
+                  userId: assignee.userId,
+                  deadlineVersion,
+                  dueAt: finalDue,
+                },
+              ],
+              meta.now,
+            ),
+          );
       }
       for (const taskId of meta.deletions ?? [])
         out.push(
@@ -515,44 +572,6 @@ async function writeApplication(
             reason: '되돌리기로 업무 삭제',
           }),
         );
-      // 마감·담당자·완료 변경은 B의 예약 갱신을 같은 저장 경계에서 수행한다.
-      for (const e of entries) {
-        if (!['dueAt', 'assignee', 'complete'].includes(e.kind)) continue;
-        if (meta.deletions?.includes(e.taskId)) continue;
-        out.push(
-          ...cancelStatements(projectId, m, {
-            kind: 'task',
-            taskId: e.taskId,
-            reason: 'AI 승인/되돌리기로 재검토',
-          }),
-        );
-        const task = s.tasks.find((t) => t.id === e.taskId);
-        const dueAt =
-          'dueAt' in e.after
-            ? (e.after.dueAt as string | null)
-            : (task?.dueAt ?? null);
-        const person =
-          'person' in e.after ? (e.after.person as number) : (task?.person ?? -1);
-        const done = 'done' in e.after ? Boolean(e.after.done) : (task?.done ?? false);
-        const assignee = meta.members.find((x) => x.person === person);
-        if (dueAt && !done && assignee && !assignee.leftAt)
-          out.push(
-            ...scheduleStatements(
-              projectId,
-              m,
-              [
-                {
-                  kind: 'task' as const,
-                  taskId: e.taskId,
-                  userId: assignee.userId,
-                  deadlineVersion: (task?.deadlineVersion ?? 0) + 1,
-                  dueAt,
-                },
-              ],
-              meta.now,
-            ),
-          );
-      }
       if (meta.proposalId)
         out.push(
           db
