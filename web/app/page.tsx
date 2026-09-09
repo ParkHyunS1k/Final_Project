@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
+import { ChangeReview } from '@/components/change-review';
 import {
   ProjectWorkspace,
   ProjectDetails,
@@ -873,6 +874,17 @@ function Dashboard({
                   </button>
                 )}
               </section>
+            )}
+            {tab === 'ai' && (
+              <ChangeReview
+                projectId={projectId}
+                revision={s.revision}
+                tasks={s.tasks}
+                members={state!.members}
+                me={state!.me}
+                writable={writable && agreedToGoal && !state!.me.leftAt}
+                onApplied={(next) => setState(next as State)}
+              />
             )}
             {tab === 'result' && (
               <section className="work-section">

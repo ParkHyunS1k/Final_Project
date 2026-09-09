@@ -26,6 +26,7 @@ import {
   ChartNoAxesCombined,
   Flag,
   Folder,
+  Sparkles,
 } from 'lucide-react';
 export const workspaceViews = [
   { id: 'plan', label: '프로젝트 업무', icon: ListTodo },
@@ -33,6 +34,7 @@ export const workspaceViews = [
   { id: 'today', label: '스프린트 현황', icon: ChartNoAxesCombined },
   { id: 'docs', label: '프로젝트 문서', icon: FileText },
   { id: 'team', label: '팀 · 공수', icon: Users },
+  { id: 'ai', label: '변경안 검토', icon: Sparkles },
   { id: 'result', label: '완주 확인', icon: Flag },
 ];
 function WorkspaceNav({
