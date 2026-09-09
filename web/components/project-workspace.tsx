@@ -146,12 +146,15 @@ async function api(path: string, body?: Record<string, unknown>) {
     token?: string;
     details: InvitePreview;
   };
-  if (!res.ok)
-    throw new Error(
+  if (!res.ok) {
+    const failure = new Error(
       res.status === 401
         ? '로그인이 필요합니다.'
         : data.error || '처리하지 못했습니다.',
-    );
+    ) as Error & { details?: InvitePreview };
+    if (res.status === 409 && data.details) failure.details = data.details;
+    throw failure;
+  }
   return data;
 }
 export function ProjectWorkspace({
@@ -431,11 +434,20 @@ export function ProjectWorkspace({
                         action: 'accept',
                         token: invite,
                         agreed,
+                        // 이 화면에서 실제로 확인한 목표 버전을 함께 보낸다.
+                        goalVersion: preview.details.goal_version,
                       });
                       location.replace(
                         '/?project=' + encodeURIComponent(result.projectId),
                       );
                     } catch (e) {
+                      const changed = (e as { details?: InvitePreview })
+                        .details;
+                      // 저장 시점에 목표가 달랐다면 최신 목표로 다시 확인받는다.
+                      if (changed) {
+                        setPreview({ details: changed });
+                        setAgreed(false);
+                      }
                       setError((e as Error).message);
                     } finally {
                       setBusy(false);

@@ -20,6 +20,15 @@ import {
 } from './sprint-policy';
 import { assertEvidence, parseDeliverables } from './deliverables';
 import { scheduleStatements } from './reminder-store';
+/** 화면에서 확인한 목표와 저장 시점의 목표가 다를 때. 최신 내용을 함께 돌려준다. */
+export class GoalChanged extends Error {
+  details: unknown;
+  status = 409;
+  constructor(details: unknown) {
+    super('목표가 바뀌었습니다. 최신 목표와 완료 기준을 확인한 뒤 다시 수락해주세요.');
+    this.details = details;
+  }
+}
 export class AccessError extends Error {
   constructor(
     message = '프로젝트에 접근할 권한이 없습니다.',
@@ -411,10 +420,15 @@ export async function acceptInvite(
   user: Identity,
   token: string,
   agreed: unknown,
+  confirmedGoalVersion: unknown,
 ) {
   if (agreed !== true)
     throw new Error('프로젝트 목표와 완료 기준을 확인해주세요.');
-  const { invite } = await inspectInvite(user, token);
+  // 사용자가 화면에서 실제로 확인한 목표 버전을 받는다.
+  // 누락된 값을 현재 버전으로 대신 채우지 않는다.
+  if (!Number.isInteger(confirmedGoalVersion))
+    throw new Error('확인한 목표 버전을 함께 보내주세요.');
+  const { invite, details } = await inspectInvite(user, token);
   const project = String(invite.project_id);
   const db = database();
   const already = await db
@@ -427,6 +441,8 @@ export async function acceptInvite(
   const s = await readSprint(project);
   const policy = await readPolicy(project);
   if (!s || !policy) throw new AccessError();
+  // 확인한 버전과 지금 저장하려는 버전이 다르면 최신 목표를 다시 보여준다.
+  if (policy.goalVersion !== confirmedGoalVersion) throw new GoalChanged(details);
   const rows = await readMembers(project);
   if (rows.length >= MAX_MEMBERS)
     throw new Error(`팀은 최대 ${MAX_MEMBERS}명입니다.`);
@@ -482,6 +498,11 @@ export async function acceptInvite(
         : []),
     ],
     ['draft', 'active'],
+    // 저장 직전에 목표가 다시 바뀌면 가입·동의 기록을 남기지 않는다.
+    {
+      sql: 'EXISTS(SELECT 1 FROM project_policy p WHERE p.project_id=sprints.owner AND p.goal_version=?)',
+      args: [policy.goalVersion],
+    },
   );
   return project;
 }

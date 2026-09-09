@@ -8,6 +8,7 @@ import {
   member,
   actorOf,
   AccessError,
+  GoalChanged,
 } from '@/lib/projects';
 import { database, readSprint, readPolicy, save, Conflict } from '@/lib/sprint-store';
 import {
@@ -26,6 +27,8 @@ function failure(error: unknown) {
     return reply({ error: error.message }, error.status);
   if (error instanceof PolicyError)
     return reply({ error: error.message }, error.status);
+  if (error instanceof GoalChanged)
+    return reply({ error: error.message, details: error.details }, error.status);
   if (error instanceof Conflict)
     return reply(
       { error: '다른 변경이 있습니다. 최신 상태에서 다시 시도해주세요.' },
@@ -79,7 +82,12 @@ export async function POST(request: Request) {
       return reply({ projectId: await createProject(user, b) }, 201);
     if (b.action === 'accept')
       return reply({
-        projectId: await acceptInvite(user, String(b.token), b.agreed),
+        projectId: await acceptInvite(
+          user,
+          String(b.token),
+          b.agreed,
+          b.goalVersion,
+        ),
       });
     if (typeof b.projectId !== 'string' || !Number.isInteger(b.revision))
       throw new Error('프로젝트와 최신 버전을 선택해주세요.');

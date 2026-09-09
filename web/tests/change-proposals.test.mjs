@@ -12,6 +12,17 @@ for (const name of readdirSync('drizzle')
   .filter((n) => n.endsWith('.sql'))
   .sort())
   db.exec(readFileSync('drizzle/' + name, 'utf8'));
+// 실제 쓰기 직전에 상태를 바꾸는 상황을 재현하기 위한 훅.
+// __BEFORE_WRITE_SQL로 어떤 문장 직전에 실행할지 지정한다(기본값: 버전 증가 UPDATE).
+function fireBeforeWrite(sqls) {
+  const hook = globalThis.__BEFORE_WRITE;
+  if (!hook) return;
+  const pattern = globalThis.__BEFORE_WRITE_SQL ?? 'UPDATE sprints SET revision';
+  if (!sqls.some((sql) => sql.includes(pattern))) return;
+  globalThis.__BEFORE_WRITE = null;
+  globalThis.__BEFORE_WRITE_SQL = null;
+  hook();
+}
 class Prepared {
   constructor(sql, args = []) {
     this.sql = sql;
@@ -30,6 +41,7 @@ class Prepared {
     return this.execute();
   }
   execute() {
+    if (!/^\s*SELECT/.test(this.sql)) fireBeforeWrite([this.sql]);
     const st = db.prepare(this.sql);
     if (/^\s*SELECT/.test(this.sql))
       return {
@@ -44,15 +56,7 @@ class Prepared {
 globalThis.__TEST_DB = {
   prepare: (sql) => new Prepared(sql),
   async batch(statements) {
-    // 실제 쓰기 직전에 상태를 바꾸는 상황을 재현하기 위한 훅.
-    if (
-      globalThis.__BEFORE_WRITE &&
-      statements.some((s) => s.sql.includes('UPDATE sprints SET revision'))
-    ) {
-      const hook = globalThis.__BEFORE_WRITE;
-      globalThis.__BEFORE_WRITE = null;
-      hook();
-    }
+    fireBeforeWrite(statements.map((s) => s.sql));
     db.exec('BEGIN');
     try {
       const rows = statements.map((s) => s.execute());
@@ -180,6 +184,8 @@ async function draftTeam(owner, mate, over = {}) {
     action: 'accept',
     token,
     agreed: true,
+    // 화면에서 확인한 목표 버전을 함께 보낸다.
+    goalVersion: state.policy.goalVersion,
   });
   assert.equal(accepted.status, 200, await accepted.clone().text());
   state = await read(owner, projectId);

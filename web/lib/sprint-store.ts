@@ -293,6 +293,8 @@ export async function save(
   detail: string,
   extras: (mutation: string) => D1PreparedStatement[] = () => [],
   states: Lifecycle[] | null = null,
+  // 저장 시점에 함께 확인할 추가 조건. 실패하면 아무것도 쓰이지 않는다.
+  guard: { sql: string; args: unknown[] } | null = null,
 ) {
   const db = database();
   const mutation = crypto.randomUUID();
@@ -300,7 +302,8 @@ export async function save(
   const head = db
     .prepare(
       'UPDATE sprints SET revision=revision+1,mutation=?,joined=?,finished=?,updated_at=? WHERE owner=? AND revision=?' +
-        (states ? policyGuard(states) : ''),
+        (states ? policyGuard(states) : '') +
+        (guard ? ' AND ' + guard.sql : ''),
     );
   const headArgs: unknown[] = [
     mutation,
@@ -310,6 +313,7 @@ export async function save(
     owner,
     s.revision,
   ];
+  if (guard) headArgs.push(...guard.args);
   const statements = [head.bind(...headArgs)];
   for (const t of s.tasks)
     statements.push(
