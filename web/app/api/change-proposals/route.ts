@@ -10,7 +10,7 @@ import {
   Conflict,
 } from '@/lib/sprint-store';
 import { assertProjectMutationAllowed, PolicyError } from '@/lib/sprint-policy';
-import { readSource } from '@/lib/source-documents';
+import { readSource, WRITABLE_PROJECT } from '@/lib/source-documents';
 import {
   buildPrompt,
   fakeModel,
@@ -189,14 +189,17 @@ export async function POST(request: Request) {
         // 모델 오류·잘못된 구조는 검토 가능한 실패로 남기고 업무는 바꾸지 않는다.
         error = e instanceof Error ? e.message : '모델 응답을 처리하지 못했습니다.';
       }
-      await db.batch([
+      // 모델 호출이 끝난 뒤 상태가 바뀌었을 수 있다. 실제 INSERT에도 프로젝트
+      // 상태·마감·현재 멤버십 조건을 걸고, 세부 항목은 머리 행이 있을 때만 넣는다.
+      const written = await db.batch([
         db
           .prepare(
-            'INSERT INTO ai_change_proposals(id,project_id,source_id,base_revision,model,prompt_version,status,error,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)',
+            'INSERT INTO ai_change_proposals(id,project_id,source_id,base_revision,model,prompt_version,status,error,created_by,created_at)' +
+              ' SELECT ?,p.project_id,?,?,?,?,?,?,?,?' +
+              WRITABLE_PROJECT,
           )
           .bind(
             proposalId,
-            projectId,
             source.id,
             sprint.revision,
             model.name,
@@ -205,11 +208,14 @@ export async function POST(request: Request) {
             error,
             user.id,
             now.toISOString(),
+            projectId,
+            user.id,
           ),
         ...changes.map((c) =>
           db
             .prepare(
-              'INSERT INTO ai_proposal_changes(proposal_id,change_id,kind,task_id,new_key,before,after,evidence_start,evidence_end,evidence_quote,basis,needs_review,requires,blocked) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+              'INSERT INTO ai_proposal_changes(proposal_id,change_id,kind,task_id,new_key,before,after,evidence_start,evidence_end,evidence_quote,basis,needs_review,requires,blocked)' +
+                ' SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,? FROM ai_change_proposals WHERE id=?',
             )
             .bind(
               proposalId,
@@ -226,9 +232,14 @@ export async function POST(request: Request) {
               c.needsReview,
               c.requires,
               c.blocked,
+              proposalId,
             ),
         ),
       ]);
+      if (written[0].meta.changes !== 1)
+        throw new PolicyError(
+          '변경안을 만드는 사이에 프로젝트가 종료되었거나 권한이 바뀌었습니다. 최신 상태를 확인해주세요.',
+        );
       // 생성만으로는 어떤 업무 값도 바뀌지 않는다.
       return reply(
         {

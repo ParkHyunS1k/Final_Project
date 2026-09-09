@@ -62,6 +62,13 @@ export function sourceInput(b: Record<string, unknown>) {
   return { body: b.body, origin, capturedAt, supersedes };
 }
 
+// 실제 INSERT에 프로젝트 상태·마감·현재 멤버십 조건을 함께 건다.
+// 모델 호출이나 해시 계산이 끝난 뒤 상태가 바뀌었다면 아무것도 남지 않는다.
+export const WRITABLE_PROJECT =
+  " FROM project_policy p WHERE p.project_id=? AND p.lifecycle IN ('draft','active')" +
+  " AND (p.deadline_at IS NULL OR p.deadline_at > strftime('%Y-%m-%dT%H:%M:%fZ','now'))" +
+  ' AND EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=p.project_id AND m.user_id=? AND m.left_at IS NULL)';
+
 export async function createSource(
   projectId: string,
   authorId: string,
@@ -75,13 +82,14 @@ export async function createSource(
     if (!previous)
       throw new PolicyError('이전 원문을 찾을 수 없습니다.', 404);
   }
-  await database()
+  const result = await database()
     .prepare(
-      'INSERT INTO source_documents(id,project_id,author_id,body,origin,captured_at,hash,supersedes,created_at) VALUES(?,?,?,?,?,?,?,?,?)',
+      'INSERT INTO source_documents(id,project_id,author_id,body,origin,captured_at,hash,supersedes,created_at)' +
+        ' SELECT ?,p.project_id,?,?,?,?,?,?,?' +
+        WRITABLE_PROJECT,
     )
     .bind(
       id,
-      projectId,
       authorId,
       input.body,
       input.origin,
@@ -89,8 +97,14 @@ export async function createSource(
       hash,
       input.supersedes,
       now.toISOString(),
+      projectId,
+      authorId,
     )
     .run();
+  if (result.meta.changes !== 1)
+    throw new PolicyError(
+      '저장하는 사이에 프로젝트가 종료되었거나 권한이 바뀌었습니다. 최신 상태를 확인해주세요.',
+    );
   return id;
 }
 
