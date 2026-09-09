@@ -6,9 +6,14 @@ import {
   inspectInvite,
   acceptInvite,
   member,
+  actorOf,
   AccessError,
 } from '@/lib/projects';
-import { database, readSprint, save, Conflict } from '@/lib/sprint-store';
+import { database, readSprint, readPolicy, save, Conflict } from '@/lib/sprint-store';
+import {
+  assertProjectMutationAllowed,
+  PolicyError,
+} from '@/lib/sprint-policy';
 export const dynamic = 'force-dynamic';
 function reply(value: unknown, status = 200) {
   return Response.json(value, {
@@ -18,6 +23,8 @@ function reply(value: unknown, status = 200) {
 }
 function failure(error: unknown) {
   if (error instanceof AccessError)
+    return reply({ error: error.message }, error.status);
+  if (error instanceof PolicyError)
     return reply({ error: error.message }, error.status);
   if (error instanceof Conflict)
     return reply(
@@ -83,8 +90,12 @@ export async function POST(request: Request) {
       );
     if (b.action === 'revoke') {
       const me = await member(b.projectId, user);
-      if (me.role !== 'owner')
-        throw new AccessError('팀장만 초대를 취소할 수 있습니다.');
+      assertProjectMutationAllowed({
+        policy: await readPolicy(b.projectId),
+        actor: actorOf(me),
+        action: 'revokeInvite',
+        now: new Date(),
+      });
       const s = await readSprint(b.projectId);
       if (!s || s.revision !== b.revision) throw new Conflict();
       await save(
@@ -99,6 +110,7 @@ export async function POST(request: Request) {
             )
             .bind(b.projectId, b.inviteId, b.projectId, m),
         ],
+        ['draft', 'active'],
       );
       return reply({ ok: true });
     }

@@ -25,7 +25,8 @@ import {
   people as samplePeople,
   type Sprint,
   type Task,
-  type Schedule,
+  type Plan,
+  seoulTime,
 } from '@/lib/sprint';
 import type { ProjectMeta } from './project-workspace';
 
@@ -45,10 +46,9 @@ const statuses = [
   { id: 'todo', label: '시작 전' },
   { id: 'in_progress', label: '진행 중' },
   { id: 'done', label: '완료' },
-  { id: 'deferred', label: '다음 스프린트' },
 ];
 function statusOf(t: Task) {
-  return t.deferred ? 'deferred' : t.done ? 'done' : (t.status ?? 'todo');
+  return t.done ? 'done' : (t.status ?? 'todo');
 }
 export function TaskCollection({
   sprint,
@@ -64,7 +64,7 @@ export function TaskCollection({
   onAdd,
 }: {
   sprint: Sprint;
-  plan: Schedule;
+  plan: Plan;
   me: ProjectMeta['me'];
   members: ProjectMeta['members'];
   checkins: Checkin[];
@@ -92,7 +92,7 @@ export function TaskCollection({
         aria-label={`${t.title} 상태`}
         className={`status-select status-${statusOf(t)}`}
         value={statusOf(t)}
-        disabled={!writable(t) || t.deferred}
+        disabled={!writable(t)}
         onChange={(e) => {
           const status = e.target.value;
           if (status === 'done' || t.done) {
@@ -112,7 +112,6 @@ export function TaskCollection({
         }}
       >
         {statuses
-          .filter((s) => s.id !== 'deferred' || t.deferred)
           .map((s) => (
             <NativeSelectOption key={s.id} value={s.id}>
               {s.label}
@@ -185,7 +184,7 @@ export function TaskCollection({
                         <span>{t.title}</span>
                       </button>
                       <span className="task-subline">
-                        {t.optional ? '부가 업무' : '필수 업무'}
+                        업무
                         {t.dependsOn.length
                           ? ` · 선행 ${t.dependsOn.length}개`
                           : ''}
@@ -197,7 +196,7 @@ export function TaskCollection({
                         aria-label={`${t.title} 담당자`}
                         value={t.person}
                         disabled={
-                          !owner || !writable(t) || t.done || t.deferred
+                          !owner || !writable(t) || t.done
                         }
                         onChange={(e) =>
                           void mutate(
@@ -235,16 +234,16 @@ export function TaskCollection({
                     <TableCell>
                       <span
                         className={
-                          !t.done && !t.deferred && !plan.finishes[t.id]
+                          !t.done && !plan.finishes[t.id]
                             ? 'schedule-warning'
                             : ''
                         }
                       >
                         {t.done
                           ? '결과 확인 완료'
-                          : t.deferred
-                            ? '다음 스프린트'
-                            : (plan.finishes[t.id] ?? '배치 불가')}
+                          : plan.finishes[t.id]
+                            ? seoulTime(plan.finishes[t.id]) + ' KST'
+                            : '배치 불가'}
                       </span>
                     </TableCell>
                   </TableRow>
@@ -257,7 +256,7 @@ export function TaskCollection({
           <div className="task-board">
             {statuses
               .filter(
-                (s) => s.id !== 'deferred' || tasks.some((t) => t.deferred),
+                () => true,
               )
               .map((s) => (
                 <section
@@ -284,7 +283,7 @@ export function TaskCollection({
                         </button>
                         <p>
                           {people[t.person]?.name ?? '미배정'} ·{' '}
-                          {t.optional ? '부가' : '필수'}
+                          업무
                         </p>
                         <div className="board-card-bottom">
                           {statusControl(t)}
@@ -342,7 +341,7 @@ function TaskDetail({
 }: {
   task: Task;
   sprint: Sprint;
-  plan: Schedule;
+  plan: Plan;
   me: ProjectMeta['me'];
   checkins: Checkin[];
   busy: boolean;
@@ -358,7 +357,7 @@ function TaskDetail({
     !sprint.finished &&
     Boolean(me.agreedAt) &&
     (me.role === 'owner' || task.person === me.person) &&
-    !task.deferred;
+    true;
   const stale = base.revision !== sprint.revision;
   async function submit(
     e: React.SyntheticEvent<HTMLFormElement>,
@@ -402,7 +401,7 @@ function TaskDetail({
       <SheetContent className="task-detail-sheet">
         <SheetHeader>
           <p className="work-kicker">
-            업무 / {t.optional ? '부가 업무' : '필수 업무'}
+            업무
           </p>
           <SheetTitle>{task.title}</SheetTitle>
           <SheetDescription>
@@ -424,9 +423,9 @@ function TaskDetail({
               <dd>
                 {task.done
                   ? '결과 확인 완료'
-                  : task.deferred
-                    ? '다음 스프린트'
-                    : (plan.finishes[task.id] ?? '가용시간을 확인해주세요.')}
+                  : plan.finishes[task.id]
+                    ? seoulTime(plan.finishes[task.id]) + ' KST (예상)'
+                    : '남은 기간 안에 배치되지 않습니다.'}
               </dd>
             </div>
           </dl>

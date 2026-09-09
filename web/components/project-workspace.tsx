@@ -1,7 +1,6 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Project switching clears invitation and dashboard state via full navigation. */
 import { useEffect, useState, type ReactNode } from 'react';
-import { dateInSeoul } from '@/lib/sprint';
 import {
   SidebarProvider,
   Sidebar,
@@ -33,8 +32,8 @@ export const workspaceViews = [
   { id: 'mine', label: '내 할 일', icon: UserRound },
   { id: 'today', label: '스프린트 현황', icon: ChartNoAxesCombined },
   { id: 'docs', label: '프로젝트 문서', icon: FileText },
-  { id: 'team', label: '팀 · 가용시간', icon: Users },
-  { id: 'refund', label: '완주 확인', icon: Flag },
+  { id: 'team', label: '팀 · 공수', icon: Users },
+  { id: 'result', label: '완주 확인', icon: Flag },
 ];
 function WorkspaceNav({
   view,
@@ -91,7 +90,14 @@ function WorkspaceButton({
 }
 export type ProjectMeta = {
   projectId: string;
-  me: { role: string; person: number; agreedAt: string | null; name: string };
+  me: {
+    role: string;
+    person: number;
+    agreedAt: string | null;
+    agreedGoalVersion: number;
+    leftAt: string | null;
+    name: string;
+  };
   details: {
     goal: string;
     deliverables: string;
@@ -103,8 +109,22 @@ export type ProjectMeta = {
     role: string;
     person: number;
     agreed_at: string | null;
+    agreed_goal_version: number;
+    left_at: string | null;
+    left_note: string;
   }[];
   invites: { id: string; email: string; expires_at: string; status: string }[];
+};
+export type InvitePreview = {
+  title: string;
+  goal: string;
+  scope: string;
+  completion_criteria: string;
+  goal_version: number;
+  lifecycle: string;
+  deadline_at: string | null;
+  duration_days: number;
+  deliverables: string[];
 };
 async function api(path: string, body?: Record<string, unknown>) {
   const res = await fetch(path, {
@@ -119,10 +139,10 @@ async function api(path: string, body?: Record<string, unknown>) {
   });
   const data = (await res.json()) as {
     error?: string;
-    projects: { id: string; title: string; role: string }[];
+    projects: { id: string; title: string; role: string; lifecycle: string }[];
     projectId: string;
     token?: string;
-    details: ProjectMeta['details'] & { title: string; deadline: string };
+    details: InvitePreview;
   };
   if (!res.ok)
     throw new Error(
@@ -142,7 +162,7 @@ export function ProjectWorkspace({
   ) => ReactNode;
 }) {
   const [projects, setProjects] = useState<
-    { id: string; title: string; role: string }[]
+    { id: string; title: string; role: string; lifecycle: string }[]
   >([]);
   const [selected, setSelected] = useState('');
   const [view, setView] = useState('plan');
@@ -151,9 +171,9 @@ export function ProjectWorkspace({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [invite, setInvite] = useState('');
-  const [preview, setPreview] = useState<{
-    details: ProjectMeta['details'] & { title: string; deadline: string };
-  } | null>(null);
+  const [preview, setPreview] = useState<{ details: InvitePreview } | null>(
+    null,
+  );
   const [agreed, setAgreed] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -187,7 +207,7 @@ export function ProjectWorkspace({
         action: 'create',
         title: f.get('title'),
         goal: f.get('goal'),
-        startDate: f.get('startDate'),
+        scope: f.get('scope'),
         duration: Number(f.get('duration')),
         deliverables: f.get('deliverables'),
         completionCriteria: f.get('criteria'),
@@ -300,8 +320,10 @@ export function ProjectWorkspace({
           <section className="project-panel">
             <h1>7~10일 안에 완성할 프로젝트</h1>
             <p>
-              팀이 함께 확인할 목표와 완료 기준부터 정합니다. 마감은 마지막 날
-              오후 6시(한국 시간)입니다.
+              팀이 함께 확인할 목표와 완료 기준부터 정합니다. 만들면 준비
+              상태로 저장되고, 최소 2명이 최신 목표에 동의한 뒤 팀장이 시작할
+              때 그 시각부터 선택한 일수만큼 기한이 확정됩니다. 준비 기간은
+              스프린트 기간을 소모하지 않습니다.
             </p>
             <form className="project-form" onSubmit={create}>
               <label>
@@ -318,13 +340,12 @@ export function ProjectWorkspace({
                 />
               </label>
               <label>
-                시작일
-                <input
-                  name="startDate"
-                  type="date"
+                기능 범위
+                <textarea
+                  name="scope"
                   required
-                  min={dateInSeoul(new Date())}
-                  defaultValue={dateInSeoul(new Date())}
+                  maxLength={2000}
+                  placeholder="이번에 만들 기능과 만들지 않을 것"
                 />
               </label>
               <label>
@@ -356,8 +377,8 @@ export function ProjectWorkspace({
               </label>
               <label className="agreement">
                 <input type="checkbox" name="agreed" required />{' '}
-                목표·결과물·완료 기준을 확인했습니다. 실제 결제는 발생하지
-                않습니다.
+                목표·기능 범위·결과물·완료 기준을 확인했습니다. 시작 후에는
+                바꿀 수 없으며 실제 결제는 발생하지 않습니다.
               </label>
               <button className="btn primary" disabled={busy}>
                 {busy ? '저장 중…' : '프로젝트 만들기'}
@@ -372,20 +393,31 @@ export function ProjectWorkspace({
               <>
                 <h2>{preview.details.title}</h2>
                 <p>{preview.details.goal}</p>
+                <p>기능 범위: {preview.details.scope}</p>
                 <ul>
-                  {JSON.parse(preview.details.deliverables).map((v: string) => (
+                  {preview.details.deliverables.map((v: string) => (
                     <li key={v}>{v}</li>
                   ))}
                 </ul>
                 <p>완료 기준: {preview.details.completion_criteria}</p>
-                <p>마감: {preview.details.deadline.slice(0, 10)} 18:00 KST</p>
+                <p>
+                  {preview.details.deadline_at
+                    ? '마감: ' +
+                      new Date(preview.details.deadline_at).toLocaleString(
+                        'ko-KR',
+                        { timeZone: 'Asia/Seoul' },
+                      ) +
+                      ' (진행 중 · 고정된 기한)'
+                    : `아직 준비 중입니다. 시작하면 그 시각부터 ${preview.details.duration_days}일입니다.`}
+                </p>
                 <label className="agreement">
                   <input
                     type="checkbox"
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
                   />
-                  목표와 완료 기준을 확인하고 참여합니다.
+                  목표 v{preview.details.goal_version}와 완료 기준을 확인하고
+                  참여합니다.
                 </label>
                 <button
                   className="btn primary"

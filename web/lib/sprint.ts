@@ -182,38 +182,6 @@ export function schedule(s: Sprint, now = new Date()): Schedule {
     perPerson,
   };
 }
-export function recovery(s: Sprint, now = new Date()) {
-  const before = schedule(s, now);
-  if (before.feasible) return null;
-  const ids: number[] = [];
-  const candidates = s.tasks
-    .filter((t) => t.optional && !t.done && !t.deferred)
-    .sort((a, b) => b.remaining - a.remaining);
-  for (const task of candidates) {
-    if (
-      s.tasks.some(
-        (t) =>
-          !t.done &&
-          !t.deferred &&
-          !ids.includes(t.id) &&
-          t.dependsOn.includes(task.id),
-      )
-    )
-      continue;
-    ids.push(task.id);
-    const after = schedule(
-      {
-        ...s,
-        tasks: s.tasks.map((t) =>
-          ids.includes(t.id) ? { ...t, deferred: true } : t,
-        ),
-      },
-      now,
-    );
-    if (after.feasible) return { deferIds: [...ids], before, after };
-  }
-  return null;
-}
 export function validateHours(value: unknown) {
   if (
     typeof value !== 'number' ||
@@ -245,8 +213,9 @@ export function taskInput(
     throw new Error('참여 중인 담당자를 선택해주세요.');
   const remaining = validateHours(b.remaining);
   if (!remaining) throw new Error('남은 시간은 0.5시간 이상이어야 합니다.');
-  if (typeof b.optional !== 'boolean')
-    throw new Error('필수 여부를 선택해주세요.');
+  // 새 정책에는 부가/보류 개념이 없다. 값이 오면 필수(false)로만 허용한다.
+  if (b.optional !== undefined && b.optional !== false)
+    throw new Error('필수 결과물을 부가 업무로 표시할 수 없습니다.');
   if (
     !Array.isArray(b.dependsOn) ||
     b.dependsOn.length > tasks.length ||
@@ -280,7 +249,136 @@ export function taskInput(
     title: b.title.trim(),
     person: b.person,
     remaining,
-    optional: b.optional,
+    optional: false,
     dependsOn,
   };
+}
+
+// ---------------------------------------------------------------------------
+// 공통 공수 모델 (사용자 확정: 개인별 가용시간 입력 없음, 전원 하루 8시간 가정)
+// 출퇴근 시각이나 연속 근무를 강제하는 규칙이 아니다. 남은 기간 대비 남은 공수를
+// 비교하기 위한 내부 계산 가정이며, 승인된 업무 마감(dueAt)과는 별개다.
+// ---------------------------------------------------------------------------
+export type PlanTask = {
+  id: number;
+  person: number;
+  remaining: number;
+  done: boolean;
+  dependsOn: number[];
+};
+export type Plan = {
+  feasible: boolean;
+  needed: number;
+  available: number;
+  overBy: number;
+  unscheduled: number[];
+  starts: Record<number, string>;
+  finishes: Record<number, string>;
+  perPerson: {
+    person: number;
+    needed: number;
+    available: number;
+    finish: string | null;
+  }[];
+  from: string;
+  until: string;
+  dailyHours: number;
+  provisional: boolean;
+};
+
+/**
+ * 하루 `dailyHours`시간을 24시간에 나눠 쓰는 균일 진행 속도로 예상 종료를 계산한다.
+ * 한 담당자는 동시에 두 업무를 진행하지 않고, 후행 업무는 선행 업무보다 먼저 끝나지 않는다.
+ * `provisional`은 아직 시작하지 않아 최종 기한이 확정되지 않았다는 뜻이다.
+ */
+export function plan(
+  tasks: PlanTask[],
+  members: number[],
+  options: {
+    now: Date;
+    from: Date;
+    until: Date;
+    dailyHours?: number;
+    provisional?: boolean;
+  },
+): Plan {
+  const dailyHours = options.dailyHours ?? 8;
+  const rate = dailyHours / 24; // 실제 시간 1시간당 소화하는 공수
+  const base = Math.max(options.now.getTime(), options.from.getTime());
+  const until = options.until.getTime();
+  const budget = Math.max(0, (until - base) / 3600000) * rate;
+  const active = tasks.filter((t) => !t.done);
+  const cursor = new Map<number, number>(members.map((p) => [p, base]));
+  const ends = new Map<number, number>();
+  for (const t of tasks) if (t.done) ends.set(t.id, base);
+  const starts: Record<number, string> = {};
+  const finishes: Record<number, string> = {};
+  const unscheduled: number[] = [];
+  const pending = [...active];
+  while (pending.length) {
+    const i = pending.findIndex((t) =>
+      t.dependsOn.every((d) => ends.has(d) || unscheduled.includes(d)),
+    );
+    if (i < 0) {
+      unscheduled.push(...pending.map((t) => t.id));
+      break;
+    }
+    const task = pending.splice(i, 1)[0];
+    if (
+      task.dependsOn.some((d) => unscheduled.includes(d)) ||
+      !cursor.has(task.person)
+    ) {
+      unscheduled.push(task.id);
+      continue;
+    }
+    const start = Math.max(
+      cursor.get(task.person)!,
+      ...task.dependsOn.map((d) => ends.get(d) ?? base),
+    );
+    const end = start + (task.remaining / rate) * 3600000;
+    cursor.set(task.person, end);
+    ends.set(task.id, end);
+    starts[task.id] = new Date(start).toISOString();
+    finishes[task.id] = new Date(end).toISOString();
+    if (end > until) unscheduled.push(task.id);
+  }
+  const perPerson = members.map((person) => ({
+    person,
+    needed: active
+      .filter((t) => t.person === person)
+      .reduce((a, t) => a + t.remaining, 0),
+    available: budget,
+    finish:
+      [...ends.entries()]
+        .filter(([id]) => active.some((t) => t.id === id && t.person === person))
+        .map(([, at]) => at)
+        .sort((a, b) => b - a)
+        .map((at) => new Date(at).toISOString())[0] ?? null,
+  }));
+  const needed = perPerson.reduce((a, p) => a + p.needed, 0);
+  return {
+    feasible: !unscheduled.length,
+    needed,
+    available: budget * members.length,
+    overBy: Math.max(
+      0,
+      ...perPerson.map((p) => Math.round((p.needed - p.available) * 100) / 100),
+      0,
+    ),
+    unscheduled,
+    starts,
+    finishes,
+    perPerson,
+    from: new Date(base).toISOString(),
+    until: new Date(until).toISOString(),
+    dailyHours,
+    provisional: options.provisional ?? false,
+  };
+}
+
+export function seoulTime(iso: string) {
+  return new Date(Date.parse(iso) + 9 * 3600000)
+    .toISOString()
+    .slice(0, 16)
+    .replace('T', ' ');
 }
