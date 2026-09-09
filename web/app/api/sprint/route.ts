@@ -17,7 +17,7 @@ import {
   save,
   Conflict,
 } from '@/lib/sprint-store';
-import { validateHours, taskInput } from '@/lib/sprint';
+import { validateHours, taskInput, seoulTime } from '@/lib/sprint';
 import {
   assertProjectMutationAllowed,
   deadlineFrom,
@@ -25,7 +25,37 @@ import {
   startReadiness,
 } from '@/lib/sprint-policy';
 import { assertEvidence, completionCheck } from '@/lib/deliverables';
+import {
+  cancelStatements,
+  scheduleStatements,
+} from '@/lib/reminder-store';
 export const dynamic = 'force-dynamic';
+
+/**
+ * 승인된 업무 마감. 팀장의 명시적 입력만 확정하며, 프로젝트 최종 기한을 넘길 수 없다.
+ * 준비 중에는 최종 기한이 없으므로 마감을 미정으로만 둔다(독촉도 예약되지 않는다).
+ */
+function taskDueAt(
+  value: unknown,
+  policy: { deadlineAt: string | null },
+  now: Date,
+): string | null {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value !== 'string')
+    throw new PolicyError('업무 마감 형식이 올바르지 않습니다.');
+  const at = Date.parse(value);
+  if (!Number.isFinite(at))
+    throw new PolicyError('업무 마감 형식이 올바르지 않습니다.');
+  if (!policy.deadlineAt)
+    throw new PolicyError(
+      '스프린트를 시작한 뒤에 업무 마감을 지정할 수 있습니다.',
+    );
+  if (at > Date.parse(policy.deadlineAt))
+    throw new PolicyError('업무 마감은 프로젝트 최종 기한을 넘을 수 없습니다.');
+  if (at <= now.getTime())
+    throw new PolicyError('업무 마감은 현재 시각 이후여야 합니다.');
+  return new Date(at).toISOString();
+}
 function reply(value: unknown, status = 200) {
   return Response.json(value, {
     status,
@@ -234,6 +264,20 @@ export async function POST(request: Request) {
                 'UPDATE sprints SET start_date=?,deadline=? WHERE owner=?' + gate,
               )
               .bind(timestamp.slice(0, 10), deadline, id, id, m),
+            // 프로젝트 알림은 현재 팀원 각자에게 예약한다.
+            ...scheduleStatements(
+              id,
+              m,
+              members
+                .filter((x) => !x.leftAt)
+                .map((x) => ({
+                  kind: 'project' as const,
+                  userId: x.userId,
+                  deadlineVersion: 0,
+                  dueAt: deadline,
+                })),
+              now,
+            ),
           ];
         },
         ['draft'],
@@ -251,31 +295,50 @@ export async function POST(request: Request) {
         ? Math.max(0, ...s.tasks.map((t) => t.id)) + 1
         : existing!.id;
       const input = taskInput(b, s.tasks, taskId);
-      const assignee = (await readMembers(id)).find(
+      const teamNow = await readMembers(id);
+      const assignee = teamNow.find(
         (m) => m.person === input.person && !m.leftAt,
       );
       if (!assignee)
         throw new Error('참여 중인 팀원에게만 업무를 배정할 수 있습니다.');
+      // 승인된 업무 마감. 팀장의 명시적 입력만 확정하며 예상 종료와 별개다.
+      const dueAt = taskDueAt(b.dueAt, policy!, now);
+      const previous = existing ?? null;
+      const dueChanged = (previous?.dueAt ?? null) !== dueAt;
+      const personChanged = previous ? previous.person !== input.person : true;
+      const deadlineVersion =
+        (previous?.deadlineVersion ?? 0) + (dueChanged ? 1 : 0);
       await save(
         id,
         s,
         b.action,
-        `${input.title} · ${assignee.displayName} · 남은 ${input.remaining}h · 선행 ${input.dependsOn.join(', ') || '없음'}`,
+        `${input.title} · ${assignee.displayName} · 남은 ${input.remaining}h · 마감 ${dueAt ? seoulTime(dueAt) + ' KST' : '미정'} · 선행 ${input.dependsOn.join(', ') || '없음'}`,
         (m) => [
           creating
             ? db
                 .prepare(
-                  'INSERT INTO sprint_tasks(owner,id,title,person,remaining) SELECT owner,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
+                  'INSERT INTO sprint_tasks(owner,id,title,person,remaining,due_at,deadline_version) SELECT owner,?,?,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
                 )
-                .bind(taskId, input.title, input.person, input.remaining, id, m)
+                .bind(
+                  taskId,
+                  input.title,
+                  input.person,
+                  input.remaining,
+                  dueAt,
+                  deadlineVersion,
+                  id,
+                  m,
+                )
             : db
                 .prepare(
-                  'UPDATE sprint_tasks SET title=?,person=?,remaining=? WHERE owner=? AND id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+                  'UPDATE sprint_tasks SET title=?,person=?,remaining=?,due_at=?,deadline_version=? WHERE owner=? AND id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
                 )
                 .bind(
                   input.title,
                   input.person,
                   input.remaining,
+                  dueAt,
+                  deadlineVersion,
                   id,
                   taskId,
                   id,
@@ -293,6 +356,33 @@ export async function POST(request: Request) {
               )
               .bind(taskId, d, id, m),
           ),
+          // 마감이나 담당자가 바뀌면 이전 담당자의 미발송 예약을 취소하고
+          // 새 담당자에게 미래 단계만 다시 예약한다.
+          ...(dueChanged || personChanged
+            ? [
+                ...cancelStatements(id, m, {
+                  kind: 'task',
+                  taskId,
+                  reason: dueChanged ? '승인된 마감 변경' : '담당자 변경',
+                }),
+                ...(dueAt
+                  ? scheduleStatements(
+                      id,
+                      m,
+                      [
+                        {
+                          kind: 'task' as const,
+                          taskId,
+                          userId: assignee.userId,
+                          deadlineVersion,
+                          dueAt,
+                        },
+                      ],
+                      now,
+                    )
+                  : []),
+              ]
+            : []),
         ],
         [...open],
       );
@@ -358,12 +448,38 @@ export async function POST(request: Request) {
         t.status = 'in_progress';
       }
       t.done = b.done;
+      const assignedTo = (await readMembers(id)).find(
+        (m) => m.person === t.person,
+      );
       await save(
         id,
         s,
         'task',
         `${t.title} · ${t.done ? '기록 완료' : '다시 진행'}`,
-        () => [],
+        (m) =>
+          b.done
+            ? cancelStatements(id, m, {
+                kind: 'task',
+                taskId: t.id,
+                reason: '업무 완료',
+              })
+            : // 재개해도 이미 지난 단계는 소급 발송하지 않는다.
+              t.dueAt && assignedTo && !assignedTo.leftAt
+              ? scheduleStatements(
+                  id,
+                  m,
+                  [
+                    {
+                      kind: 'task' as const,
+                      taskId: t.id,
+                      userId: assignedTo.userId,
+                      deadlineVersion: t.deadlineVersion ?? 0,
+                      dueAt: t.dueAt,
+                    },
+                  ],
+                  now,
+                )
+              : [],
         [...open],
       );
     } else if (b.action === 'deliverableEvidence') {
@@ -446,6 +562,8 @@ export async function POST(request: Request) {
               "UPDATE project_policy SET lifecycle='completed',completed_at=? WHERE project_id=? AND lifecycle='active' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)",
             )
             .bind(timestamp, id, id, m),
+          // 완주하면 남은 모든 독촉을 중단한다.
+          ...cancelStatements(id, m, { reason: '프로젝트 완주' }),
         ],
         ['active'],
       );
@@ -464,6 +582,10 @@ export async function POST(request: Request) {
               'UPDATE project_members SET left_at=?,left_note=? WHERE project_id=? AND user_id=? AND left_at IS NULL AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
             )
             .bind(timestamp, b.note.trim(), id, user.id, id, m),
+          ...cancelStatements(id, m, {
+            userId: user.id,
+            reason: '참여 중단 보고',
+          }),
         ],
         [...open],
       );

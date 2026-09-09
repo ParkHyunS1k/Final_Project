@@ -81,6 +81,8 @@ export async function readSprint(owner: string): Promise<Sprint | null> {
       deferred: Boolean(t.deferred),
       done: Boolean(t.done),
       evidence: String(t.evidence),
+      dueAt: (t.due_at as string | null) ?? null,
+      deadlineVersion: Number(t.deadline_version ?? 0),
       dependsOn: results[2].results
         .filter((d) => d.task_id === t.id)
         .map((d) => Number(d.depends_on)),

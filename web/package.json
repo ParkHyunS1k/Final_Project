@@ -11,7 +11,7 @@
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",
-    "test": "node --experimental-strip-types --test tests/sprint.test.ts tests/sprint-policy.test.ts tests/api.test.mjs",
+    "test": "node --experimental-strip-types --test tests/sprint.test.ts tests/sprint-policy.test.ts tests/reminders.test.ts tests/api.test.mjs tests/reminder-dispatch.test.mjs",
     "db:migrate": "wrangler d1 migrations apply DB --local --config wrangler.local.jsonc",
     "db:generate": "drizzle-kit generate"
   },
