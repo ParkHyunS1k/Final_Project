@@ -83,6 +83,7 @@ export async function readSprint(owner: string): Promise<Sprint | null> {
       evidence: String(t.evidence),
       dueAt: (t.due_at as string | null) ?? null,
       deadlineVersion: Number(t.deadline_version ?? 0),
+      changeVersion: Number(t.change_version ?? 0),
       dependsOn: results[2].results
         .filter((d) => d.task_id === t.id)
         .map((d) => Number(d.depends_on)),
@@ -134,6 +135,23 @@ export async function initialize(owner: string) {
   await db.batch(statements);
   return (await readSprint(owner))!;
 }
+/**
+ * 업무 하나의 변경 버전을 올린다. 프로젝트 revision과 달리 업무 단위라서
+ * 다른 업무를 고쳐도 이 업무의 되돌리기를 막지 않는다.
+ */
+export function bumpTaskVersion(
+  projectId: string,
+  mutation: string,
+  taskId: number,
+) {
+  return database()
+    .prepare(
+      'UPDATE sprint_tasks SET change_version=change_version+1 WHERE owner=? AND id=?' +
+        ' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+    )
+    .bind(projectId, taskId, projectId, mutation);
+}
+
 export type Member = {
   userId: string;
   displayName: string;

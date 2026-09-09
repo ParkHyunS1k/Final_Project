@@ -67,22 +67,35 @@ export async function listProposals(projectId: string, limit = 10) {
   return rows.results;
 }
 
-export async function appliedTitlesFromSource(
-  projectId: string,
+/**
+ * 같은 원문에서 이미 만든 신규 업무를 식별하는 키.
+ * 제목만 비교하지 않고 원문과 근거 위치를 함께 쓴다.
+ */
+export function candidateKey(
   sourceId: string,
+  change: { evidence?: { start: number; end: number } | null; after: Record<string, unknown> },
 ) {
+  const e = change.evidence;
+  return e
+    ? `${sourceId}#${e.start}-${e.end}`
+    : `${sourceId}#title:${text(change.after.title)}`;
+}
+
+/** 되돌리지 않은 적용 기록에서 이미 만든 생성 후보 키를 모은다. */
+export async function appliedCandidateKeys(projectId: string, sourceId: string) {
   const rows = await database()
     .prepare(
-      'SELECT entries FROM ai_change_applications WHERE project_id=? AND source_id=? AND reverts IS NULL',
+      'SELECT id,entries FROM ai_change_applications WHERE project_id=? AND source_id=? AND reverts IS NULL' +
+        ' AND NOT EXISTS(SELECT 1 FROM ai_change_applications r WHERE r.project_id=ai_change_applications.project_id AND r.reverts=ai_change_applications.id)',
     )
     .bind(projectId, sourceId)
-    .all<{ entries: string }>();
-  const titles: string[] = [];
+    .all<{ id: string; entries: string }>();
+  const keys = new Set<string>();
   for (const r of rows.results)
     for (const e of JSON.parse(r.entries) as AppliedEntry[])
-      if (e.kind === 'createTask' && typeof e.after.title === 'string')
-        titles.push(e.after.title);
-  return titles;
+      if (e.kind === 'createTask' && typeof e.candidateKey === 'string')
+        keys.add(e.candidateKey);
+  return keys;
 }
 
 export type AppliedEntry = {
@@ -92,6 +105,8 @@ export type AppliedEntry = {
   before: Record<string, unknown>;
   after: Record<string, unknown>;
   edited: boolean;
+  // createTask에만 있다. 같은 원문의 재처리에서 중복 생성을 막는 식별자.
+  candidateKey?: string;
 };
 
 export type Selection = {
@@ -151,9 +166,10 @@ export type Prepared = {
  * 함께 적용해야 하는 항목을 모두 검사하고 하나라도 실패하면 전체를 거절한다.
  */
 export function prepareApplication(
-  proposal: { changes: StoredChange[] },
+  proposal: { changes: StoredChange[]; sourceId: string },
   selections: Selection[],
   ctx: Context,
+  appliedKeys: Set<string> = new Set(),
 ): Prepared {
   if (!Array.isArray(selections) || !selections.length)
     throw new PolicyError('적용할 항목을 선택해주세요.');
@@ -218,6 +234,12 @@ export function prepareApplication(
             `"${title}"이(가) 참조하는 선행 업무가 이 승인에 포함되지 않았습니다.`,
           );
       }
+      const key = candidateKey(proposal.sourceId, change);
+      // 승인 단계에서도 이미 적용한 생성 항목인지 다시 확인한다.
+      if (appliedKeys.has(key))
+        throw new PolicyError(
+          `"${title}"은(는) 이 원문에서 이미 적용한 신규 업무입니다. 항목을 제외하고 다시 승인해주세요.`,
+        );
       const taskId = newKeys.get(change.newKey!)!;
       creations.push({
         changeId: change.changeId,
@@ -233,8 +255,9 @@ export function prepareApplication(
         kind: change.kind,
         taskId,
         before: {},
-        after: { title, person, remaining, dependsOn },
+        after: { title, person, remaining, dependsOn, changeVersion: 0 },
         edited: wasEdited,
+        candidateKey: key,
       });
       continue;
     }
@@ -335,7 +358,11 @@ export function revertCandidates(
           reason: '결과물 근거가 기록된 업무는 자동으로 삭제하지 않습니다.',
           restore: {},
         };
+      // 생성 이후 이 업무에 어떤 수정이라도 있었으면 삭제하지 않는다.
+      // 프로젝트의 다른 업무 수정은 영향을 주지 않는다.
+      const created = Number(entry.after.changeVersion ?? 0);
       const changed =
+        Number(task.changeVersion ?? 0) !== created ||
         task.title !== entry.after.title ||
         task.person !== entry.after.person ||
         task.remaining !== entry.after.remaining;
@@ -343,7 +370,8 @@ export function revertCandidates(
         ? {
             entry,
             status: 'changed' as const,
-            reason: '적용 후 다른 수정이 있었습니다. 삭제할지 다시 검토해주세요.',
+            reason:
+              '생성 이후 이 업무의 설명·상태·마감·보고가 바뀌었습니다. 기록을 지우지 않으려면 삭제 대신 다시 검토해주세요.',
             restore: {},
           }
         : {

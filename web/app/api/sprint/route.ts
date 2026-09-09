@@ -14,6 +14,7 @@ import {
   readPolicy,
   readMembers,
   readDeliverables,
+  bumpTaskVersion,
   save,
   Conflict,
 } from '@/lib/sprint-store';
@@ -356,6 +357,7 @@ export async function POST(request: Request) {
               )
               .bind(taskId, d, id, m),
           ),
+          ...(creating ? [] : [bumpTaskVersion(id, m, taskId)]),
           // 마감이나 담당자가 바뀌면 이전 담당자의 미발송 예약을 취소하고
           // 새 담당자에게 미래 단계만 다시 예약한다.
           ...(dueChanged || personChanged
@@ -401,7 +403,7 @@ export async function POST(request: Request) {
         s,
         'taskDetails',
         `${t.title} · ${t.status === 'todo' ? '시작 전' : '진행 중'} · 남은 ${t.remaining}h · 상세 수정`,
-        () => [],
+        (m) => [bumpTaskVersion(id, m, t.id)],
         [...open],
       );
     } else if (b.action === 'checkin') {
@@ -429,6 +431,7 @@ export async function POST(request: Request) {
               id,
               m,
             ),
+          bumpTaskVersion(id, m, t.id),
         ],
         [...open],
       );
@@ -456,8 +459,9 @@ export async function POST(request: Request) {
         s,
         'task',
         `${t.title} · ${t.done ? '기록 완료' : '다시 진행'}`,
-        (m) =>
-          b.done
+        (m) => [
+          bumpTaskVersion(id, m, t.id),
+          ...(b.done
             ? cancelStatements(id, m, {
                 kind: 'task',
                 taskId: t.id,
@@ -479,7 +483,8 @@ export async function POST(request: Request) {
                   ],
                   now,
                 )
-              : [],
+              : []),
+        ],
         [...open],
       );
     } else if (b.action === 'deliverableEvidence') {

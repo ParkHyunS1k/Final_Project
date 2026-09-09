@@ -2,6 +2,7 @@
 // 검증을 통과한 항목도 사용자가 선택·승인해야만 적용된다.
 import { PolicyError } from './sprint-policy';
 import { validateHours } from './sprint';
+import { text } from './utils';
 
 export const PROMPT_VERSION = 'extract-v1';
 
@@ -114,7 +115,8 @@ function checkEvidence(body: string, evidence: Evidence | null | undefined) {
 export function validateChanges(
   raw: RawChange[],
   input: ExtractionInput,
-  appliedNewTitles: string[] = [],
+  // 같은 원문에서 이미 적용한 생성 후보 키. 제목만으로 판단하지 않는다.
+  appliedKeys: Set<string> = new Set(),
 ) {
   if (!Array.isArray(raw)) throw new PolicyError('모델 응답 형식이 올바르지 않습니다.');
   const changes: ValidChange[] = [];
@@ -132,6 +134,7 @@ export function validateChanges(
     let newKey: string | null = null;
     let needsReview = typeof c.needsReview === 'string' ? c.needsReview : '';
     let blocked = '';
+    let pendingKey = false;
     const source = (c.after ?? {}) as Record<string, unknown>;
     if (kind === 'createTask') {
       newKey = typeof c.newKey === 'string' && c.newKey ? c.newKey : `new${index}`;
@@ -159,10 +162,8 @@ export function validateChanges(
           )
         : [];
       // 같은 원문에서 이미 적용된 신규 업무는 자동으로 다시 만들지 않는다.
-      if (appliedNewTitles.includes(title)) {
-        blocked = '이 원문에서 이미 적용한 업무입니다.';
-        needsReview = needsReview || blocked;
-      }
+      // 판단 기준은 원문과 근거 위치이며, 되돌린 적용은 여기에 포함되지 않는다.
+      pendingKey = true;
     } else {
       if (typeof c.taskId !== 'number')
         return drop('대상 업무가 지정되지 않았습니다.');
@@ -216,6 +217,15 @@ export function validateChanges(
     const evidence = checkEvidence(body, c.evidence);
     if (c.evidence && !evidence)
       return drop('근거 위치가 원문과 일치하지 않습니다.');
+    if (pendingKey) {
+      const key = evidence
+        ? `${input.source.id}#${evidence.start}-${evidence.end}`
+        : `${input.source.id}#title:${text(after.title)}`;
+      if (appliedKeys.has(key)) {
+        blocked = '이 원문에서 이미 적용한 업무입니다.';
+        needsReview = needsReview || blocked;
+      }
+    }
     const basis: 'fact' | 'estimate' =
       c.basis === 'fact' && evidence ? 'fact' : 'estimate';
     if (kind === 'complete') {
