@@ -1,12 +1,30 @@
 import {
   identity,
   member,
+  actorOf,
   listProjects,
   projectState,
+  exportProject,
+  goalInput,
   AccessError,
 } from '@/lib/projects';
-import { database, readSprint, save, Conflict } from '@/lib/sprint-store';
-import { recovery, schedule, validateHours, taskInput } from '@/lib/sprint';
+import {
+  database,
+  readSprint,
+  readPolicy,
+  readMembers,
+  readDeliverables,
+  save,
+  Conflict,
+} from '@/lib/sprint-store';
+import { validateHours, taskInput } from '@/lib/sprint';
+import {
+  assertProjectMutationAllowed,
+  deadlineFrom,
+  PolicyError,
+  startReadiness,
+} from '@/lib/sprint-policy';
+import { assertEvidence, completionCheck } from '@/lib/deliverables';
 export const dynamic = 'force-dynamic';
 function reply(value: unknown, status = 200) {
   return Response.json(value, {
@@ -18,11 +36,13 @@ export async function GET(request: Request) {
   const user = identity(request);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   try {
+    const url = new URL(request.url);
     const projects = await listProjects(user);
-    const id =
-      new URL(request.url).searchParams.get('project') ||
-      String(projects[0]?.id || '');
+    const id = url.searchParams.get('project') || String(projects[0]?.id || '');
     if (!id) return reply({ error: '프로젝트를 먼저 만들어주세요.' }, 404);
+    // 마감·완주 이후에도 열람과 내보내기는 유지한다.
+    if (url.searchParams.get('format') === 'export')
+      return reply(await exportProject(id, user));
     return reply(await projectState(id, user));
   } catch (error) {
     if (error instanceof AccessError)
@@ -57,326 +77,408 @@ export async function POST(request: Request) {
         ? b.projectId
         : String(projects[0]?.id || '');
     const me = await member(id, user);
-    if (
-      ['approve', 'reject', 'finish', 'createTask', 'editTask'].includes(
-        b.action,
-      ) &&
-      me.role !== 'owner'
-    )
-      throw new AccessError('팀장만 실행할 수 있습니다.');
+    const actor = actorOf(me);
+    const policy = await readPolicy(id);
     const s = await readSprint(id);
     if (!s) return reply({ error: '프로젝트를 먼저 열어주세요.' }, 404);
-    if (b.revision !== s.revision) throw new Conflict();
-    if (s.finished) throw new Error('완료된 스프린트는 변경할 수 없습니다.');
+    const now = new Date();
     const db = database();
-    const timestamp = new Date().toISOString();
-    if (b.action === 'join') {
-      if (b.agreed !== true) throw new Error('참여 조건에 동의해주세요.');
-      s.joined = true;
+    const timestamp = now.toISOString();
+    // assignee 범위 action은 대상 업무의 담당자를 함께 검사한다.
+    const target =
+      typeof b.taskId === 'number'
+        ? s.tasks.find((t) => t.id === b.taskId)
+        : undefined;
+    assertProjectMutationAllowed({
+      policy,
+      actor,
+      action: b.action,
+      now,
+      assigneePerson: target?.person,
+      targetUserId: typeof b.userId === 'string' ? b.userId : user.id,
+    });
+    if (b.revision !== s.revision) throw new Conflict();
+    const open = ['draft', 'active'] as const;
+    if (b.action === 'agreeGoal') {
+      // 진행 중 참여자는 고정 목표에 동의할 뿐, 목표를 다시 열지 않는다.
+      if (b.goalVersion !== policy!.goalVersion)
+        throw new Conflict('목표가 다시 바뀌었습니다. 최신 내용을 확인해주세요.');
       await save(
         id,
         s,
-        'join',
-        '참여 조건 service-pilot-v1 확인 · 실제 결제 없음',
+        'agreeGoal',
+        `${me.display_name} · 목표 v${policy!.goalVersion} 동의`,
         (m) => [
           db
             .prepare(
-              'UPDATE project_members SET agreed_at=? WHERE project_id=? AND user_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+              'UPDATE project_members SET agreed_at=?,agreed_goal_version=? WHERE project_id=? AND user_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
             )
-            .bind(timestamp, id, user.id, id, m),
-        ],
-      );
-    } else {
-      if (!me.agreed_at) throw new Error('참여 조건을 먼저 확인해주세요.');
-      if (b.action === 'createTask' || b.action === 'editTask') {
-        const creating = b.action === 'createTask';
-        const existing = s.tasks.find((t) => t.id === b.taskId);
-        if (!creating && (!existing || existing.done || existing.deferred))
-          throw new Error('진행 중인 업무만 편집할 수 있습니다.');
-        if (creating && s.tasks.length >= 100)
-          throw new Error(
-            '한 스프린트에는 최대 100개의 업무를 등록할 수 있습니다.',
-          );
-        const taskId = creating
-          ? Math.max(0, ...s.tasks.map((t) => t.id)) + 1
-          : existing!.id;
-        const input = taskInput(b, s.tasks, taskId);
-        const assignee = await db
-          .prepare(
-            'SELECT display_name FROM project_members WHERE project_id=? AND person=?',
-          )
-          .bind(id, input.person)
-          .first<{ display_name: string }>();
-        if (!assignee)
-          throw new Error(
-            '초대를 수락한 팀원에게만 업무를 배정할 수 있습니다.',
-          );
-        await save(
-          id,
-          s,
-          b.action,
-          `${input.title} · ${assignee.display_name} · 남은 ${input.remaining}h · ${input.optional ? '부가' : '필수'} · 선행 ${input.dependsOn.join(', ') || '없음'}`,
-          (m) => [
-            creating
-              ? db
-                  .prepare(
-                    'INSERT INTO sprint_tasks(owner,id,title,person,remaining,optional) SELECT owner,?,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
-                  )
-                  .bind(
-                    taskId,
-                    input.title,
-                    input.person,
-                    input.remaining,
-                    Number(input.optional),
-                    id,
-                    m,
-                  )
-              : db
-                  .prepare(
-                    'UPDATE sprint_tasks SET title=?,person=?,remaining=?,optional=? WHERE owner=? AND id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
-                  )
-                  .bind(
-                    input.title,
-                    input.person,
-                    input.remaining,
-                    Number(input.optional),
-                    id,
-                    taskId,
-                    id,
-                    m,
-                  ),
-            db
-              .prepare(
-                'DELETE FROM sprint_dependencies WHERE owner=? AND task_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
-              )
-              .bind(id, taskId, id, m),
-            ...input.dependsOn.map((d) =>
-              db
-                .prepare(
-                  'INSERT INTO sprint_dependencies(owner,task_id,depends_on) SELECT owner,?,? FROM sprints WHERE owner=? AND mutation=?',
-                )
-                .bind(taskId, d, id, m),
+            .bind(
+              timestamp,
+              policy!.goalVersion,
+              id,
+              user.id,
+              id,
+              m,
             ),
-          ],
-        );
-      } else if (b.action === 'taskDetails') {
-        const t = s.tasks.find(
-          (t) => t.id === b.taskId && !t.deferred && !t.done,
-        );
-        if (!t) throw new Error('진행 중인 업무만 수정할 수 있습니다.');
-        if (me.role !== 'owner' && t.person !== me.person)
-          throw new AccessError('본인의 업무만 변경할 수 있습니다.');
-        if (b.status !== 'todo' && b.status !== 'in_progress')
-          throw new Error('시작 전 또는 진행 중 상태를 선택해주세요.');
-        if (typeof b.description !== 'string' || b.description.length > 10000)
-          throw new Error('업무 설명은 10000자 이내로 입력해주세요.');
-        t.status = b.status;
-        t.description = b.description;
-        t.remaining = validateHours(b.remaining);
-        await save(
-          id,
-          s,
-          'taskDetails',
-          `${t.title} · ${t.status === 'todo' ? '시작 전' : '진행 중'} · 남은 ${t.remaining}h · 상세 수정`,
-        );
-      } else if (b.action === 'checkin') {
-        const t = s.tasks.find(
-          (t) => t.id === b.taskId && !t.done && !t.deferred,
-        );
-        if (!t) throw new Error('진행 중인 업무를 선택해주세요.');
-        if (me.role !== 'owner' && t.person !== me.person)
-          throw new AccessError('본인의 업무만 변경할 수 있습니다.');
-        if (
-          typeof b.note !== 'string' ||
-          !b.note.trim() ||
-          b.note.length > 1000
-        )
-          throw new Error('체크인 내용을 1~1000자로 입력해주세요.');
-        t.remaining = validateHours(b.remaining);
-        await save(
-          id,
-          s,
-          'checkin',
-          `${t.title} · 남은 ${t.remaining}시간`,
-          (m) => [
+        ],
+        [...open],
+      );
+    } else if (b.action === 'editGoal') {
+      const v = goalInput(b);
+      const version = policy!.goalVersion + 1;
+      s.title = v.title;
+      await save(
+        id,
+        s,
+        'editGoal',
+        `목표 v${version} 편집 · 전원 재동의 필요`,
+        (m) => {
+          const gate =
+            ' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)';
+          return [
             db
               .prepare(
-                'INSERT INTO sprint_checkins(id,owner,task_id,note,remaining,created_at) SELECT ?,owner,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
+                'UPDATE sprints SET title=? WHERE owner=?' + gate,
+              )
+              .bind(v.title, id, id, m),
+            db
+              .prepare(
+                'UPDATE project_policy SET goal_version=?,duration_days=? WHERE project_id=?' +
+                  gate,
+              )
+              .bind(version, v.duration, id, id, m),
+            db
+              .prepare(
+                'UPDATE project_agreement SET goal_version=?,title=?,goal=?,scope=?,completion_criteria=? WHERE project_id=?' +
+                  gate,
+              )
+              .bind(version, v.title, v.goal, v.scope, v.completion, id, id, m),
+            db
+              .prepare(
+                'UPDATE project_details SET goal=?,deliverables=?,completion_criteria=? WHERE project_id=?' +
+                  gate,
               )
               .bind(
-                crypto.randomUUID(),
-                t.id,
-                b.note.trim(),
-                t.remaining,
-                timestamp,
+                v.goal,
+                JSON.stringify(v.deliverables),
+                v.completion,
+                id,
                 id,
                 m,
               ),
-          ],
-        );
-      } else if (b.action === 'capacity') {
-        if (me.role !== 'owner' && b.person !== me.person)
-          throw new AccessError('본인의 가용시간만 변경할 수 있습니다.');
-        const c = s.capacity.find(
-          (c) => c.person === b.person && c.date === b.date,
-        );
-        if (!c) throw new Error('스프린트 안의 팀원과 날짜를 선택해주세요.');
-        c.hours = validateHours(b.hours);
-        if (c.hours > 12) throw new Error('하루 작업시간은 0~12시간입니다.');
-        await save(
-          id,
-          s,
-          'capacity',
-          `${c.date} · 팀원 ${c.person + 1} 가용시간 ${c.hours}h`,
-        );
-      } else if (b.action === 'task') {
-        const t = s.tasks.find((t) => t.id === b.taskId && !t.deferred);
-        if (!t) throw new Error('업무를 찾을 수 없습니다.');
-        if (me.role !== 'owner' && t.person !== me.person)
-          throw new AccessError('본인의 업무만 변경할 수 있습니다.');
-        if (typeof b.done !== 'boolean')
-          throw new Error('완료 상태가 올바르지 않습니다.');
-        if (b.done) {
-          if (
-            typeof b.evidence !== 'string' ||
-            b.evidence.trim().length < 5 ||
-            b.evidence.length > 2000
-          )
-            throw new Error('검증 결과나 결과물 링크를 5~2000자로 남겨주세요.');
-          t.evidence = b.evidence.trim();
-          t.remaining = 0;
-        } else {
-          t.remaining = validateHours(b.remaining);
-          if (t.remaining === 0)
-            throw new Error('다시 진행할 업무의 남은 시간을 입력해주세요.');
-          t.evidence = '';
-          t.status = 'in_progress';
-        }
-        t.done = b.done;
-        await save(
-          id,
-          s,
-          'task',
-          `${t.title} · ${t.done ? '결과 확인' : '다시 진행'}`,
-        );
-      } else if (b.action === 'propose') {
-        const plan = recovery(s);
-        if (!plan)
-          throw new Error(
-            schedule(s).feasible
-              ? '현재 계획은 마감 안에 배치됩니다.'
-              : '부가 기능을 미뤄도 마감을 지키기 어렵습니다. 필수 범위나 가용시간을 팀과 다시 합의해주세요.',
-          );
-        const proposalId = crypto.randomUUID();
-        await save(
-          id,
-          s,
-          'propose',
-          '가용시간과 의존관계에 따른 범위 축소안 생성',
-          (m) => [
+            // 편집한 팀장은 새 버전에 동의한 상태, 나머지는 재동의 대상이다.
             db
               .prepare(
-                "UPDATE sprint_proposals SET status='superseded' WHERE owner=? AND status='pending' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)",
+                'UPDATE project_members SET agreed_goal_version=? WHERE project_id=? AND user_id=?' +
+                  gate,
+              )
+              .bind(version, id, user.id, id, m),
+            db
+              .prepare(
+                'DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL' +
+                  gate,
               )
               .bind(id, id, m),
+            ...v.deliverables.map((title, i) =>
+              db
+                .prepare(
+                  'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) SELECT owner,?,?,? FROM sprints WHERE owner=? AND mutation=?',
+                )
+                .bind('d_' + crypto.randomUUID(), i, title, id, m),
+            ),
+          ];
+        },
+        ['draft'],
+      );
+    } else if (b.action === 'start') {
+      const members = await readMembers(id);
+      const deliverables = await readDeliverables(id);
+      const check = startReadiness(
+        members,
+        policy!.goalVersion,
+        deliverables.length,
+      );
+      if (!check.ready) throw new PolicyError(check.missing.join(' '));
+      const deadline = deadlineFrom(now, policy!.durationDays);
+      await save(
+        id,
+        s,
+        'start',
+        `스프린트 시작 · ${policy!.durationDays}일 · 마감 ${deadline}`,
+        (m) => {
+          const gate =
+            ' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)';
+          return [
+            // 중복 시작은 lifecycle 조건에서 걸러지고 기한을 다시 계산하지 않는다.
             db
               .prepare(
-                "INSERT INTO sprint_proposals(id,owner,base_revision,defer_ids,status,created_at) SELECT ?,owner,revision,?,'pending',? FROM sprints WHERE owner=? AND mutation=?",
+                "UPDATE project_policy SET lifecycle='active',started_at=?,deadline_at=? WHERE project_id=? AND lifecycle='draft'" +
+                  gate,
               )
-              .bind(
-                proposalId,
-                JSON.stringify(plan.deferIds),
-                timestamp,
-                id,
-                m,
-              ),
-          ],
+              .bind(timestamp, deadline, id, id, m),
+            db
+              .prepare(
+                'UPDATE project_agreement SET fixed_at=? WHERE project_id=?' +
+                  gate,
+              )
+              .bind(timestamp, id, id, m),
+            db
+              .prepare(
+                'UPDATE project_deliverables SET fixed_at=? WHERE project_id=? AND fixed_at IS NULL' +
+                  gate,
+              )
+              .bind(timestamp, id, id, m),
+            db
+              .prepare(
+                'UPDATE sprints SET start_date=?,deadline=? WHERE owner=?' + gate,
+              )
+              .bind(timestamp.slice(0, 10), deadline, id, id, m),
+          ];
+        },
+        ['draft'],
+      );
+    } else if (b.action === 'createTask' || b.action === 'editTask') {
+      const creating = b.action === 'createTask';
+      const existing = s.tasks.find((t) => t.id === b.taskId);
+      if (!creating && (!existing || existing.done))
+        throw new Error('진행 중인 업무만 편집할 수 있습니다.');
+      if (creating && s.tasks.length >= 100)
+        throw new Error(
+          '한 스프린트에는 최대 100개의 업무를 등록할 수 있습니다.',
         );
-      } else if (b.action === 'approve' || b.action === 'reject') {
-        if (typeof b.proposalId !== 'string')
-          throw new Error('제안을 선택해주세요.');
-        const proposal = await db
-          .prepare('SELECT * FROM sprint_proposals WHERE owner=? AND id=?')
-          .bind(id, b.proposalId)
-          .first();
-        if (!proposal || proposal.status !== 'pending')
-          throw new Error('대기 중인 제안이 아닙니다.');
-        if (Number(proposal.base_revision) !== s.revision) throw new Conflict();
-        const ids = JSON.parse(String(proposal.defer_ids)) as number[];
-        if (b.action === 'approve') {
-          if (
-            ids.some(
-              (taskId) =>
-                !s.tasks.some(
-                  (t) =>
-                    t.id === taskId && t.optional && !t.done && !t.deferred,
+      const taskId = creating
+        ? Math.max(0, ...s.tasks.map((t) => t.id)) + 1
+        : existing!.id;
+      const input = taskInput(b, s.tasks, taskId);
+      const assignee = (await readMembers(id)).find(
+        (m) => m.person === input.person && !m.leftAt,
+      );
+      if (!assignee)
+        throw new Error('참여 중인 팀원에게만 업무를 배정할 수 있습니다.');
+      await save(
+        id,
+        s,
+        b.action,
+        `${input.title} · ${assignee.displayName} · 남은 ${input.remaining}h · 선행 ${input.dependsOn.join(', ') || '없음'}`,
+        (m) => [
+          creating
+            ? db
+                .prepare(
+                  'INSERT INTO sprint_tasks(owner,id,title,person,remaining) SELECT owner,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
+                )
+                .bind(taskId, input.title, input.person, input.remaining, id, m)
+            : db
+                .prepare(
+                  'UPDATE sprint_tasks SET title=?,person=?,remaining=? WHERE owner=? AND id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+                )
+                .bind(
+                  input.title,
+                  input.person,
+                  input.remaining,
+                  id,
+                  taskId,
+                  id,
+                  m,
                 ),
+          db
+            .prepare(
+              'DELETE FROM sprint_dependencies WHERE owner=? AND task_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
             )
-          )
-            throw new Error('제안의 업무 상태가 바뀌었습니다.');
-          s.tasks = s.tasks.map((t) =>
-            ids.includes(t.id) ? { ...t, deferred: true } : t,
-          );
-          if (!schedule(s).feasible)
-            throw new Error(
-              '현재 시점에는 이 복구안으로 마감을 지킬 수 없습니다. 다시 계산해주세요.',
-            );
-        }
-        await save(
-          id,
-          s,
-          b.action,
-          b.action === 'approve'
-            ? `다음 스프린트로 이동: ${ids.join(', ')}`
-            : '복구안 거절',
-          (m) => [
+            .bind(id, taskId, id, m),
+          ...input.dependsOn.map((d) =>
             db
               .prepare(
-                'UPDATE sprint_proposals SET status=? WHERE owner=? AND id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+                'INSERT INTO sprint_dependencies(owner,task_id,depends_on) SELECT owner,?,? FROM sprints WHERE owner=? AND mutation=?',
               )
-              .bind(
-                b.action === 'approve' ? 'approved' : 'rejected',
-                id,
-                b.proposalId,
-                id,
-                m,
-              ),
-          ],
+              .bind(taskId, d, id, m),
+          ),
+        ],
+        [...open],
+      );
+    } else if (b.action === 'taskDetails') {
+      const t = s.tasks.find((t) => t.id === b.taskId && !t.done);
+      if (!t) throw new Error('진행 중인 업무만 수정할 수 있습니다.');
+      if (b.status !== 'todo' && b.status !== 'in_progress')
+        throw new Error('시작 전 또는 진행 중 상태를 선택해주세요.');
+      if (typeof b.description !== 'string' || b.description.length > 10000)
+        throw new Error('업무 설명은 10000자 이내로 입력해주세요.');
+      t.status = b.status;
+      t.description = b.description;
+      t.remaining = validateHours(b.remaining);
+      await save(
+        id,
+        s,
+        'taskDetails',
+        `${t.title} · ${t.status === 'todo' ? '시작 전' : '진행 중'} · 남은 ${t.remaining}h · 상세 수정`,
+        () => [],
+        [...open],
+      );
+    } else if (b.action === 'checkin') {
+      const t = s.tasks.find((t) => t.id === b.taskId && !t.done);
+      if (!t) throw new Error('진행 중인 업무를 선택해주세요.');
+      if (typeof b.note !== 'string' || !b.note.trim() || b.note.length > 1000)
+        throw new Error('체크인 내용을 1~1000자로 입력해주세요.');
+      t.remaining = validateHours(b.remaining);
+      await save(
+        id,
+        s,
+        'checkin',
+        `${t.title} · 남은 ${t.remaining}시간`,
+        (m) => [
+          db
+            .prepare(
+              'INSERT INTO sprint_checkins(id,owner,task_id,note,remaining,created_at) SELECT ?,owner,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
+            )
+            .bind(
+              crypto.randomUUID(),
+              t.id,
+              b.note.trim(),
+              t.remaining,
+              timestamp,
+              id,
+              m,
+            ),
+        ],
+        [...open],
+      );
+    } else if (b.action === 'task') {
+      const t = s.tasks.find((t) => t.id === b.taskId);
+      if (!t) throw new Error('업무를 찾을 수 없습니다.');
+      if (typeof b.done !== 'boolean')
+        throw new Error('완료 상태가 올바르지 않습니다.');
+      if (b.done) {
+        t.evidence = assertEvidence(b.evidence);
+        t.remaining = 0;
+      } else {
+        t.remaining = validateHours(b.remaining);
+        if (t.remaining === 0)
+          throw new Error('다시 진행할 업무의 남은 시간을 입력해주세요.');
+        t.evidence = '';
+        t.status = 'in_progress';
+      }
+      t.done = b.done;
+      await save(
+        id,
+        s,
+        'task',
+        `${t.title} · ${t.done ? '기록 완료' : '다시 진행'}`,
+        () => [],
+        [...open],
+      );
+    } else if (b.action === 'deliverableEvidence') {
+      const list = await readDeliverables(id);
+      const d = list.find((d) => d.deliverableId === b.deliverableId);
+      if (!d) throw new Error('결과물을 찾을 수 없습니다.');
+      const evidence = assertEvidence(b.evidence);
+      await save(
+        id,
+        s,
+        'deliverableEvidence',
+        `${d.title} · 근거 기록`,
+        (m) => [
+          // 증빙을 바꿔도 시작 시 고정한 제목·순서는 변하지 않는다.
+          db
+            .prepare(
+              'UPDATE project_deliverables SET evidence=?,evidence_by=?,evidence_at=?,confirmed=0,confirmed_by=NULL,confirmed_at=NULL WHERE project_id=? AND deliverable_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+            )
+            .bind(
+              evidence,
+              user.id,
+              timestamp,
+              id,
+              d.deliverableId,
+              id,
+              m,
+            ),
+        ],
+        [...open],
+      );
+    } else if (b.action === 'deliverableConfirm') {
+      const list = await readDeliverables(id);
+      const d = list.find((d) => d.deliverableId === b.deliverableId);
+      if (!d) throw new Error('결과물을 찾을 수 없습니다.');
+      if (typeof b.confirmed !== 'boolean')
+        throw new Error('확인 여부를 선택해주세요.');
+      if (b.confirmed && d.evidence.trim().length < 5)
+        throw new Error('근거가 기록된 결과물만 확인할 수 있습니다.');
+      await save(
+        id,
+        s,
+        'deliverableConfirm',
+        // 팀장이 사람의 판단으로 확인한다. AI가 증빙의 진실성을 보증하지 않는다.
+        `${d.title} · 팀장 ${b.confirmed ? '확인' : '확인 취소'}`,
+        (m) => [
+          db
+            .prepare(
+              'UPDATE project_deliverables SET confirmed=?,confirmed_by=?,confirmed_at=? WHERE project_id=? AND deliverable_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+            )
+            .bind(
+              Number(b.confirmed),
+              b.confirmed ? user.id : null,
+              b.confirmed ? timestamp : null,
+              id,
+              d.deliverableId,
+              id,
+              m,
+            ),
+        ],
+        [...open],
+      );
+    } else if (b.action === 'finish') {
+      // 완주 판정은 결과물 확인만 본다. 체크인 수·업무 수는 조건이 아니다.
+      const check = completionCheck(await readDeliverables(id));
+      if (!check.ready)
+        throw new PolicyError(
+          check.total
+            ? `아직 확인되지 않은 필수 결과물이 있습니다: ${check.missing.join(', ')}`
+            : '확인할 필수 결과물이 없습니다.',
         );
-      } else if (b.action === 'finish') {
-        const checkin = await db
-          .prepare('SELECT id FROM sprint_checkins WHERE owner=? LIMIT 1')
-          .bind(id)
-          .first();
-        if (
-          !s.tasks.some((t) => !t.deferred) ||
-          !checkin ||
-          s.tasks.some(
-            (t) => !t.deferred && (!t.done || t.evidence.trim().length < 5),
-          )
-        )
-          throw new Error('체크인과 모든 필수 결과물 확인을 마쳐주세요.');
-        if (Date.now() > Date.parse(s.deadline))
-          throw new Error(
-            '마감이 지난 스프린트입니다. 기한 내 완주로 처리할 수 없습니다.',
-          );
-        s.finished = true;
-        await save(
-          id,
-          s,
-          'finish',
-          '기한 내 결과물 확인 완료 · 금전 환급은 운영자 검토 전',
-        );
-      } else throw new Error('지원하지 않는 작업입니다.');
-    }
+      s.finished = true;
+      await save(
+        id,
+        s,
+        'finish',
+        '기한 내 합의 결과물 전체 확인 · 금전 환급은 운영자 검토 전',
+        (m) => [
+          db
+            .prepare(
+              "UPDATE project_policy SET lifecycle='completed',completed_at=? WHERE project_id=? AND lifecycle='active' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)",
+            )
+            .bind(timestamp, id, id, m),
+        ],
+        ['active'],
+      );
+    } else if (b.action === 'stepBack') {
+      // 당사자가 알리고, 남은 팀 기준의 변경안은 팀장이 검토한다. 자동 재배정은 없다.
+      if (typeof b.note !== 'string' || !b.note.trim() || b.note.length > 1000)
+        throw new Error('참여 중단 사유를 1~1000자로 남겨주세요.');
+      await save(
+        id,
+        s,
+        'stepBack',
+        `${me.display_name} · 참여 중단 보고`,
+        (m) => [
+          db
+            .prepare(
+              'UPDATE project_members SET left_at=?,left_note=? WHERE project_id=? AND user_id=? AND left_at IS NULL AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+            )
+            .bind(timestamp, b.note.trim(), id, user.id, id, m),
+        ],
+        [...open],
+      );
+    } else throw new Error('지원하지 않는 작업입니다.');
     return reply(await projectState(id, user));
   } catch (error) {
     if (error instanceof AccessError)
+      return reply({ error: error.message }, error.status);
+    if (error instanceof PolicyError)
       return reply({ error: error.message }, error.status);
     if (error instanceof Conflict)
       return reply(
         {
           error:
+            error.message ||
             '다른 변경이 있거나 오래된 제안입니다. 최신 상태를 불러온 뒤 다시 검토해주세요.',
         },
         409,

@@ -33,25 +33,66 @@ import {
 } from '@/components/ui/native-select';
 import {
   people as samplePeople,
-  dates,
-  schedule,
+  seoulTime,
   type Sprint,
+  type Plan,
   type Schedule,
   type Task,
 } from '@/lib/sprint';
 
-type Proposal = {
-  id: string;
-  base_revision: number;
-  defer_ids: string;
-  status: string;
-  created_at: string;
+export type Lifecycle =
+  | 'legacy'
+  | 'draft'
+  | 'active'
+  | 'completed'
+  | 'expired';
+export type Deliverable = {
+  deliverableId: string;
+  position: number;
+  title: string;
+  fixedAt: string | null;
+  evidence: string;
+  evidenceBy: string | null;
+  evidenceAt: string | null;
+  confirmed: boolean;
+  confirmedBy: string | null;
+  confirmedAt: string | null;
 };
 type State = ProjectMeta & {
   asOf: string;
+  lifecycle: Lifecycle;
+  policy: {
+    goalVersion: number;
+    durationDays: number;
+    dailyHours: number;
+    startedAt: string | null;
+    deadlineAt: string | null;
+    completedAt: string | null;
+  } | null;
+  agreement: {
+    goal_version: number;
+    title: string;
+    goal: string;
+    scope: string;
+    completion_criteria: string;
+    fixed_at: string;
+  } | null;
+  deliverables: Deliverable[];
+  completion: {
+    ready: boolean;
+    total: number;
+    confirmed: number;
+    missing: string[];
+  };
+  readiness: {
+    ready: boolean;
+    joined: number;
+    agreed: number;
+    missing: string[];
+  } | null;
+  plan: Plan | null;
+  legacySchedule: Schedule | null;
   sprint: Sprint;
-  schedule: Schedule;
-  proposal: Proposal | null;
   checkins: {
     id: string;
     task_id: number;
@@ -66,7 +107,7 @@ type State = ProjectMeta & {
     created_at: string;
   }[];
 };
-type Modal = 'join' | 'checkin' | 'recovery' | null;
+type Modal = 'checkin' | 'stepBack' | 'evidence' | null;
 export default function Home() {
   return (
     <ProjectWorkspace>
@@ -76,6 +117,25 @@ export default function Home() {
     </ProjectWorkspace>
   );
 }
+const PHASE: Record<Lifecycle, { label: string; note: string }> = {
+  legacy: {
+    label: '이전 기록',
+    note: '이전 규칙으로 만든 기록입니다. 열람과 내보내기만 할 수 있습니다.',
+  },
+  draft: {
+    label: '준비 중',
+    note: '아직 스프린트 기간이 소모되지 않습니다. 팀장이 시작해야 기한이 확정됩니다.',
+  },
+  active: { label: '진행 중', note: '' },
+  completed: {
+    label: '완주',
+    note: '합의한 결과물을 모두 확인했습니다. 이후 변경은 저장되지 않습니다.',
+  },
+  expired: {
+    label: '기한 종료',
+    note: '마감이 지나 모든 변경이 잠겼습니다. 열람과 내보내기는 계속할 수 있습니다.',
+  },
+};
 function Dashboard({
   projectId,
   tab,
@@ -96,9 +156,8 @@ function Dashboard({
   const [note, setNote] = useState('');
   const [taskId, setTaskId] = useState(1);
   const [remaining, setRemaining] = useState(2);
-  const [person, setPerson] = useState(0);
-  const [capacityDate, setCapacityDate] = useState('');
-  const [hours, setHours] = useState(2);
+  const [evidenceId, setEvidenceId] = useState('');
+  const [evidence, setEvidence] = useState('');
   const [editingTask, setEditingTask] = useState<Task | null | undefined>(
     undefined,
   );
@@ -127,11 +186,6 @@ function Dashboard({
         if (res.status === 401) setNeedsLogin(true);
         if (!res.ok) throw new Error(body.error ?? '불러오지 못했습니다.');
         setState(body);
-        setPerson(body.me.person);
-        setHours(
-          body.sprint.capacity.find((c) => c.person === body.me.person)
-            ?.hours ?? 0,
-        );
       })
       .catch((e) => {
         if (!c.signal.aborted) setError(e.message);
@@ -172,24 +226,13 @@ function Dashboard({
               properties: {
                 view: {
                   type: 'string',
-                  enum: ['today', 'plan', 'team', 'refund', 'mine', 'docs'],
+                  enum: workspaceViews.map((v) => v.id),
                 },
               },
               required: ['view'],
-              additionalProperties: false,
             },
-            annotations: { readOnlyHint: false, untrustedContentHint: false },
-            execute(input: unknown) {
-              if (
-                !input ||
-                typeof input !== 'object' ||
-                Object.keys(input).length !== 1 ||
-                !('view' in input) ||
-                typeof input.view !== 'string' ||
-                !['today', 'plan', 'team', 'refund', 'mine', 'docs'].includes(
-                  input.view,
-                )
-              )
+            async execute(input: { view: string }) {
+              if (!workspaceViews.some((v) => v.id === input.view))
                 throw new Error('Invalid view');
               setTab(input.view);
               return { requestedView: input.view };
@@ -260,13 +303,38 @@ function Dashboard({
       setBusy(false);
     }
   }
+  async function exportProject() {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(
+        '/api/sprint?project=' + encodeURIComponent(projectId) + '&format=export',
+        { cache: 'no-store' },
+      );
+      const body = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? '내보내지 못했습니다.');
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(body, null, 2)], {
+          type: 'application/json',
+        }),
+      );
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `projectmate-${projectId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setNotice('시작 합의·결과물·업무·변경 기록을 내보냈습니다.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '내보내지 못했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  }
   function openCheckin() {
     if (!state) return;
     const t = state.sprint.tasks.find(
       (t) =>
-        !t.done &&
-        !t.deferred &&
-        (state.me.role === 'owner' || t.person === state.me.person),
+        !t.done && (state.me.role === 'owner' || t.person === state.me.person),
     );
     if (!t) {
       setNotice('본인에게 배정된 진행 중인 업무가 없습니다.');
@@ -280,47 +348,29 @@ function Dashboard({
   const s = state?.sprint;
   const people = s?.people ?? samplePeople;
   const isOwner = state?.me.role === 'owner';
-  const plan = state?.schedule;
-  const active = s?.tasks.filter((t) => !t.deferred) ?? [];
-  const done = active.filter((t) => t.done).length;
-  const progress = active.length ? Math.round((done / active.length) * 100) : 0;
-  const proposal = state?.proposal;
-  const proposalCurrent =
-    proposal?.status === 'pending' && proposal.base_revision === s?.revision;
-  const deferIds = proposal ? (JSON.parse(proposal.defer_ids) as number[]) : [];
-  const after =
-    s && proposal
-      ? schedule(
-          {
-            ...s,
-            tasks: s.tasks.map((t) =>
-              deferIds.includes(t.id) ? { ...t, deferred: true } : t,
-            ),
-          },
-          new Date(state?.asOf ?? '1970-01-01'),
-        )
-      : null;
-  const days = s ? dates(s.startDate, s.deadline.slice(0, 10)) : [];
-  const remainingDays = s
-    ? Math.max(
-        0,
-        Math.ceil(
-          (Date.parse(s.deadline) - Date.parse(state?.asOf ?? '1970-01-01')) /
-            86400000,
-        ),
-      )
+  const plan = state?.plan;
+  const lifecycle = state?.lifecycle ?? 'draft';
+  const writable = lifecycle === 'draft' || lifecycle === 'active';
+  const agreedToGoal =
+    !!state?.policy &&
+    state.me.agreedGoalVersion === state.policy.goalVersion &&
+    !state.me.leftAt;
+  const tasks = s?.tasks ?? [];
+  const done = tasks.filter((t) => t.done).length;
+  const progress = state?.completion.total
+    ? Math.round((state.completion.confirmed / state.completion.total) * 100)
     : 0;
-  const finished = s?.finished ?? false;
-  const joined = Boolean(state?.me.agreedAt);
-  const canFinish =
-    joined &&
-    Boolean(state?.checkins.length) &&
-    active.length > 0 &&
-    done === active.length;
+  const deadline = state?.policy?.deadlineAt ?? null;
+  const remainingHours = deadline
+    ? (Date.parse(deadline) - Date.parse(state?.asOf ?? '1970-01-01')) / 3600000
+    : null;
+  const remainingDays =
+    remainingHours === null ? null : Math.max(0, Math.ceil(remainingHours / 24));
+  const phase = PHASE[lifecycle];
   return (
     <div className="app-shell">
       <div className="work-main">
-        {!s || !plan ? (
+        {!s ? (
           <section className="agent-card">
             <h1>스프린트 작업 공간</h1>
             {needsLogin && (
@@ -344,7 +394,11 @@ function Dashboard({
             <header className="work-heading">
               <div>
                 <p className="work-kicker">
-                  {s.startDate} — {s.deadline.slice(0, 10)} · 18:00 KST
+                  {lifecycle === 'legacy'
+                    ? '이전 규칙으로 만든 기록'
+                    : deadline
+                      ? `시작 ${seoulTime(state!.policy!.startedAt!)} · 마감 ${seoulTime(deadline)} KST`
+                      : `시작하면 그 시각부터 ${state?.policy?.durationDays ?? 7}일`}
                 </p>
                 <h1>
                   {workspaceViews.find((v) => v.id === tab)?.label ??
@@ -353,8 +407,11 @@ function Dashboard({
               </div>
               <div className="work-heading-actions">
                 <span className="pill">
-                  {finished ? '완주' : `D−${remainingDays}`} · {done}/
-                  {active.length} 완료
+                  {lifecycle === 'active'
+                    ? `D−${remainingDays}`
+                    : phase.label}{' '}
+                  · 결과물 {state!.completion.confirmed}/
+                  {state!.completion.total} 확인
                 </span>
                 <button
                   className="icon-btn"
@@ -364,16 +421,105 @@ function Dashboard({
                 >
                   <RefreshCw size={17} />
                 </button>
-                <button
-                  className="btn"
-                  disabled={busy || finished}
-                  onClick={() => (joined ? openCheckin() : setDialog('join'))}
-                >
-                  {joined ? '체크인' : '참여 조건 확인'}
+                <button className="btn" disabled={busy} onClick={exportProject}>
+                  내보내기
                 </button>
+                {writable && agreedToGoal && (
+                  <button className="btn" disabled={busy} onClick={openCheckin}>
+                    체크인
+                  </button>
+                )}
               </div>
             </header>
-            {tab === 'docs' && <ProjectDetails state={state} refresh={load} />}
+            {phase.note && (
+              <output className="work-health">
+                <span
+                  className={`status-dot ${writable ? 'status-in_progress' : 'status-done'}`}
+                />
+                {phase.note}
+              </output>
+            )}
+            {state!.policy && !agreedToGoal && !state!.me.leftAt && (
+              <section className="project-panel">
+                <h2>최신 목표와 완료 기준을 확인해주세요.</h2>
+                <p>
+                  목표 v{state!.policy.goalVersion}에 동의해야 업무를 변경할 수
+                  있습니다. 동의 전에는 읽기만 가능합니다.
+                </p>
+                <p>
+                  <b>목표</b> {state!.agreement?.goal}
+                </p>
+                <p>
+                  <b>기능 범위</b> {state!.agreement?.scope}
+                </p>
+                <p>
+                  <b>완료 기준</b> {state!.agreement?.completion_criteria}
+                </p>
+                <ul>
+                  {state!.deliverables.map((d) => (
+                    <li key={d.deliverableId}>{d.title}</li>
+                  ))}
+                </ul>
+                <label className="agree" htmlFor="agree-goal">
+                  <Checkbox
+                    id="agree-goal"
+                    checked={agreed}
+                    onCheckedChange={(v) => setAgreed(Boolean(v))}
+                  />{' '}
+                  이 목표와 완료 기준으로 진행하는 데 동의합니다.
+                </label>
+                <button
+                  className="btn primary"
+                  disabled={!agreed || busy || !writable}
+                  onClick={() =>
+                    mutate(
+                      'agreeGoal',
+                      { goalVersion: state!.policy!.goalVersion },
+                      '목표 동의를 저장했습니다.',
+                    )
+                  }
+                >
+                  동의하고 계속
+                </button>
+              </section>
+            )}
+            {lifecycle === 'draft' && state!.readiness && (
+              <section className="project-panel">
+                <span className="eyebrow">START CHECK</span>
+                <h2>시작 준비</h2>
+                <p>
+                  가입 {state!.readiness.joined}명 · 최신 목표 동의{' '}
+                  {state!.readiness.agreed}명. 초대만 보낸 사람은 인원에 포함되지
+                  않습니다.
+                </p>
+                {state!.readiness.missing.map((m) => (
+                  <p key={m} className="tiny muted">
+                    · {m}
+                  </p>
+                ))}
+                <p className="tiny muted">
+                  시작하면 그 시각부터 {state!.policy?.durationDays}일 뒤가
+                  최종 기한이며, 목표·결과물·완료 기준과 기한은 더 이상 바꿀 수
+                  없습니다.
+                </p>
+                {isOwner && (
+                  <button
+                    className="btn primary"
+                    disabled={busy || !state!.readiness.ready}
+                    onClick={() =>
+                      mutate(
+                        'start',
+                        {},
+                        '스프린트를 시작하고 목표와 기한을 고정했습니다.',
+                      )
+                    }
+                  >
+                    스프린트 시작
+                  </button>
+                )}
+              </section>
+            )}
+            {tab === 'docs' && <ProjectDetails state={state!} refresh={load} />}
             {tab === 'today' && (
               <section className="work-section">
                 <section className="overview-grid">
@@ -383,71 +529,69 @@ function Dashboard({
                       <Flag size={21} />
                     </div>
                     <div className="day-number">
-                      {finished ? 'DONE' : `D−${remainingDays}`}
+                      {lifecycle === 'active'
+                        ? `D−${remainingDays}`
+                        : phase.label}
                       <span>
-                        {finished ? '결과물 확인 완료' : '하나씩, 확실하게'}
+                        {lifecycle === 'completed'
+                          ? '결과물 확인 완료'
+                          : lifecycle === 'draft'
+                            ? '아직 기간이 줄지 않아요'
+                            : '하나씩, 확실하게'}
                       </span>
                     </div>
-                    <div className="sprint-track">
-                      {days.map((d, i) => (
-                        <div
-                          key={d}
-                          className={
-                            Date.parse(d + 'T00:00:00+09:00') <=
-                            Date.parse(state?.asOf ?? '1970-01-01')
-                              ? 'passed'
-                              : ''
-                          }
-                        >
-                          <span />
-                          {i === 0
-                            ? '01'
-                            : i === days.length - 1
-                              ? String(days.length).padStart(2, '0')
-                              : ''}
-                        </div>
-                      ))}
-                    </div>
                     <div className="row tiny">
-                      <span>{s.startDate} 시작</span>
-                      <b>18:00 KST 마감 ↗</b>
+                      <span>
+                        {state!.policy?.startedAt
+                          ? seoulTime(state!.policy.startedAt) + ' 시작'
+                          : '시작 전'}
+                      </span>
+                      <b>
+                        {deadline ? seoulTime(deadline) + ' KST 마감' : '기한 미확정'}
+                      </b>
                     </div>
                   </div>
                   <div className="stat-card">
-                    <span className="stat-label">결과 확인 진행</span>
+                    <span className="stat-label">합의 결과물 확인</span>
                     <div className="stat-number">
                       {progress}
                       <small>%</small>
                     </div>
-                    <Progress value={progress} aria-label="작업 완료율" />
+                    <Progress value={progress} aria-label="결과물 확인율" />
                     <p>
-                      {active.length}개 중 {done}개 확인
+                      {state!.completion.total}개 중{' '}
+                      {state!.completion.confirmed}개 팀장 확인
                     </p>
                     <div className="stat-footer">
-                      <Check size={16} /> 결과물 근거를 함께 기록
+                      <Check size={16} /> 업무 개수·보고 횟수는 완주 조건이
+                      아닙니다
                     </div>
                   </div>
                   <div className="stat-card">
                     <span className="stat-label">마감까지 남은 작업</span>
                     <div className="stat-number">
-                      {plan.needed}
+                      {plan?.needed ?? 0}
                       <small>시간</small>
                     </div>
                     <span
-                      className={`pill ${plan.feasible ? 'green' : 'orange'}`}
+                      className={`pill ${plan?.feasible ? 'green' : 'orange'}`}
                     >
-                      {!s.tasks.length
+                      {!tasks.length
                         ? '업무 계획 전'
-                        : plan.feasible
+                        : plan?.feasible
                           ? '현재 계산상 배치 가능'
-                          : `${plan.unscheduled.length}개 작업 배치 불가`}
+                          : `${plan?.unscheduled.length ?? 0}개 작업 배치 불가`}
                     </span>
-                    <p>날짜별 가용시간 합계 {plan.available}시간</p>
+                    <p>
+                      하루 {plan?.dailyHours ?? 8}시간 공통 가정 · 남은 예산{' '}
+                      {Math.round((plan?.available ?? 0) * 10) / 10}시간
+                      {plan?.provisional ? ' (예상)' : ''}
+                    </p>
                     <button
                       className="text-link stat-footer"
                       onClick={() => setTab('team')}
                     >
-                      가용시간 수정 <ArrowRight size={15} />
+                      공수 계산 보기 <ArrowRight size={15} />
                     </button>
                   </div>
                 </section>
@@ -458,133 +602,107 @@ function Dashboard({
                         <Sparkles size={19} /> 메이트의 다음 한 수
                       </h2>
                       <span className="tiny muted">
-                        가용시간 · 의존관계 기반 계산
+                        공통 공수 · 의존관계 기반 계산
                       </span>
                     </div>
                     <div
-                      className={`agent-card ${!plan.feasible ? 'at-risk' : ''}`}
+                      className={`agent-card ${plan && !plan.feasible ? 'at-risk' : ''}`}
                     >
                       <div className="agent-top">
                         <span className="agent-mark">
                           <Zap size={20} />
                         </span>
                         <span
-                          className={`pill ${plan.feasible ? 'green' : 'orange'}`}
+                          className={`pill ${plan?.feasible ? 'green' : 'orange'}`}
                         >
-                          {finished
+                          {lifecycle === 'completed'
                             ? '완주 확인'
-                            : !s.tasks.length
+                            : !tasks.length
                               ? '업무 계획 전'
-                              : plan.feasible
+                              : plan?.feasible
                                 ? '진행 가능'
                                 : '계획 조정 필요'}
                         </span>
                       </div>
                       <h3>
-                        {finished
+                        {lifecycle === 'completed'
                           ? '약속한 결과물을 확인했어요.'
-                          : !s.tasks.length
-                            ? '팀을 모으고 가용시간을 확인해요.'
-                            : plan.feasible
+                          : !tasks.length
+                            ? '업무를 나누고 담당자를 정해요.'
+                            : plan?.feasible
                               ? '핵심 흐름을 하나씩 연결해요.'
                               : '현재 계획으로는 마감을 넘기는 작업이 있어요.'}
                       </h3>
                       <p>
-                        {finished
+                        {lifecycle === 'completed'
                           ? '결과물과 변경 내역이 저장되었습니다. 보증금은 자동 환급되지 않습니다.'
-                          : !s.tasks.length
-                            ? '실행 계획에서 업무와 담당자를 추가하고, 팀 · 가용시간에서 작업 가능한 시간을 입력해주세요.'
-                            : plan.feasible
-                              ? '작업이 늘거나 시간이 줄면 체크인과 가용시간을 업데이트해주세요. 남은 일정은 저장할 때마다 다시 계산합니다.'
-                              : '남은 공수와 담당자별 가용시간을 확인했어요. 필수 기능을 유지하면서 부가 기능을 다음으로 미룰 수 있는지 계산해볼게요.'}
+                          : !tasks.length
+                            ? '실행 계획에서 업무와 담당자를 추가해주세요. 담당자별 가용시간 입력은 없고, 전원 하루 8시간을 공통 가정으로 계산합니다.'
+                            : plan?.feasible
+                              ? '체크인으로 남은 공수를 갱신하면 예상 종료를 다시 계산합니다. 예상치는 승인된 업무 마감과 다릅니다.'
+                              : '담당자별 남은 공수가 남은 기간을 넘습니다. 목표를 줄이거나 기한을 미루는 대신 담당 재배정·진행 순서·구현 방법을 바꿔주세요.'}
                       </p>
                       <div className="agent-impact">
                         <span>
-                          <Clock3 size={15} /> 필요 {plan.needed}h / 가용{' '}
-                          {plan.available}h
+                          <Clock3 size={15} /> 필요 {plan?.needed ?? 0}h / 남은
+                          예산 {Math.round((plan?.available ?? 0) * 10) / 10}h
                         </span>
-                        <span>30분 단위 · 오전 9시부터 배치</span>
+                        <span>
+                          전원 하루 {plan?.dailyHours ?? 8}시간 공통 가정
+                        </span>
                       </div>
-                      {!plan.feasible ? (
-                        <button
-                          className="btn dark"
-                          disabled={busy || !joined}
-                          onClick={async () => {
-                            if (
-                              await mutate(
-                                'propose',
-                                {},
-                                '현재 상태를 기준으로 복구안을 만들었습니다.',
-                              )
-                            )
-                              setDialog('recovery');
-                          }}
-                        >
-                          복구안 계산하기 <ArrowRight size={16} />
-                        </button>
-                      ) : (
-                        <button
-                          className="text-link"
-                          onClick={() => setTab('plan')}
-                        >
-                          실행 계획 보기 <ArrowRight size={16} />
-                        </button>
-                      )}
-                      {proposal?.status === 'pending' && (
-                        <button
-                          className="text-link proposal-link"
-                          onClick={() => setDialog('recovery')}
-                        >
-                          저장된 복구안 {proposalCurrent ? '검토' : '다시 확인'}{' '}
-                          →
-                        </button>
-                      )}
+                      <button className="text-link" onClick={() => setTab('plan')}>
+                        실행 계획 보기 <ArrowRight size={16} />
+                      </button>
                     </div>
                     <div className="section-heading task-heading">
                       <h2>최근 체크인</h2>
                     </div>
                     <div className="task-list">
-                      {state.checkins.length ? (
-                        state.checkins.slice(0, 3).map((c) => (
+                      {state!.checkins.length ? (
+                        state!.checkins.slice(0, 3).map((c) => (
                           <div className="task-row" key={c.id}>
                             <Check size={18} />
                             <div>
                               <b>{c.note}</b>
                               <span>
-                                {s.tasks.find((t) => t.id === c.task_id)?.title}{' '}
-                                · 남은 {c.remaining}h ·{' '}
-                                {new Date(c.created_at).toLocaleString(
-                                  'ko-KR',
-                                  { timeZone: 'Asia/Seoul' },
-                                )}
+                                {tasks.find((t) => t.id === c.task_id)?.title} ·
+                                남은 {c.remaining}h ·{' '}
+                                {new Date(c.created_at).toLocaleString('ko-KR', {
+                                  timeZone: 'Asia/Seoul',
+                                })}
                               </span>
                             </div>
                           </div>
                         ))
                       ) : (
                         <p className="empty-copy">
-                          완료한 일과 막힌 점을 첫 체크인으로 남겨주세요.
+                          하루 한 번 완료·남은 일·막힘을 남겨주세요. 보고가
+                          없어도 완주 판정에는 영향을 주지 않습니다.
                         </p>
                       )}
                     </div>
                   </section>
                   <aside>
                     <div className="section-heading">
-                      <h2>담당자별 남은 용량</h2>
+                      <h2>담당자별 남은 공수</h2>
                     </div>
                     <div className="team-card">
-                      {plan.perPerson.map((p) => (
+                      {(plan?.perPerson ?? []).map((p) => (
                         <div className="member" key={p.person}>
                           <span
                             className="avatar"
-                            style={{ background: people[p.person].color }}
+                            style={{
+                              background: people[p.person]?.color ?? '#eee',
+                            }}
                           >
-                            {people[p.person].initial}
+                            {people[p.person]?.initial ?? '?'}
                           </span>
                           <div>
-                            <b>{people[p.person].name}</b>
+                            <b>{people[p.person]?.name ?? '팀원'}</b>
                             <span>
-                              필요 {p.needed}h / 가용 {p.available}h
+                              필요 {p.needed}h / 남은 예산{' '}
+                              {Math.round(p.available * 10) / 10}h
                             </span>
                           </div>
                           <span
@@ -599,15 +717,19 @@ function Dashboard({
                       </div>
                     </div>
                     <div className="goal-card">
-                      <span className="eyebrow">OUR PROMISE</span>
+                      <span className="eyebrow">
+                        {state!.agreement?.fixed_at
+                          ? 'FIXED PROMISE'
+                          : 'OUR PROMISE'}
+                      </span>
                       <h3>
                         크게 벌이지 않고,
                         <br />
                         작게 완성하기.
                       </h3>
-                      <p>{state.details.goal}</p>
+                      <p>{state!.agreement?.goal ?? state!.details?.goal}</p>
                       <div>
-                        <Check size={15} /> 필수 기능은 복구안에서도 유지
+                        <Check size={15} /> 시작 시 합의한 결과물은 줄이지 않음
                       </div>
                       <div>
                         <Check size={15} /> 변경 사유와 승인 이력 저장
@@ -617,17 +739,17 @@ function Dashboard({
                 </div>
               </section>
             )}
-            {(tab === 'plan' || tab === 'mine') && (
+            {(tab === 'plan' || tab === 'mine') && plan && (
               <section>
                 <div className="work-health">
                   <span
                     className={`status-dot ${plan.feasible ? 'status-done' : 'status-in_progress'}`}
                   />
-                  {!s.tasks.length
-                    ? '업무와 가용시간을 입력해 계획을 시작하세요.'
+                  {!tasks.length
+                    ? '업무와 담당자를 등록해 계획을 시작하세요.'
                     : plan.feasible
-                      ? `마감 내 배치 가능 · 남은 ${plan.needed}h / 가용 ${plan.available}h`
-                      : `${plan.unscheduled.length}개 업무 배치 불가 · 가용시간과 선행 작업을 확인해주세요.`}
+                      ? `마감 내 배치 가능 · 남은 ${plan.needed}h / 예산 ${Math.round(plan.available * 10) / 10}h`
+                      : `${plan.unscheduled.length}개 업무 배치 불가 · 담당 재배정과 선행 작업을 확인해주세요.`}
                   <button onClick={() => setTab('today')}>
                     스프린트 현황 →
                   </button>
@@ -635,10 +757,10 @@ function Dashboard({
                 <TaskCollection
                   sprint={s}
                   plan={plan}
-                  me={state.me}
-                  members={state.members}
-                  checkins={state.checkins}
-                  busy={busy}
+                  me={state!.me}
+                  members={state!.members}
+                  checkins={state!.checkins}
+                  busy={busy || !writable || !agreedToGoal}
                   error={error}
                   mine={tab === 'mine'}
                   mutate={mutate}
@@ -655,7 +777,7 @@ function Dashboard({
                 />
                 <details className="workspace-history">
                   <summary>변경 기록</summary>
-                  {state.events.map((e) => (
+                  {state!.events.map((e) => (
                     <p key={e.revision}>
                       <span>v{e.revision}</span>
                       {e.detail}
@@ -667,152 +789,105 @@ function Dashboard({
             {tab === 'team' && (
               <section className="work-section">
                 <div className="section-heading">
-                  <h2>날짜별로 실제 쓸 수 있는 시간</h2>
+                  <h2>공통 공수 계산</h2>
                   <span className="pill">
-                    {state.details.legacy
-                      ? '기존 샘플 역할 포함'
-                      : '초대받은 팀원과 공유'}
+                    전원 하루 {plan?.dailyHours ?? 8}시간 가정
                   </span>
                 </div>
+                <p className="hint">
+                  개인별 가용시간 입력은 없습니다. 하루{' '}
+                  {plan?.dailyHours ?? 8}시간은 남은 기간과 남은 공수를 비교하기
+                  위한 내부 계산 가정이며, 실제 근무 시간대나 출퇴근 시각을
+                  뜻하지 않습니다.
+                </p>
                 <div className="people-grid">
-                  {people.map((p, i) => (
-                    <div className="person-card" key={p.name}>
+                  {(plan?.perPerson ?? []).map((p) => (
+                    <div className="person-card" key={p.person}>
                       <span
                         className="avatar large"
-                        style={{ background: p.color }}
+                        style={{
+                          background: people[p.person]?.color ?? '#eee',
+                        }}
                       >
-                        {p.initial}
+                        {people[p.person]?.initial ?? '?'}
                       </span>
-                      <h3>{p.name}</h3>
-                      <p>{p.role}</p>
+                      <h3>{people[p.person]?.name ?? '팀원'}</h3>
+                      <p>{people[p.person]?.role ?? '팀원'}</p>
                       <div className="person-hours">
-                        {s.capacity
-                          .filter((c) => c.person === i)
-                          .reduce((a, c) => a + c.hours, 0)}
-                        <small>시간 / 스프린트</small>
+                        {Math.round(p.available * 10) / 10}
+                        <small>시간 남은 예산</small>
+                      </div>
+                      <p className="tiny muted">
+                        필요 {p.needed}h ·{' '}
+                        {p.finish
+                          ? `예상 종료 ${seoulTime(p.finish)} KST`
+                          : '배정된 업무 없음'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="section-heading">
+                  <h2>팀 상태</h2>
+                </div>
+                <div className="team-card">
+                  {state!.members.map((m) => (
+                    <div className="member" key={m.person}>
+                      <span
+                        className="avatar"
+                        style={{
+                          background: people[m.person]?.color ?? '#eee',
+                        }}
+                      >
+                        {m.display_name.slice(0, 1)}
+                      </span>
+                      <div>
+                        <b>{m.display_name}</b>
+                        <span>
+                          {m.role === 'owner' ? '팀장' : '팀원'} ·{' '}
+                          {m.left_at
+                            ? '참여 중단 보고'
+                            : m.agreed_goal_version ===
+                                state!.policy?.goalVersion
+                              ? `목표 v${m.agreed_goal_version} 동의`
+                              : '재동의 필요'}
+                        </span>
                       </div>
                     </div>
                   ))}
+                  <div className="team-note">
+                    참여 중단은 당사자가 보고하고, 남은 팀 기준의 변경안은
+                    팀장이 검토합니다. 자동 재배정은 하지 않습니다.
+                  </div>
                 </div>
-                <form
-                  className="capacity-editor"
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    await mutate(
-                      'capacity',
-                      { person, date: capacityDate || days[0], hours },
-                      '날짜별 가용시간을 저장하고 일정을 다시 계산했습니다.',
-                    );
-                  }}
-                >
-                  <label htmlFor="person">
-                    담당자
-                    <NativeSelect
-                      id="person"
-                      value={person}
-                      onChange={(e) => {
-                        const p = Number(e.target.value);
-                        setPerson(p);
-                        setHours(
-                          s.capacity.find(
-                            (c) =>
-                              c.person === p &&
-                              c.date === (capacityDate || days[0]),
-                          )?.hours ?? 0,
-                        );
-                      }}
-                    >
-                      {people.map((p, i) => (
-                        <NativeSelectOption
-                          key={i}
-                          value={i}
-                          disabled={!isOwner && i !== state.me.person}
-                        >
-                          {p.name}
-                        </NativeSelectOption>
-                      ))}
-                    </NativeSelect>
-                  </label>
-                  <label htmlFor="capacity-date">
-                    날짜
-                    <NativeSelect
-                      id="capacity-date"
-                      value={capacityDate || days[0]}
-                      onChange={(e) => {
-                        setCapacityDate(e.target.value);
-                        setHours(
-                          s.capacity.find(
-                            (c) =>
-                              c.person === person && c.date === e.target.value,
-                          )?.hours ?? 0,
-                        );
-                      }}
-                    >
-                      {days.map((d) => (
-                        <NativeSelectOption key={d} value={d}>
-                          {d}
-                        </NativeSelectOption>
-                      ))}
-                    </NativeSelect>
-                  </label>
-                  <label htmlFor="capacity-hours">
-                    가능한 시간
-                    <input
-                      id="capacity-hours"
-                      type="number"
-                      min="0"
-                      max="12"
-                      step="0.5"
-                      required
-                      value={hours}
-                      onChange={(e) => setHours(Number(e.target.value))}
-                    />
-                  </label>
+                {writable && agreedToGoal && !state!.me.leftAt && (
                   <button
-                    className="btn primary"
-                    disabled={
-                      busy ||
-                      !joined ||
-                      finished ||
-                      (!isOwner && person !== state?.me.person)
-                    }
+                    className="btn"
+                    disabled={busy}
+                    onClick={() => {
+                      setNote('');
+                      setDialog('stepBack');
+                    }}
                   >
-                    저장하고 재계산
+                    참여 중단 보고
                   </button>
-                </form>
-                <p className="hint">
-                  0시간은 작업 불가로 처리합니다. 현재 버전은 입력한 시간을 오전
-                  9시부터 연속 배치하며, 이미 지난 시간은 제외합니다.
-                </p>
-                <div className="capacity-summary">
-                  {days.map((d) => (
-                    <div key={d}>
-                      <b>{d.slice(5)}</b>
-                      {people.map((p, i) => (
-                        <span key={i}>
-                          {p.name}{' '}
-                          {s.capacity.find(
-                            (c) => c.person === i && c.date === d,
-                          )?.hours ?? 0}
-                          h
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+                )}
               </section>
             )}
-            {tab === 'refund' && (
+            {tab === 'result' && (
               <section className="work-section">
                 <div className="refund-grid">
                   <div className="refund-main">
                     <ShieldCheck size={30} />
                     <h2>
-                      완주는 결과로 확인하고,
+                      완주는 처음 약속한 결과물로,
                       <br />
-                      참여 약속은 기록으로 남겨요.
+                      보고 횟수로 판정하지 않아요.
                     </h2>
-                    <p>금액과 반환 정책은 검토 중인 예시입니다.</p>
+                    <p>
+                      체크리스트를 모두 끝냈는지와 합의한 결과물을 달성했는지는
+                      다릅니다. 업무 {done}/{tasks.length}개가 완료되어도 필수
+                      결과물이 미확인이면 완주할 수 없습니다.
+                    </p>
                     <div className="receipt">
                       <div>
                         <span>이용료 예시</span>
@@ -828,47 +903,77 @@ function Dashboard({
                       </div>
                     </div>
                     <p>
-                      팀원의 이탈과 개인의 성실한 기여는 별도로 검토합니다. 결과
-                      확인 버튼은 금전 환급 판정이 아닙니다.
+                      결과물 근거 확인과 금전 환급 판정은 별개입니다. AI가
+                      증빙의 진실성을 자동으로 보증하지 않습니다.
                     </p>
                   </div>
                   <div className="refund-criteria">
-                    <span className="eyebrow">COMPLETION CHECK</span>
-                    <h3>완주 확인 목록</h3>
-                    {[
-                      {
-                        ok: joined,
-                        title: '참여 조건 확인',
-                        desc: '서비스 파일럿 조건 v1 동의 기록',
-                      },
-                      {
-                        ok: Boolean(state.checkins.length),
-                        title: '진행 상황 공유',
-                        desc: `체크인 ${state.checkins.length}건 표시 · 최근 20건`,
-                      },
-                      {
-                        ok: done === active.length,
-                        title: '결과물 근거 확인',
-                        desc: `활성 작업 ${done}/${active.length}개 확인`,
-                      },
-                    ].map((c) => (
-                      <div className="criterion" key={c.title}>
+                    <span className="eyebrow">DELIVERABLES</span>
+                    <h3>합의한 결과물</h3>
+                    {state!.deliverables.map((d) => (
+                      <div className="criterion" key={d.deliverableId}>
                         <span
                           className={
-                            c.ok ? 'criteria-check ok' : 'criteria-check'
+                            d.confirmed ? 'criteria-check ok' : 'criteria-check'
                           }
                         >
-                          {c.ok ? <Check size={16} /> : <Clock3 size={16} />}
+                          {d.confirmed ? (
+                            <Check size={16} />
+                          ) : (
+                            <Clock3 size={16} />
+                          )}
                         </span>
                         <div>
-                          <b>{c.title}</b>
-                          <p>{c.desc}</p>
+                          <b>{d.title}</b>
+                          <p>{d.evidence || '근거가 아직 없습니다.'}</p>
+                          {writable && agreedToGoal && (
+                            <>
+                              <button
+                                className="text-link"
+                                disabled={busy}
+                                onClick={() => {
+                                  setEvidenceId(d.deliverableId);
+                                  setEvidence(d.evidence);
+                                  setDialog('evidence');
+                                }}
+                              >
+                                근거 기록·수정
+                              </button>
+                              {isOwner && (
+                                <button
+                                  className="text-link"
+                                  disabled={busy || !d.evidence}
+                                  onClick={() =>
+                                    mutate(
+                                      'deliverableConfirm',
+                                      {
+                                        deliverableId: d.deliverableId,
+                                        confirmed: !d.confirmed,
+                                      },
+                                      d.confirmed
+                                        ? '확인을 취소했습니다.'
+                                        : '팀장 확인을 저장했습니다.',
+                                    )
+                                  }
+                                >
+                                  {d.confirmed
+                                    ? '확인 취소'
+                                    : '팀장이 직접 확인'}
+                                </button>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
                     <button
                       className="btn primary wide"
-                      disabled={!canFinish || finished || busy || !isOwner}
+                      disabled={
+                        busy ||
+                        !isOwner ||
+                        lifecycle !== 'active' ||
+                        !state!.completion.ready
+                      }
                       onClick={() =>
                         mutate(
                           'finish',
@@ -877,11 +982,14 @@ function Dashboard({
                         )
                       }
                     >
-                      {finished ? '완주 기록 저장됨' : '기한 내 완주 확인'}
+                      {lifecycle === 'completed'
+                        ? '완주 기록 저장됨'
+                        : '기한 내 완주 확인'}
                     </button>
                     <p className="tiny muted">
-                      이 버전은 결과물의 내용을 AI가 자동 검증하지 않습니다.
-                      팀이 직접 확인한 근거를 저장합니다.
+                      확인 자료는 코드 저장소와 실행 방법, 핵심 기능 데모 또는
+                      영상, 팀원별 기여 내용입니다. 배포 URL은 프로젝트에서 별도
+                      합의한 경우에만 필요합니다.
                     </p>
                   </div>
                 </div>
@@ -913,7 +1021,7 @@ function Dashboard({
             mutate(
               editingTask ? 'editTask' : 'createTask',
               { ...fields, revision: editingRevision },
-              '업무를 저장하고 일정을 다시 계산했습니다.',
+              '업무를 저장하고 예상 일정을 다시 계산했습니다.',
             )
           }
         />
@@ -926,51 +1034,20 @@ function Dashboard({
       >
         <DialogContent className="demo-dialog">
           <DialogTitle>
-            {dialog === 'join'
-              ? '함께 끝내기로 약속해요.'
-              : dialog === 'checkin'
-                ? '지금 남은 일을 알려주세요.'
-                : '현재 상태로 계산한 복구안'}
+            {dialog === 'checkin'
+              ? '지금 남은 일을 알려주세요.'
+              : dialog === 'stepBack'
+                ? '참여 중단을 팀에 알립니다.'
+                : '결과물 근거 기록'}
           </DialogTitle>
           <DialogDescription>
-            {dialog === 'join'
-              ? '목표를 확인하고 참여하는 파일럿입니다. 실제 결제는 없습니다.'
-              : dialog === 'checkin'
-                ? '막힌 점과 남은 공수를 저장하면 마감 내 배치 가능성을 다시 계산합니다.'
-                : '필수 기능을 유지하면서 부가 기능을 다음 스프린트로 옮기는 안입니다.'}
+            {dialog === 'checkin'
+              ? '막힌 점과 남은 공수를 저장하면 예상 종료를 다시 계산합니다. 보고가 없어도 완주 판정은 결과물 기준입니다.'
+              : dialog === 'stepBack'
+                ? '보고만으로 담당이나 기한이 바뀌지 않습니다. 남은 팀 기준의 변경은 팀장이 검토합니다.'
+                : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
           </DialogDescription>
-          {dialog === 'join' ? (
-            <>
-              <p>
-                체크인, 결과물 확인, 계획 변경 기록을 서버에 저장합니다. 보증금
-                금액은 예시이며 실제 결제와 환급은 진행하지 않습니다.
-              </p>
-              <label className="agree" htmlFor="agree">
-                <Checkbox
-                  id="agree"
-                  checked={agreed}
-                  onCheckedChange={(v) => setAgreed(Boolean(v))}
-                />{' '}
-                참여 조건을 확인했습니다.
-              </label>
-              <button
-                className="btn primary wide"
-                disabled={!agreed || busy}
-                onClick={async () => {
-                  if (
-                    await mutate(
-                      'join',
-                      { agreed },
-                      '참여 약속을 저장했습니다.',
-                    )
-                  )
-                    setDialog(null);
-                }}
-              >
-                약속하고 시작
-              </button>
-            </>
-          ) : dialog === 'checkin' ? (
+          {dialog === 'checkin' ? (
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -978,7 +1055,7 @@ function Dashboard({
                   await mutate(
                     'checkin',
                     { taskId, note, remaining },
-                    '체크인을 저장하고 일정을 재계산했습니다.',
+                    '체크인을 저장하고 예상 일정을 재계산했습니다.',
                   )
                 )
                   setDialog(null);
@@ -998,7 +1075,7 @@ function Dashboard({
                   );
                 }}
               >
-                {active
+                {tasks
                   .filter(
                     (t) =>
                       !t.done && (isOwner || t.person === state?.me.person),
@@ -1040,83 +1117,70 @@ function Dashboard({
                 저장하고 재계산
               </button>
             </form>
-          ) : dialog === 'recovery' && proposal ? (
-            <>
-              <span className={`pill ${proposalCurrent ? 'green' : 'orange'}`}>
-                {proposalCurrent
-                  ? `현재 버전 ${s?.revision} 기준`
-                  : '상태가 바뀌었거나 이미 처리된 제안'}
-              </span>
-              {s?.tasks
-                .filter((t) => deferIds.includes(t.id))
-                .map((t) => (
-                  <div className="recovery-step" key={t.id}>
-                    <Flag size={19} />
-                    <div>
-                      <b>{t.title}</b>
-                      <p>
-                        {people[t.person].name} · {t.remaining}h를 다음
-                        스프린트로 이동
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              <div className="recovery-summary">
-                {plan?.needed}h → <b>{after?.needed}h</b>
-              </div>
-              <p>
-                적용 후 계산:{' '}
-                {after?.feasible
-                  ? '마감 내 배치 가능'
-                  : '현재 시점에는 배치 불가'}
-                . 필수 기능과 최종 마감은 유지합니다.
-              </p>
+          ) : dialog === 'stepBack' ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (
+                  await mutate(
+                    'stepBack',
+                    { note },
+                    '참여 중단 보고를 저장했습니다.',
+                  )
+                )
+                  setDialog(null);
+              }}
+            >
+              <label className="input-label" htmlFor="leave-note">
+                팀에 알릴 내용
+              </label>
+              <textarea
+                id="leave-note"
+                rows={4}
+                maxLength={1000}
+                required
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
               <button
                 className="btn primary wide"
-                disabled={
-                  busy || !proposalCurrent || !after?.feasible || !isOwner
-                }
-                onClick={async () => {
-                  if (
-                    await mutate(
-                      'approve',
-                      { proposalId: proposal.id },
-                      '복구안을 적용하고 변경 이력을 저장했습니다.',
-                    )
-                  )
-                    setDialog(null);
-                }}
+                disabled={busy || !note.trim()}
               >
-                검토한 복구안 승인
+                보고 저장
               </button>
+            </form>
+          ) : dialog === 'evidence' ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (
+                  await mutate(
+                    'deliverableEvidence',
+                    { deliverableId: evidenceId, evidence },
+                    '결과물 근거를 저장했습니다. 팀장 확인이 필요합니다.',
+                  )
+                )
+                  setDialog(null);
+              }}
+            >
+              <label className="input-label" htmlFor="evidence">
+                근거
+              </label>
+              <textarea
+                id="evidence"
+                rows={5}
+                maxLength={2000}
+                required
+                value={evidence}
+                onChange={(e) => setEvidence(e.target.value)}
+              />
               <button
-                className="btn"
-                disabled={busy || !proposalCurrent || !isOwner}
-                onClick={async () => {
-                  if (
-                    await mutate(
-                      'reject',
-                      { proposalId: proposal.id },
-                      '복구안을 거절했습니다.',
-                    )
-                  )
-                    setDialog(null);
-                }}
+                className="btn primary wide"
+                disabled={busy || evidence.trim().length < 5}
               >
-                이 안은 사용하지 않기
+                근거 저장
               </button>
-              {!proposalCurrent && (
-                <button
-                  className="btn primary"
-                  disabled={busy}
-                  onClick={() =>
-                    mutate('propose', {}, '최신 상태로 새 제안을 만들었습니다.')
-                  }
-                >
-                  최신 상태로 다시 계산
-                </button>
-              )}
-            </>
+            </form>
           ) : null}
           {busy && <p className="tiny muted">서버에 저장하는 중입니다…</p>}
           {error && (

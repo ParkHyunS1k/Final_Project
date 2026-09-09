@@ -34,9 +34,8 @@ export function TaskEditor({
   const [title, setTitle] = useState(task?.title ?? '');
   const [person, setPerson] = useState(task?.person ?? members[0]?.person ?? 0);
   const [remaining, setRemaining] = useState(task?.remaining ?? 1);
-  const [optional, setOptional] = useState(task?.optional ?? false);
   const [dependsOn, setDependsOn] = useState(task?.dependsOn ?? []);
-  const candidates = tasks.filter((t) => t.id !== task?.id && !t.deferred);
+  const candidates = tasks.filter((t) => t.id !== task?.id);
   return (
     <Dialog
       open
@@ -57,7 +56,6 @@ export function TaskEditor({
                 title,
                 person,
                 remaining,
-                optional,
                 dependsOn,
                 ...(task ? { taskId: task.id } : {}),
               })
@@ -108,14 +106,10 @@ export function TaskEditor({
               value={remaining}
               onChange={(e) => setRemaining(Number(e.target.value))}
             />
-            <label className="agree" htmlFor="task-optional">
-              <Checkbox
-                id="task-optional"
-                checked={optional}
-                onCheckedChange={(v) => setOptional(Boolean(v))}
-              />
-              부가 업무 · 복구안에서 다음 스프린트로 미룰 수 있음
-            </label>
+            <p className="tiny muted">
+              합의한 결과물은 부가 업무로 미룰 수 없습니다. 업무를 나누거나
+              합쳐도 약속한 기능은 유지합니다.
+            </p>
             <fieldset className="task-dependencies">
               <legend>먼저 끝나야 하는 업무</legend>
               {candidates.length ? (
