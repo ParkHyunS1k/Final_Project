@@ -4,8 +4,26 @@
 [A](2026-09-09-a-sprint-policy.md) · [B](2026-09-09-b-deadline-email.md) ·
 [C](2026-09-09-c-ai-change-review.md) · [설계](../specs/2026-09-09-spartan-sprint-design.md)
 
-브랜치 `phs`. 커밋 3개(A `3987bf3`, B `b6595b6`, C `42c0643`).
+브랜치 `phs`. 구현 커밋 3개(A `3987bf3`, B `b6595b6`, C `42c0643`)와
+사용자 검토 후 수정 커밋 4개(`c9f1d07`, `92221ce`, `3e512ef`, `04e7219`).
 `main` 병합·브랜치 삭제·강제 푸시·원격 푸시는 하지 않았다.
+
+## 사용자 검토 지적 9건과 수정 (2026-09-09)
+
+| # | 문제 | 수정 | 재현 테스트 |
+|---|---|---|---|
+| 3 | Drizzle 정의와 실제 DB 구조 불일치 | `schema.ts`를 0005~0007에 맞추고 빠진 스냅샷 생성 | `schema-migrations.test.mjs` |
+| 1 | 확인하지 않은 목표에 동의 | 수락 요청에 확인한 `goalVersion` 필수, 저장 조건에도 포함 | `save-guards.test.mjs` |
+| 2 | 종료 후 원문·변경안 저장 | INSERT에 상태·마감·멤버십 조건, 머리 행과 세부 항목 원자 저장 | `save-guards.test.mjs` |
+| 4 | 되돌리기가 후속 기록 삭제 | 업무별 `change_version`으로 생성 이후 수정 여부 판단 | `apply-revert.test.mjs` |
+| 6 | 같은 원문에서 중복 생성 | `baseRevision` 검사 + 원문·근거 위치 기반 후보 키 재검사 | `apply-revert.test.mjs` |
+| 5 | AI 담당 변경 후 알림 소실 | 업무별 최종 상태를 먼저 계산해 한 번만 저장·재예약 | `reminder-consistency.test.mjs` |
+| 7 | 다른 프로젝트 알림 충돌 | 단계 정리 키에 `projectId` 포함, 묶음은 수신자·시각 기준 | `reminder-consistency.test.mjs` |
+| 8 | 보내지 않은 내용을 완료로 기록 | 한도를 수신자 단위로 적용, 한 묶음을 통째로 확보 | `reminder-consistency.test.mjs` |
+| 9 | 완료된 업무에 독촉 발송 | 각 메일 직전에 최신 상태 재확인, 빈 묶음 미발송 | `reminder-consistency.test.mjs` |
+
+수정으로 추가된 마이그레이션: `0008_task_change_version`, `0009_batch_recipient_slot`.
+바뀐 요청 계약: `POST /api/projects` `action:'accept'`에 `goalVersion` 필수.
 
 ## 착수 전 확인한 기술 결정
 
@@ -62,15 +80,16 @@ npx oxlint lib app/api app/page.tsx components/change-review.tsx components/sour
 
 | 검사 | 결과 |
 |---|---|
-| `npm test` | 91개 통과 / 0 실패 |
+| `npm test` | 116개 통과 / 0 실패 |
 | `npx tsc --noEmit` | 통과 |
 | `npx oxlint` (서비스 파일) | 통과 |
 | `npm run build` | 통과 |
 | `npm run db:migrate` (로컬 D1) | 0005·0006·0007 적용 |
 | `datasets/.../validate.py` | `integrity: passed` (변경 없음 확인) |
 
-테스트 91개 구성: 일정·공수 16, 정책 14, 알림 계산 12, 가드레일 2,
-API 통합 16, 알림 통합 13, 변경안 통합 18.
+테스트 116개 구성: 일정·공수 16, 정책 14, 알림 계산 13, 가드레일 2,
+마이그레이션 3, API 통합 16, 알림 통합 13, 변경안 통합 18,
+저장 검사 7, 승인·복구 7, 알림 정합성 7.
 
 ## 모의 검증과 운영 연결의 구분
 
@@ -104,7 +123,10 @@ API 통합 16, 알림 통합 13, 변경안 통합 18.
 7. **준비(draft) 중에는 업무 마감을 지정할 수 없다.** 최종 기한이 확정되지 않아
    초과 여부를 검사할 수 없기 때문이다. 계획의 "미정 마감 허용"은 마감 없이
    업무를 만드는 것으로 구현했다.
-8. **`save()`의 쓰기 시점 검사는 DB 시계를 쓴다.** 상태·마감 조건을 CAS UPDATE에
+8. **묶음 발송의 처리 한도는 수신자 수 기준이다(기본 50명).** 한 수신자의 도래
+   항목을 모두 확보하므로 알림이 아주 많은 사용자가 있으면 한 번의 실행이 길어질
+   수 있다. 실행 간격과 한도는 운영하며 조정한다.
+9. **`save()`의 쓰기 시점 검사는 DB 시계를 쓴다.** 상태·마감 조건을 CAS UPDATE에
    포함해 `strftime('now')`와 비교한다. 요청 시작 시각만으로 통과한 늦은 쓰기는
    거절되지만, D1과 애플리케이션 시계가 크게 어긋나면 판정도 어긋난다.
 
@@ -125,3 +147,4 @@ API 통합 16, 알림 통합 13, 변경안 통합 18.
 - [ ] 실제 두 계정으로 준비 → 목표 변경 → 재동의 → 시작 → 승인 → 결과물 확인 → 완주
 - [ ] 운영 AI 모델 연결 여부 결정과 예산·인증 방식 확인
 - [ ] 이전 규칙 프로젝트의 명시적 전환이 필요한지 결정
+- [ ] 이미 배포된 DB가 있다면 0008·0009 마이그레이션 적용
