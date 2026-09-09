@@ -91,26 +91,39 @@ export function cancelStatements(
 export type ClaimedRow = DueItem;
 
 /**
- * 도래한 항목을 원자적으로 확보한다. 두 실행기가 같은 항목을 가져가지 못한다.
+ * 도래한 항목을 수신자 단위로 원자적으로 확보한다.
+ * 한 통에 들어갈 항목이 나뉘지 않도록 한 수신자의 도래 항목을 전부 함께 가져간다.
+ * `limit`은 개별 예약 수가 아니라 한 번에 처리할 수신자 수다.
  * 확보 후 프로세스가 중단되면 `staleAfterMs` 뒤 다른 실행기가 다시 가져간다.
  */
 export async function claimDue(
   now: Date,
   worker: string,
-  limit = 200,
+  limit = 50,
   staleAfterMs = 5 * 60000,
 ) {
   const db = database();
+  const at = now.toISOString();
   const stale = new Date(now.getTime() - staleAfterMs).toISOString();
-  await db
+  const claimable =
+    " AND (status='pending' OR (status='claimed' AND claimed_at<?))";
+  const users = await db
     .prepare(
-      "UPDATE reminder_items SET status='claimed',claim_owner=?,claimed_at=? WHERE id IN (" +
-        'SELECT id FROM reminder_items WHERE scheduled_at<=?' +
-        " AND (status='pending' OR (status='claimed' AND claimed_at<?))" +
-        ' ORDER BY scheduled_at LIMIT ?)',
+      'SELECT user_id,min(scheduled_at) AS first_at FROM reminder_items WHERE scheduled_at<=?' +
+        claimable +
+        ' GROUP BY user_id ORDER BY first_at LIMIT ?',
     )
-    .bind(worker, now.toISOString(), now.toISOString(), stale, limit)
-    .run();
+    .bind(at, stale, limit)
+    .all<{ user_id: string }>();
+  for (const row of users.results)
+    await db
+      .prepare(
+        "UPDATE reminder_items SET status='claimed',claim_owner=?,claimed_at=?" +
+          ' WHERE user_id=? AND scheduled_at<=?' +
+          claimable,
+      )
+      .bind(worker, at, row.user_id, at, stale)
+      .run();
   const rows = await db
     .prepare(
       "SELECT * FROM reminder_items WHERE claim_owner=? AND status='claimed' ORDER BY scheduled_at",
@@ -169,7 +182,7 @@ export async function openBatch(
   await db
     .prepare(
       "INSERT INTO reminder_batches(id,project_id,user_id,scheduled_at,email,subject,status,attempts,idempotency_key,first_attempt_at,last_attempt_at) VALUES(?,?,?,?,?,?,'sending',1,?,?,?)" +
-        ' ON CONFLICT(project_id,user_id,scheduled_at) DO UPDATE SET attempts=reminder_batches.attempts+1,last_attempt_at=?,email=?,subject=?' +
+        ' ON CONFLICT(user_id,scheduled_at) DO UPDATE SET attempts=reminder_batches.attempts+1,last_attempt_at=?,email=?,subject=?' +
         " WHERE reminder_batches.status IN ('failed','unknown')",
     )
     .bind(
@@ -189,9 +202,9 @@ export async function openBatch(
     .run();
   const row = await db
     .prepare(
-      'SELECT * FROM reminder_batches WHERE project_id=? AND user_id=? AND scheduled_at=?',
+      'SELECT * FROM reminder_batches WHERE user_id=? AND scheduled_at=?',
     )
-    .bind(projectId, userId, scheduledAt)
+    .bind(userId, scheduledAt)
     .first<Record<string, unknown>>();
   return row
     ? {

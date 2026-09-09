@@ -265,7 +265,8 @@ export const reminderBatches = sqliteTable(
     lastAttemptAt: text('last_attempt_at').notNull(),
   },
   (t) => [
-    uniqueIndex('idx_batch_slot').on(t.projectId, t.userId, t.scheduledAt),
+    // 메일은 같은 수신자·같은 예정 시각이면 프로젝트가 달라도 한 통으로 묶는다.
+    uniqueIndex('idx_batch_slot').on(t.userId, t.scheduledAt),
     uniqueIndex('idx_batch_idempotency').on(t.idempotencyKey),
   ],
 );

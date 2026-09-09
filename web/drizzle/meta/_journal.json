@@ -64,6 +64,13 @@
       "when": 1789300000000,
       "tag": "0008_task_change_version",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789400000000,
+      "tag": "0009_batch_recipient_slot",
+      "breakpoints": true
     }
   ]
 }
