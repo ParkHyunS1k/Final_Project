@@ -757,6 +757,7 @@ function Dashboard({
                 <TaskCollection
                   sprint={s}
                   plan={plan}
+                  asOf={state!.asOf}
                   me={state!.me}
                   members={state!.members}
                   checkins={state!.checkins}
@@ -1014,6 +1015,7 @@ function Dashboard({
           task={editingTask}
           tasks={state.sprint.tasks}
           members={state.members}
+          projectDeadline={state.policy?.deadlineAt ?? null}
           busy={busy}
           error={error}
           onClose={() => setEditingTask(undefined)}

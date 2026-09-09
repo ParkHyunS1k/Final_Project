@@ -23,6 +23,9 @@ class Prepared {
   async first() {
     return db.prepare(this.sql).get(...this.args) ?? null;
   }
+  async run() {
+    return this.execute();
+  }
   async all() {
     return this.execute();
   }

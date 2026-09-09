@@ -53,6 +53,7 @@ function statusOf(t: Task) {
 export function TaskCollection({
   sprint,
   plan,
+  asOf,
   me,
   members,
   checkins,
@@ -65,6 +66,8 @@ export function TaskCollection({
 }: {
   sprint: Sprint;
   plan: Plan;
+  /** 서버가 알려준 현재 시각. 렌더 중 Date.now()를 쓰지 않는다. */
+  asOf: string;
   me: ProjectMeta['me'];
   members: ProjectMeta['members'];
   checkins: Checkin[];
@@ -169,6 +172,7 @@ export function TaskCollection({
                   <TableHead>상태</TableHead>
                   <TableHead>담당자</TableHead>
                   <TableHead>남은 시간</TableHead>
+                  <TableHead>승인된 마감 · KST</TableHead>
                   <TableHead>예상 완료 · KST</TableHead>
                 </TableRow>
               </TableHeader>
@@ -187,6 +191,9 @@ export function TaskCollection({
                         업무
                         {t.dependsOn.length
                           ? ` · 선행 ${t.dependsOn.length}개`
+                          : ''}
+                        {!t.done && t.dueAt && Date.parse(t.dueAt) < Date.parse(asOf)
+                          ? ' · 마감 지남'
                           : ''}
                       </span>
                     </TableCell>
@@ -230,6 +237,19 @@ export function TaskCollection({
                       >
                         {t.remaining}h
                       </button>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={
+                          !t.done &&
+                          t.dueAt &&
+                          Date.parse(t.dueAt) < Date.parse(asOf)
+                            ? 'schedule-warning'
+                            : ''
+                        }
+                      >
+                        {t.dueAt ? seoulTime(t.dueAt) : '미정'}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <span
@@ -312,6 +332,7 @@ export function TaskCollection({
           task={task}
           sprint={sprint}
           plan={plan}
+          asOf={asOf}
           me={me}
           checkins={checkins}
           busy={busy}
@@ -331,6 +352,7 @@ function TaskDetail({
   task,
   sprint,
   plan,
+  asOf,
   me,
   checkins,
   busy,
@@ -342,6 +364,7 @@ function TaskDetail({
   task: Task;
   sprint: Sprint;
   plan: Plan;
+  asOf: string;
   me: ProjectMeta['me'];
   checkins: Checkin[];
   busy: boolean;
@@ -417,6 +440,18 @@ function TaskDetail({
             <div>
               <dt>상태</dt>
               <dd>{statuses.find((s) => s.id === statusOf(task))?.label}</dd>
+            </div>
+            <div>
+              <dt>승인된 마감</dt>
+              <dd>
+                {task.dueAt
+                  ? seoulTime(task.dueAt) +
+                    ' KST' +
+                    (!task.done && Date.parse(task.dueAt) < Date.parse(asOf)
+                      ? ' · 마감 지남'
+                      : '')
+                  : '미정 · 독촉 이메일 예약 없음'}
+              </dd>
             </div>
             <div>
               <dt>예상 완료</dt>

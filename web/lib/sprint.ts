@@ -10,6 +10,9 @@ export type Task = {
   dependsOn: number[];
   status?: 'todo' | 'in_progress';
   description?: string;
+  // 승인된 개별 업무 마감. 계산기의 예상 종료(plan.finishes)와 별개다.
+  dueAt?: string | null;
+  deadlineVersion?: number;
 };
 export type Capacity = { person: number; date: string; hours: number };
 export type Sprint = {

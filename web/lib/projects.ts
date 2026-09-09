@@ -19,6 +19,7 @@ import {
   type Actor,
 } from './sprint-policy';
 import { assertEvidence, parseDeliverables } from './deliverables';
+import { scheduleStatements } from './reminder-store';
 export class AccessError extends Error {
   constructor(
     message = '프로젝트에 접근할 권한이 없습니다.',
@@ -463,6 +464,22 @@ export async function acceptInvite(
           invite.id,
           user.id,
         ),
+      // 진행 중 프로젝트에 합류하면 남은 프로젝트 알림 단계만 예약한다.
+      ...(policy.deadlineAt
+        ? scheduleStatements(
+            project,
+            m,
+            [
+              {
+                kind: 'project' as const,
+                userId: user.id,
+                deadlineVersion: 0,
+                dueAt: policy.deadlineAt,
+              },
+            ],
+            new Date(),
+          )
+        : []),
     ],
     ['draft', 'active'],
   );
