@@ -32,6 +32,8 @@ export const tasks = sqliteTable(
     remaining: real('remaining').notNull(),
     dueAt: text('due_at'),
     deadlineVersion: integer('deadline_version').notNull().default(0),
+    // 업무 단위 변경 버전. 생성 이후 수정 여부를 업무별로 판단한다.
+    changeVersion: integer('change_version').notNull().default(0),
     optional: integer('optional').notNull().default(0),
     deferred: integer('deferred').notNull().default(0),
     done: integer('done').notNull().default(0),

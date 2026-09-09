@@ -19,7 +19,7 @@ import {
   type Model,
 } from '@/lib/ai-extraction';
 import {
-  appliedTitlesFromSource,
+  appliedCandidateKeys,
   listProposals,
   prepareApplication,
   readProposal,
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
         const checked = validateChanges(
           output.changes,
           input,
-          await appliedTitlesFromSource(projectId, source.id),
+          await appliedCandidateKeys(projectId, source.id),
         );
         changes = checked.changes;
         rejected = checked.rejected;
@@ -284,7 +284,14 @@ export async function POST(request: Request) {
         proposal,
         (b.selections ?? []) as { changeId: string }[],
         ctx,
+        await appliedCandidateKeys(projectId, proposal.sourceId),
       );
+      // 변경안을 만든 당시의 기준 상태가 그대로여야 그대로 승인할 수 있다.
+      // 첫 변경안 승인으로 업무가 바뀌었다면 두 번째 변경안은 재검토 대상이다.
+      if (proposal.baseRevision !== sprint.revision)
+        throw new Conflict(
+          '변경안을 만든 뒤 기준 상태가 달라졌습니다. 최신 차이로 다시 검토해주세요.',
+        );
       await writeApplication(
         projectId,
         sprint,
