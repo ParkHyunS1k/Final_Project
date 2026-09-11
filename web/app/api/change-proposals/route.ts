@@ -29,6 +29,7 @@ import {
   type Context,
 } from '@/lib/change-proposals';
 import { cancelStatements, scheduleStatements } from '@/lib/reminder-store';
+import { readReplay, replayCases } from '@/lib/change-review-replay';
 export const dynamic = 'force-dynamic';
 
 // 운영 모델은 아직 연결하지 않았다(사용자 결정 2026-09-09). 가짜 모델로 흐름만 잇는다.
@@ -66,11 +67,19 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const projectId = url.searchParams.get('project') ?? '';
     await member(projectId, user);
+    // 저장된 평가 응답 재생은 멤버 확인 뒤 읽기 전용으로만 준다. DB에 쓰지 않는다.
+    const replayId = url.searchParams.get('replay');
+    if (replayId !== null) {
+      const replay = readReplay(replayId);
+      if (!replay) return reply({ error: '재생할 평가 응답을 찾을 수 없습니다.' }, 404);
+      return reply({ replay });
+    }
     const id = url.searchParams.get('proposal');
     if (!id)
       return reply({
         proposals: await listProposals(projectId),
         applications: await listApplications(projectId),
+        replayCases: replayCases(),
       });
     const proposal = await readProposal(projectId, id);
     if (!proposal) return reply({ error: '변경안을 찾을 수 없습니다.' }, 404);

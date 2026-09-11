@@ -73,7 +73,7 @@ const outfile = join(dir, 'route.mjs');
 await build({
   stdin: {
     contents:
-      "export * from './app/api/sprint/route'; export { initialize } from './lib/sprint-store'; export { GET as projectsGET,POST as projectsPOST } from './app/api/projects/route'; export { GET as sourcesGET,POST as sourcesPOST } from './app/api/sources/route'; export { GET as proposalsGET,POST as proposalsPOST,useModel } from './app/api/change-proposals/route'; export { fakeModel,validateChanges } from './lib/ai-extraction';",
+      "export * from './app/api/sprint/route'; export { initialize } from './lib/sprint-store'; export { GET as projectsGET,POST as projectsPOST } from './app/api/projects/route'; export { GET as sourcesGET,POST as sourcesPOST } from './app/api/sources/route'; export { GET as proposalsGET,POST as proposalsPOST,useModel } from './app/api/change-proposals/route'; export { fakeModel,validateChanges } from './lib/ai-extraction'; export { replayReview,readReplay,replayCases } from './lib/change-review-replay';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -274,6 +274,145 @@ async function propose(user, projectId, sourceId) {
 let seq = 0;
 // 클라이언트가 만드는 요청 식별자와 같은 형태(충분히 긴 무작위 값)를 쓴다.
 const mutation = (label) => `mut-${label}-${++seq}-${crypto.randomUUID()}`;
+
+// 저장된 평가 응답 재생: 평가 스키마 → 화면 계약 변환과 읽기 전용 조회.
+const replayBase = {
+  caseId: 'GH-TL-TEST',
+  variant: 'test-low',
+  model: 'test-model',
+  reasoningEffort: 'low',
+  startedAt: '2026-09-11T00:00:00Z',
+  thread: { title: '테스트 스레드', url: 'https://github.com/o/r/issues/1' },
+  excerpts: [
+    { index: 0, text: '첫 발언', authorLogin: 'amy', createdAt: '2026-09-10T03:17:00Z', sourceUrl: 'https://github.com/o/r/issues/1#c0' },
+    { index: 1, text: '둘째 발언\n줄바꿈 포함', authorLogin: 'ben', createdAt: '2026-09-10T03:18:00Z', sourceUrl: 'https://github.com/o/r/issues/1#c1' },
+  ],
+  tasks: [{ task_id: 'issue-1', title: '로그인', state: 'closed', closed_reason: 'COMPLETED', assignees: ['amy'] }],
+  members: ['amy', 'ben'],
+  provenance: { resultPath: 'x', resultSha256: 'x', candidatePath: 'x', candidateLineSha256: 'x' },
+};
+const evalChange = (kind, over = {}) => ({
+  kind,
+  task_id: 'issue-1',
+  status: null,
+  person: null,
+  remaining_hours: null,
+  due_at: null,
+  title: null,
+  basis: 'fact',
+  evidence_excerpt_indices: [1],
+  ...over,
+});
+const evalResponse = (changes, over = {}) => ({
+  id: 'GH-TL-TEST',
+  summary_ko: '요약',
+  decision: 'propose_changes',
+  clarification_reason_ko: null,
+  changes,
+  ...over,
+});
+
+test('평가 변경 종류를 화면용 변경 전후로 옮기고 모르는 이전 값을 없음으로 단정하지 않는다', () => {
+  const review = api.replayReview({
+    ...replayBase,
+    response: evalResponse([
+      evalChange('createTask', { task_id: null, title: '새 업무', person: 'ben', remaining_hours: 3 }),
+      evalChange('status', { status: 'in_progress' }),
+      evalChange('assignee', { person: 'ben' }),
+      evalChange('remaining', { remaining_hours: 2 }),
+      evalChange('dueAt', { due_at: '2026-09-12' }),
+      evalChange('complete', { evidence_excerpt_indices: [0, 1] }),
+    ]),
+  });
+  const [create, status, assignee, remaining, due, complete] = review.proposal.changes;
+  assert.deepEqual([create.before, create.after], [{}, { title: '새 업무', person: 'ben', remaining: 3, dependsOn: [] }]);
+  assert.deepEqual([status.before, status.after], [{ status: 'closed' }, { status: 'in_progress' }]);
+  assert.deepEqual([assignee.before, assignee.after], [{ person: 'amy' }, { person: 'ben' }]);
+  assert.deepEqual([remaining.before, remaining.after, remaining.unknownBefore], [{ remaining: null }, { remaining: 2 }, ['remaining']]);
+  assert.deepEqual([due.before, due.after, due.unknownBefore], [{ dueAt: null }, { dueAt: '2026-09-12' }, ['dueAt']]);
+  assert.deepEqual([complete.before, complete.after], [{ done: true }, { done: true }]);
+  assert.deepEqual([create.taskTitle, status.taskTitle], ['새 업무', '로그인']);
+  assert.deepEqual(review.proposal.changes.map((c) => c.requires), ['owner', 'assignee', 'owner', 'assignee', 'owner', 'assignee']);
+  assert.equal(complete.evidenceItems.length, 2);
+  for (const c of review.proposal.changes) {
+    assert.equal(c.blocked, '저장된 평가 응답 재생은 적용할 수 없습니다.');
+    assert.equal(c.needsReview, '');
+    for (const e of c.evidenceItems) assert.equal(review.source.body.slice(e.start, e.end), e.quote);
+  }
+  assert.deepEqual([review.origin, review.readOnly, review.status], ['replay', true, 'ready']);
+});
+
+test('범위를 벗어난 근거 인덱스는 버리지 않고 재생 전체를 실패로 표시한다', () => {
+  const review = api.replayReview({
+    ...replayBase,
+    response: evalResponse([evalChange('complete', { evidence_excerpt_indices: [0, 5] })]),
+  });
+  assert.equal(review.status, 'failed');
+  assert.equal(review.proposal.status, 'failed');
+  assert.match(review.proposal.error, /5/);
+});
+
+test('고정한 실제 응답 4건이 변경·무변경·확인 필요·담당자 미정으로 변환된다', () => {
+  assert.deepEqual(
+    api.replayCases().map((c) => [c.caseId, c.decision]),
+    [
+      ['GH-TL-1114781787', 'propose_changes'],
+      ['GH-TL-1125100581', 'no_change'],
+      ['GH-TL-4880873604', 'needs_clarification'],
+      ['GH-TL-5210407787', 'propose_changes'],
+    ],
+  );
+  const changed = api.readReplay('GH-TL-1114781787');
+  const noChange = api.readReplay('GH-TL-1125100581');
+  const clarification = api.readReplay('GH-TL-4880873604');
+  const unassigned = api.readReplay('GH-TL-5210407787');
+  assert.equal(changed.decision, 'propose_changes');
+  assert.equal(changed.proposal.changes[0].after.person, 'majink');
+  assert.equal(changed.proposal.changes[0].needsReview, '');
+  assert.equal(noChange.decision, 'no_change');
+  assert.deepEqual(noChange.proposal.changes, []);
+  assert.ok(noChange.summary);
+  assert.equal(clarification.decision, 'needs_clarification');
+  assert.match(clarification.clarification, /task_id/);
+  assert.equal(unassigned.proposal.changes.length, 6);
+  assert.ok(unassigned.proposal.changes.every((c) => c.after.person === null));
+  assert.ok(unassigned.proposal.changes.every((c) => c.needsReview === '담당자 미정'));
+  for (const review of [changed, noChange, clarification, unassigned]) {
+    assert.equal(review.status, 'ready');
+    for (const c of review.proposal.changes)
+      for (const e of c.evidenceItems) assert.equal(review.source.body.slice(e.start, e.end), e.quote);
+  }
+  assert.equal(api.readReplay('missing'), null);
+});
+
+test('회원은 실제 평가 응답 4건을 읽고 DB는 바뀌지 않는다', async () => {
+  const { projectId } = await startedTeam('replay', 'replaymate');
+  const count = (table) => Number(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n);
+  const snapshot = () => ({
+    tasks: count('sprint_tasks'),
+    proposals: count('ai_change_proposals'),
+    applications: count('ai_change_applications'),
+  });
+  const before = snapshot();
+  const listResponse = await proposalGet('replay', `project=${projectId}`);
+  assert.equal(listResponse.status, 200);
+  const list = await listResponse.json();
+  assert.equal(list.replayCases.length, 4);
+  assert.deepEqual(Object.keys(list.replayCases[0]).sort(), ['caseId', 'decision', 'label', 'model', 'variant']);
+  const response = await proposalGet('replay', `project=${projectId}&replay=GH-TL-1114781787`);
+  assert.equal(response.status, 200);
+  const { replay } = await response.json();
+  assert.equal(replay.decision, 'propose_changes');
+  const evidence = replay.proposal.changes[0].evidenceItems[0];
+  assert.equal(replay.source.body.slice(evidence.start, evidence.end), evidence.quote);
+  assert.deepEqual(snapshot(), before);
+});
+
+test('비회원과 없는 replay ID는 각각 403과 404다', async () => {
+  const { projectId } = await startedTeam('replayguard', 'replayguardmate');
+  assert.equal((await proposalGet('outsider', `project=${projectId}&replay=GH-TL-1114781787`)).status, 403);
+  assert.equal((await proposalGet('replayguard', `project=${projectId}&replay=missing`)).status, 404);
+});
 
 test('원문은 공백·줄바꿈까지 그대로 보존되고 프로젝트 밖에서는 읽지 못한다', async () => {
   const { projectId } = await startedTeam('src1', 'src1mate');
