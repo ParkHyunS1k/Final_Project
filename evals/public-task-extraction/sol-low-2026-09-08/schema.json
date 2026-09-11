@@ -1,0 +1,155 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "summary_ko": {
+      "type": "string"
+    },
+    "work_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description_ko": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string",
+            "enum": [
+              "current_thread",
+              "subtask",
+              "referenced_issue",
+              "unknown"
+            ]
+          },
+          "referenced_issue_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_progress",
+              "completed",
+              "blocked",
+              "deferred",
+              "not_implemented",
+              "unknown"
+            ]
+          },
+          "modality": {
+            "type": "string",
+            "enum": [
+              "asserted",
+              "proposed",
+              "conditional",
+              "question"
+            ]
+          },
+          "assignee_login": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remaining_minutes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "estimated_minutes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "evidence_excerpt_indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "required": [
+          "description_ko",
+          "target",
+          "referenced_issue_url",
+          "state",
+          "modality",
+          "assignee_login",
+          "remaining_minutes",
+          "estimated_minutes",
+          "evidence_excerpt_indices"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "whole_thread_completion_reported": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "release_state": {
+      "type": "string",
+      "enum": [
+        "released",
+        "not_released",
+        "unknown"
+      ]
+    },
+    "relation": {
+      "type": "string",
+      "enum": [
+        "duplicate",
+        "possible_duplicate",
+        "work_elsewhere",
+        "none"
+      ]
+    },
+    "relation_target_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "conflicting_estimate_minutes": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "needs_clarification": {
+      "type": "boolean"
+    },
+    "clarification_reason_ko": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "summary_ko",
+    "work_items",
+    "whole_thread_completion_reported",
+    "release_state",
+    "relation",
+    "relation_target_url",
+    "conflicting_estimate_minutes",
+    "needs_clarification",
+    "clarification_reason_ko"
+  ],
+  "additionalProperties": false
+}

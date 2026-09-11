@@ -1,0 +1,75 @@
+{
+  "id": "PM-REAL-028",
+  "model_requested": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:21:32.645202+00:00",
+  "elapsed_seconds": 14.65,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "655423bbc80de60db962b694a97ab0080cbce3b9bddb43af0168bdbc9349fea4",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 9234,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 351,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-028",
+    "summary_ko": "회원정보 조회·수정의 views.py와 HTML 작업 및 마이페이지의 AJAX 전환은 완료되었다고 보고됐으나, 커밋 푸시는 아직 이루어지지 않았다. 전체 이슈 완료 여부와 릴리스 상태는 불분명하다.",
+    "work_items": [
+      {
+        "description_ko": "회원정보 조회 및 수정 views.py와 HTML 구현",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "completed",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "완료된 회원정보 조회·수정 커밋 푸시",
+        "target": "subtask",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "마이페이지 기본 코드를 AJAX 코드로 변경",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "completed",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": null,
+    "release_state": "not_released",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "개별 구현 완료는 보고됐지만 푸시가 남아 있어 전체 마이페이지 이슈의 완료 여부를 확정할 수 없다."
+  },
+  "parse_error": null,
+  "errors": []
+}

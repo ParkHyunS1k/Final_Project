@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-034",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:43:13.130116+00:00",
+  "elapsed_seconds": 6.963,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "c91291cad4176049481803a25ac6891ddbe7dd95704bd1e1604d3c4d7d4a166e",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7840,
+    "cached_input_tokens": 6912,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 228,
+    "reasoning_output_tokens": 65
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-034",
+    "summary_ko": "중복된 파일을 제거하기 위해 이슈를 열어 둔 상태다. 파일 제거 자체는 아직 완료되었다고 보고되지 않았다.",
+    "work_items": [
+      {
+        "description_ko": "중복된 파일을 제거하기",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "proposed",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

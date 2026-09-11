@@ -1,0 +1,76 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788797782849,
+      "tag": "0000_sudden_chameleon",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788798128300,
+      "tag": "0001_illegal_aqueduct",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788800871562,
+      "tag": "0002_ambitious_magneto",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788801380849,
+      "tag": "0003_complete_apocalypse",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1788805240678,
+      "tag": "0004_boring_reavers",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789000000000,
+      "tag": "0005_spartan_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789100000000,
+      "tag": "0006_deadline_reminders",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1789200000000,
+      "tag": "0007_ai_change_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789300000000,
+      "tag": "0008_task_change_version",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789400000000,
+      "tag": "0009_batch_recipient_slot",
+      "breakpoints": true
+    }
+  ]
+}

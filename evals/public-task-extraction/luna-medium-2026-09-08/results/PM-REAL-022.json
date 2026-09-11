@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-022",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:16:32.707372+00:00",
+  "elapsed_seconds": 7.691,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "fd20c722e61ce6f37fdfa42e8df007cce3aa6a07446f1ea0ad23bc2ec3656f2f",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7845,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 255,
+    "reasoning_output_tokens": 105
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-022",
+    "summary_ko": "이 이슈에서 리소스 적용 작업을 진행하겠다는 의사가 표현되었다.",
+    "work_items": [
+      {
+        "description_ko": "리소스 적용 작업",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}
