@@ -683,6 +683,63 @@ test('5개 후보 중 2개만 승인하면 그 2개만 반영된다', async () =
   assert.ok(after.events.some((e) => e.action === 'aiApply'));
 });
 
+test('같은 업무의 같은 값을 쓰는 항목은 함께 승인하지 못하고, 하나만 승인하면 바로 되돌릴 수 있다', async () => {
+  const { projectId, state } = await startedTeam('overlap', 'overlapmate');
+  const s = await change('overlap', projectId, 'createTask', state, {
+    title: 'A 업무',
+    person: 0,
+    remaining: 4,
+    dependsOn: [],
+  });
+  // 완료 문장에 시간이 함께 있으면 가짜 모델이 남은 공수와 완료 보고를 둘 다 만든다.
+  const sourceId = await paste('overlap', projectId, 'A 업무 완료, 2시간 걸렸어요');
+  api.useModel(api.fakeModel());
+  const created = await propose('overlap', projectId, sourceId);
+  const taskId = s.sprint.tasks[0].id;
+  const remaining = created.proposal.changes.find((c) => c.kind === 'remaining' && c.taskId === taskId);
+  const complete = created.proposal.changes.find((c) => c.kind === 'complete' && c.taskId === taskId);
+  assert.ok(remaining && complete);
+  const applications = () => Number(db.prepare('SELECT COUNT(*) AS n FROM ai_change_applications').get().n);
+  const before = applications();
+
+  const both = await proposalRequest('overlap', {
+    action: 'apply',
+    projectId,
+    revision: s.sprint.revision,
+    proposalId: created.proposalId,
+    mutationId: mutation('overlap'),
+    selections: [{ changeId: remaining.changeId }, { changeId: complete.changeId }],
+  });
+  assert.equal(both.status, 400, await both.clone().text());
+  assert.match((await both.json()).error, /남은 공수/);
+  const unchanged = await read('overlap', projectId);
+  assert.equal(unchanged.sprint.tasks[0].remaining, 4);
+  assert.equal(unchanged.sprint.tasks[0].done, false);
+  assert.equal(applications(), before);
+
+  const one = await proposalRequest('overlap', {
+    action: 'apply',
+    projectId,
+    revision: unchanged.sprint.revision,
+    proposalId: created.proposalId,
+    mutationId: mutation('overlap'),
+    selections: [{ changeId: complete.changeId }],
+  });
+  assert.equal(one.status, 200, await one.clone().text());
+  const { applicationId, state: applied } = await one.json();
+  const reverted = await proposalRequest('overlap', {
+    action: 'revert',
+    projectId,
+    revision: applied.sprint.revision,
+    applicationId,
+    mutationId: mutation('overlap-revert'),
+  });
+  assert.equal(reverted.status, 200, await reverted.clone().text());
+  const restored = await read('overlap', projectId);
+  assert.equal(restored.sprint.tasks[0].remaining, 4);
+  assert.equal(restored.sprint.tasks[0].done, false);
+});
+
 test('무권한 항목이 섞인 일괄 승인은 부분 성공 없이 거절된다', async () => {
   const { projectId, state } = await startedTeam('perm', 'permmate');
   let s = await change('perm', projectId, 'createTask', state, {

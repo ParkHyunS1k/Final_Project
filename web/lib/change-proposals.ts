@@ -8,6 +8,15 @@ import { text } from './utils';
 
 export type StoredChange = ValidChange;
 
+const FIELD_LABELS: Record<string, string> = {
+  remaining: '남은 공수',
+  done: '완료',
+  evidence: '완료 근거',
+  status: '진행 상태',
+  person: '담당자',
+  dueAt: '마감',
+};
+
 export function changeRow(row: Record<string, unknown>): StoredChange {
   return {
     changeId: String(row.change_id),
@@ -311,6 +320,21 @@ export function prepareApplication(
       after,
       edited: wasEdited,
     });
+  }
+  // 같은 업무의 같은 값을 두 항목이 쓰면 마지막 값만 남아 되돌리기 비교가 어긋난다.
+  const written = new Set<string>();
+  for (const entry of entries) {
+    if (entry.kind === 'createTask') continue;
+    for (const field of Object.keys(entry.after)) {
+      const key = `${entry.taskId}:${field}`;
+      if (written.has(key)) {
+        const title = ctx.tasks.find((t) => t.id === entry.taskId)?.title;
+        throw new PolicyError(
+          `"${title}"의 ${FIELD_LABELS[field] ?? field} 값을 바꾸는 항목이 둘 이상 선택됐습니다. 하나만 선택해주세요.`,
+        );
+      }
+      written.add(key);
+    }
   }
   return { entries, creations };
 }
