@@ -1662,6 +1662,21 @@ textarea {
 .schedule-warning {
   color: #b17c31;
 }
+/* 원문·근거는 줄바꿈을 보존하되 좁은 화면에서 가로로 넘치지 않게 한다. */
+.source-body,
+.evidence {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.replay-banner {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid #d9c38f;
+  border-radius: 8px;
+  background: #fbf4e2;
+  color: #7a5a1c;
+  font-size: 14px;
+}
 .collection-empty {
   text-align: center;
   padding: 65px 20px;
