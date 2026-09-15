@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
 
 const geistSans = Geist({
@@ -9,6 +9,12 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
+
+// 한글 글리프는 Geist에 없어 Noto Sans KR로 이어진다. 한글 조각 파일은 미리 받지 않는다.
+const notoSansKr = Noto_Sans_KR({
+  variable: '--font-noto-kr',
   subsets: ['latin'],
 });
 
@@ -26,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${notoSansKr.variable} antialiased`}
       >
         {children}
       </body>
