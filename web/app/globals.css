@@ -1538,6 +1538,10 @@ textarea {
   color: var(--gray-400);
   margin: 5px 0 0 25px;
 }
+/* shadcn 선택 상자는 min-w-0이라 좁은 표에서 여백만 남고 값이 사라진다. */
+.task-table [data-slot='native-select-wrapper'] {
+  min-width: 112px;
+}
 .task-table select,
 .board-card select {
   min-height: 28px;
