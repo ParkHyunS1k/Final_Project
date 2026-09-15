@@ -5,8 +5,45 @@ import {
   schedule,
   plan,
   validateHours,
+  deadlineDays,
   type Sprint,
+  type Task,
 } from '../lib/sprint.ts';
+function due(id: number, dueAt: string | null): Task {
+  return {
+    id,
+    title: 'T' + id,
+    person: 0,
+    remaining: 1,
+    optional: false,
+    deferred: false,
+    done: false,
+    evidence: '',
+    dependsOn: [],
+    dueAt,
+  };
+}
+test('승인된 마감은 시작 시각부터 24시간 단위 Day 칸에 놓인다', () => {
+  const start = '2026-09-12T01:33:00+09:00';
+  const end = '2026-09-19T01:33:00+09:00';
+  const { days, undated } = deadlineDays(start, end, [
+    due(1, '2026-09-13T01:33:00+09:00'), // Day 1이 끝나는 시각
+    due(2, '2026-09-13T01:34:00+09:00'), // Day 2 시작 직후
+    due(3, end), // 최종 기한 시각은 마지막 날
+    due(4, null),
+    due(5, start), // 시작 시각은 Day 1
+  ]);
+  assert.equal(days.length, 7);
+  assert.equal(days[0].start, new Date(start).toISOString());
+  assert.deepEqual(
+    days.map((d) => d.tasks.map((t) => t.id)),
+    [[5, 1], [2], [], [], [], [], [3]],
+  );
+  assert.deepEqual(
+    undated.map((t) => t.id),
+    [4],
+  );
+});
 const now = new Date('2026-09-08T09:00:00+09:00');
 function small(): Sprint {
   const s = seed(now);
