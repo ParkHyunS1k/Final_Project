@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Project switching clears invitation and dashboard state via full navigation. */
 import { useEffect, useState, type ReactNode } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   SidebarProvider,
   Sidebar,
@@ -460,7 +461,14 @@ export function ProjectWorkspace({
             <p>목표를 정하고 팀원을 초대해 7일 동안 함께 진행합니다.</p>
           </section>
         ) : !loaded ? (
-          <p className="project-panel">프로젝트를 불러오는 중입니다.</p>
+          <section className="project-panel" aria-busy="true">
+            <p className="tiny muted">프로젝트를 불러오는 중입니다.</p>
+            <div className="loading-skeleton" aria-hidden="true">
+              <Skeleton className="h-8 w-1/3" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-32" />
+            </div>
+          </section>
         ) : null}
       </SidebarInset>
     </SidebarProvider>
