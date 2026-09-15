@@ -271,11 +271,12 @@ test('생성은 준비 상태이며 혼자서는 시작할 수 없다', async ()
   const after = await read('solo', projectId);
   assert.equal(after.policy.startedAt, null);
   assert.equal(after.sprint.revision, state.sprint.revision);
-  // 잘못된 기간은 생성 단계에서 거절한다.
-  assert.equal(
-    (await projectRequest('solo', { ...goalInput, duration: 6 })).status,
-    400,
-  );
+  // 기간은 7일 고정이다(2026-09-15). 다른 기간은 생성 단계에서 거절한다.
+  for (const duration of [6, 8, 10])
+    assert.equal(
+      (await projectRequest('solo', { ...goalInput, duration })).status,
+      400,
+    );
   assert.equal(
     (await projectRequest('solo', { ...goalInput, agreed: false })).status,
     400,
