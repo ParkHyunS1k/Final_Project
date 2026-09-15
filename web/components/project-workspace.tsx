@@ -213,7 +213,7 @@ export function ProjectWorkspace({
         title: f.get('title'),
         goal: f.get('goal'),
         scope: f.get('scope'),
-        duration: Number(f.get('duration')),
+        duration: 7,
         deliverables: f.get('deliverables'),
         completionCriteria: f.get('criteria'),
         agreed: f.get('agreed') === 'on',
@@ -287,7 +287,7 @@ export function ProjectWorkspace({
           <p className="sidebar-note">
             작게 시작하고, 함께 완성하기.
             <br />
-            7–10일 스프린트
+            7일 스프린트
           </p>
         </SidebarFooter>
       </Sidebar>
@@ -323,11 +323,11 @@ export function ProjectWorkspace({
         )}
         {creating && (
           <section className="project-panel">
-            <h1>7~10일 안에 완성할 프로젝트</h1>
+            <h1>7일 안에 완성할 프로젝트</h1>
             <p>
               팀이 함께 확인할 목표와 완료 기준부터 정합니다. 만들면 준비
               상태로 저장되고, 최소 2명이 최신 목표에 동의한 뒤 팀장이 시작할
-              때 그 시각부터 선택한 일수만큼 기한이 확정됩니다. 준비 기간은
+              때 그 시각부터 7일 뒤로 기한이 확정됩니다. 준비 기간은
               스프린트 기간을 소모하지 않습니다.
             </p>
             <form className="project-form" onSubmit={create}>
@@ -352,16 +352,6 @@ export function ProjectWorkspace({
                   maxLength={2000}
                   placeholder="이번에 만들 기능과 만들지 않을 것"
                 />
-              </label>
-              <label>
-                기간
-                <select name="duration" defaultValue="10">
-                  {[7, 8, 9, 10].map((n) => (
-                    <option key={n} value={n}>
-                      {n}일
-                    </option>
-                  ))}
-                </select>
               </label>
               <label>
                 필수 결과물
@@ -467,7 +457,7 @@ export function ProjectWorkspace({
         ) : loaded && !creating ? (
           <section className="project-panel">
             <h1>첫 스프린트를 만들어보세요.</h1>
-            <p>목표를 정하고 팀원을 초대해 7~10일 동안 함께 진행합니다.</p>
+            <p>목표를 정하고 팀원을 초대해 7일 동안 함께 진행합니다.</p>
           </section>
         ) : !loaded ? (
           <p className="project-panel">프로젝트를 불러오는 중입니다.</p>

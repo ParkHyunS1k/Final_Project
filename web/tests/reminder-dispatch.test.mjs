@@ -227,9 +227,9 @@ function fakeSender(script = []) {
 function rows(sql, ...args) {
   return db.prepare(sql).all(...args);
 }
-// 마감을 넉넉히 두고 시작한 팀. 업무 마감은 시작 뒤에만 지정할 수 있다.
+// 7일 스프린트로 시작한 팀. 업무 마감은 시작 뒤에만 지정할 수 있다.
 async function reminderTeam(owner, mate) {
-  const { projectId, state } = await startedTeam(owner, mate, { duration: 10 });
+  const { projectId, state } = await startedTeam(owner, mate);
   return { projectId, state, deadline: state.policy.deadlineAt };
 }
 function dueIn(state, hours) {

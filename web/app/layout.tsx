@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   referrer: 'no-referrer',
-  title: 'ProjectMate · 7~10일 완주 스프린트',
-  description: '작은 팀의 7~10일 프로젝트 완주를 돕는 스프린트 에이전트 데모',
+  title: 'ProjectMate · 7일 완주 스프린트',
+  description: '작은 팀의 7일 프로젝트 완주를 돕는 스프린트 에이전트 데모',
 };
 
 export default function RootLayout({
