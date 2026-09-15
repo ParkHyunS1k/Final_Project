@@ -27,6 +27,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   NativeSelect,
   NativeSelectOption,
@@ -380,6 +381,12 @@ function Dashboard({
               </a>
             )}
             <p>{error || '저장한 프로젝트를 불러오는 중입니다.'}</p>
+            {!error && !needsLogin && (
+              <div className="loading-skeleton" aria-hidden="true">
+                <Skeleton className="h-24" />
+                <Skeleton className="h-40" />
+              </div>
+            )}
             {error && (
               <button className="btn primary" onClick={refresh}>
                 다시 불러오기
@@ -482,7 +489,7 @@ function Dashboard({
             )}
             {lifecycle === 'draft' && state!.readiness && (
               <section className="project-panel">
-                <span className="eyebrow">START CHECK</span>
+                <span className="eyebrow">시작 전 확인</span>
                 <h2>시작 준비</h2>
                 <p>
                   가입 {state!.readiness.joined}명 · 최신 목표 동의{' '}
@@ -651,8 +658,8 @@ function Dashboard({
                     <div className="goal-card">
                       <span className="eyebrow">
                         {state!.agreement?.fixed_at
-                          ? 'FIXED PROMISE'
-                          : 'OUR PROMISE'}
+                          ? '고정한 약속'
+                          : '우리의 약속'}
                       </span>
                       <h3>
                         크게 벌이지 않고,
@@ -852,7 +859,7 @@ function Dashboard({
                     </p>
                   </div>
                   <div className="refund-criteria">
-                    <span className="eyebrow">DELIVERABLES</span>
+                    <span className="eyebrow">완주 기준</span>
                     <h3>합의한 결과물</h3>
                     {state!.deliverables.map((d) => (
                       <div className="criterion" key={d.deliverableId}>
