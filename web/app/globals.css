@@ -113,13 +113,18 @@ button:disabled {
 }
 button:focus-visible,
 a:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+input:not([data-slot]):focus-visible,
+select:not([data-slot]):focus-visible {
   outline: 3px solid #6f9746;
   outline-offset: 4px;
 }
-button {
+button,
+a {
   transition:
-    background 0.15s,
+    background-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s,
     transform 0.15s;
 }
 button:not(:disabled):active {
@@ -203,6 +208,7 @@ a {
 .icon-btn {
   background: none;
   border: 0;
+  border-radius: 6px;
   padding: 8px;
   color: var(--gray-600);
 }
@@ -1933,4 +1939,22 @@ textarea {
   .calendar-day {
     min-height: 0;
   }
+}
+
+/* 상호작용 상태: 누를 수 있는 요소는 올렸을 때 반응한다. */
+.btn:not(.primary):not(.dark):hover:not(:disabled) {
+  background: var(--gray-100);
+}
+.btn.dark:hover:not(:disabled) {
+  background: var(--green-800);
+}
+.icon-btn:hover:not(:disabled) {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+.text-link:hover:not(:disabled),
+.work-health button:hover:not(:disabled) {
+  color: var(--green-800);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
