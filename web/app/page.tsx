@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
 import { ChangeReview } from '@/components/change-review';
+import { DeadlineCalendar } from '@/components/deadline-calendar';
 import {
   ProjectWorkspace,
   ProjectDetails,
@@ -14,7 +15,6 @@ import {
   ArrowRight,
   Check,
   Clock3,
-  Flag,
   Zap,
   Sparkles,
   ShieldCheck,
@@ -27,7 +27,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Progress } from '@/components/ui/progress';
 import {
   NativeSelect,
   NativeSelectOption,
@@ -358,9 +357,6 @@ function Dashboard({
     !state.me.leftAt;
   const tasks = s?.tasks ?? [];
   const done = tasks.filter((t) => t.done).length;
-  const progress = state?.completion.total
-    ? Math.round((state.completion.confirmed / state.completion.total) * 100)
-    : 0;
   const deadline = state?.policy?.deadlineAt ?? null;
   const remainingHours = deadline
     ? (Date.parse(deadline) - Date.parse(state?.asOf ?? '1970-01-01')) / 3600000
@@ -523,79 +519,14 @@ function Dashboard({
             {tab === 'docs' && <ProjectDetails state={state!} refresh={load} />}
             {tab === 'today' && (
               <section className="work-section">
-                <section className="overview-grid">
-                  <div className="countdown">
-                    <div className="row">
-                      <span className="eyebrow">THE FINISH LINE</span>
-                      <Flag size={21} />
-                    </div>
-                    <div className="day-number">
-                      {lifecycle === 'active'
-                        ? `D−${remainingDays}`
-                        : phase.label}
-                      <span>
-                        {lifecycle === 'completed'
-                          ? '결과물 확인 완료'
-                          : lifecycle === 'draft'
-                            ? '아직 기간이 줄지 않아요'
-                            : '하나씩, 확실하게'}
-                      </span>
-                    </div>
-                    <div className="row tiny">
-                      <span>
-                        {state!.policy?.startedAt
-                          ? seoulTime(state!.policy.startedAt) + ' 시작'
-                          : '시작 전'}
-                      </span>
-                      <b>
-                        {deadline ? seoulTime(deadline) + ' KST 마감' : '기한 미확정'}
-                      </b>
-                    </div>
-                  </div>
-                  <div className="stat-card">
-                    <span className="stat-label">합의 결과물 확인</span>
-                    <div className="stat-number">
-                      {progress}
-                      <small>%</small>
-                    </div>
-                    <Progress value={progress} aria-label="결과물 확인율" />
-                    <p>
-                      {state!.completion.total}개 중{' '}
-                      {state!.completion.confirmed}개 팀장 확인
-                    </p>
-                    <div className="stat-footer">
-                      <Check size={16} /> 업무 개수·보고 횟수는 완주 조건이
-                      아닙니다
-                    </div>
-                  </div>
-                  <div className="stat-card">
-                    <span className="stat-label">마감까지 남은 작업</span>
-                    <div className="stat-number">
-                      {plan?.needed ?? 0}
-                      <small>시간</small>
-                    </div>
-                    <span
-                      className={`pill ${plan?.feasible ? 'green' : 'orange'}`}
-                    >
-                      {!tasks.length
-                        ? '업무 계획 전'
-                        : plan?.feasible
-                          ? '현재 계산상 배치 가능'
-                          : `${plan?.unscheduled.length ?? 0}개 작업 배치 불가`}
-                    </span>
-                    <p>
-                      하루 {plan?.dailyHours ?? 8}시간 공통 가정 · 남은 예산{' '}
-                      {Math.round((plan?.available ?? 0) * 10) / 10}시간
-                      {plan?.provisional ? ' (예상)' : ''}
-                    </p>
-                    <button
-                      className="text-link stat-footer"
-                      onClick={() => setTab('team')}
-                    >
-                      공수 계산 보기 <ArrowRight size={15} />
-                    </button>
-                  </div>
-                </section>
+                <DeadlineCalendar
+                  startedAt={state!.policy?.startedAt ?? null}
+                  deadline={deadline}
+                  asOf={state!.asOf}
+                  tasks={tasks}
+                  people={people}
+                  onPlan={() => setTab('plan')}
+                />
                 <div className="content-grid">
                   <section>
                     <div className="section-heading">

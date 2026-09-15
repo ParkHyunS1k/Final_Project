@@ -170,7 +170,7 @@ export function ProjectWorkspace({
     { id: string; title: string; role: string; lifecycle: string }[]
   >([]);
   const [selected, setSelected] = useState('');
-  const [view, setView] = useState('plan');
+  const [view, setView] = useState('today');
   const [loaded, setLoaded] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -255,7 +255,7 @@ export function ProjectWorkspace({
                     onClick={() => {
                       setSelected(p.id);
                       setCreating(false);
-                      setView('plan');
+                      setView('today');
                       history.replaceState(
                         null,
                         '',

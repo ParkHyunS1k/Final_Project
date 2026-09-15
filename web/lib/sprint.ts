@@ -386,3 +386,28 @@ export function seoulTime(iso: string) {
     .slice(0, 16)
     .replace('T', ' ');
 }
+
+const DAY_MS = 86400000;
+// 시작 시각부터 24시간 단위 Day 칸에 승인된 마감을 둔다(최종 기한 계산과 같은 기준).
+// 구간이 끝나는 시각의 마감은 그날 마감이다. 마감이 없거나 기간 밖이면 undated.
+export function deadlineDays(startedAt: string, deadline: string, tasks: Task[]) {
+  const start = Date.parse(startedAt);
+  const days = Array.from(
+    { length: Math.round((Date.parse(deadline) - start) / DAY_MS) },
+    (_, i) => ({
+      day: i + 1,
+      start: new Date(start + i * DAY_MS).toISOString(),
+      tasks: [] as Task[],
+    }),
+  );
+  const undated: Task[] = [];
+  for (const t of tasks) {
+    const at = t.dueAt ? Date.parse(t.dueAt) : NaN;
+    const slot = days[Math.max(1, Math.ceil((at - start) / DAY_MS)) - 1];
+    if (slot) slot.tasks.push(t);
+    else undated.push(t);
+  }
+  for (const d of days)
+    d.tasks.sort((a, b) => Date.parse(a.dueAt!) - Date.parse(b.dueAt!));
+  return { days, undated };
+}
