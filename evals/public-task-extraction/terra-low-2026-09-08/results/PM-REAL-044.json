@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-044",
+  "model_requested": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:20:02.514847+00:00",
+  "elapsed_seconds": 5.528,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "b41de8d34a109b65abadbbad36880310e2cdf217bc11c596f45904ca6c6f18cb",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 9215,
+    "cached_input_tokens": 8960,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 147,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-044",
+    "summary_ko": "SwiftLint 규칙 Wiki 업로드가 예정되어 있다.",
+    "work_items": [
+      {
+        "description_ko": "SwiftLint 규칙을 Wiki에 업로드",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": "noah0316",
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

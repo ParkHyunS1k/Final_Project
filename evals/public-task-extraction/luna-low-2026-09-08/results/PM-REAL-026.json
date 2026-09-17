@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-026",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:42:52.130904+00:00",
+  "elapsed_seconds": 8.193,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "e39d5d2974b7c2fe555e69899a2d2c75d1646a8bc20b60a29f74d444a9cd579a",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7872,
+    "cached_input_tokens": 6912,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 310,
+    "reasoning_output_tokens": 116
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-026",
+    "summary_ko": "UI는 아직 배포되지 않은 개발 중인 v1.2를 기준으로 하며, 화면이 다르게 보일 수 있다는 안내입니다.",
+    "work_items": [
+      {
+        "description_ko": "v1.2 UI 개발",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "in_progress",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "not_released",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "현재 이슈의 구체적인 작업 범위와 v1.2 UI 개발이 이슈의 직접적인 작업인지 불분명합니다."
+  },
+  "parse_error": null,
+  "errors": []
+}

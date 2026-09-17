@@ -1,0 +1,62 @@
+{
+  "id": "PM-REAL-048",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:43:46.190144+00:00",
+  "elapsed_seconds": 13.585,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "325560147588902fac3f87635c3517d14f6f3202575db971850d30167de58e17",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7908,
+    "cached_input_tokens": 6912,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 483,
+    "reasoning_output_tokens": 214
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-048",
+    "summary_ko": "관리자 레이아웃 관련 체크 항목 하나가 완료된 것으로 표시되었고, 라벨 작업의 예상 소요 시간은 1시간으로 제시되었습니다. 전체 이슈의 완료 여부나 릴리스 상태는 확인되지 않습니다.",
+    "work_items": [
+      {
+        "description_ko": "세부 작업(내용 불명)을 완료로 표시",
+        "target": "subtask",
+        "referenced_issue_url": null,
+        "state": "completed",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": 180,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "라벨 작업",
+        "target": "subtask",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": 60,
+        "evidence_excerpt_indices": [
+          1
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "첫 번째 체크 항목의 작업 내용과 두 시간 값이 동일 작업에 대한 상충 추정인지 확인할 수 없습니다."
+  },
+  "parse_error": null,
+  "errors": []
+}

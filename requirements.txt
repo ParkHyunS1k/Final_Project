@@ -1,0 +1,7 @@
+# Python 3.12 기준. 이 PC에서는 `python`이 Store 스텁이므로 `py -3`로 실행한다.
+#   py -3 -m pip install -r requirements.txt
+
+networkx>=3.0    # 의존관계 위상정렬, 역산 스케줄러
+pypdf>=5.0       # PDF 텍스트 레이어 추출 (없으면 스캔본으로 보고 VLM으로 넘어간다)
+
+# 그 외는 표준 라이브러리만 쓴다. LLM/전사 호출도 urllib으로 직접 한다.

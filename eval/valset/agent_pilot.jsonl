@@ -1,0 +1,12 @@
+{"id": "p-01", "utterance": "성경이한테 금요일까지 모델 평가 좀 던져줘", "expect": {"decision": "tool_calls", "tool": "create_task"}, "tags": ["colloquial", "relative_date"], "note": "오늘 2026-09-08(화) 기준 금요일 = 2026-09-11"}
+{"id": "p-02", "utterance": "지금 지연된 업무 뭐 있어?", "expect": {"decision": "tool_calls", "tool": "search_tasks"}, "tags": ["read", "delayed_only"]}
+{"id": "p-03", "utterance": "현민이 업무량 얼마나 돼?", "expect": {"decision": "tool_calls", "tool": "get_member_tasks"}, "tags": ["read", "partial_name"], "note": "'현민' → 김현민. 다른 프로젝트의 남현민은 보이면 안 된다"}
+{"id": "p-04", "utterance": "지원이한테 발표자료 만들라고 해줘", "expect": {"decision": "clarify", "tool": null}, "tags": ["ambiguous_member"], "note": "박지원/최지원 둘 다 있다"}
+{"id": "p-05", "utterance": "평가 하네스 작성 끝났어", "expect": {"decision": "tool_calls", "tool": "complete_task"}, "tags": ["implicit_intent"], "note": "v1 실패: no_tool '수고하셨습니다'로 넘어갔다"}
+{"id": "p-06", "utterance": "평가 하네스 작성 완료 처리해줘", "expect": {"decision": "tool_calls", "tool": "complete_task"}, "tags": ["needs_task_id"], "note": "v1 실패: 'ID를 알려주세요'로 과잉 되묻기"}
+{"id": "p-07", "utterance": "API 서버 구현 마감을 다음 주 수요일로 미뤄줘", "expect": {"decision": "tool_calls", "tool": "update_task"}, "tags": ["needs_task_id", "relative_date"], "note": "다음 주 수요일 = 2026-09-16"}
+{"id": "p-08", "utterance": "다음 주쯤까지 뭐 하나 만들어줘", "expect": {"decision": "clarify", "tool": null}, "tags": ["underspecified"], "note": "제목이 없다. 되묻는 게 정답"}
+{"id": "p-09", "utterance": "오늘 서울 날씨 어때?", "expect": {"decision": "no_tool", "tool": null}, "tags": ["out_of_scope"]}
+{"id": "p-10", "utterance": "확인 카드 UI 누가 하고 있지?", "expect": {"decision": "tool_calls", "tool": "search_tasks"}, "tags": ["read", "by_title"]}
+{"id": "p-11", "utterance": "DB 스키마 작성도 완료 처리해줘", "expect": {"decision": "tool_calls", "tool": "complete_task"}, "tags": ["already_done"], "note": "이미 done이다. Tool이 INVALID_STATE를 반환하는 게 정답"}
+{"id": "p-12", "utterance": "홍길동한테 배포 스크립트 맡겨줘", "expect": {"decision": "clarify", "tool": null}, "tags": ["unknown_member"], "note": "없는 팀원. 임의로 만들면 안 된다. clarify 또는 NOT_FOUND 후 되묻기"}

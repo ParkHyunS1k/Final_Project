@@ -1,0 +1,62 @@
+{
+  "id": "PM-REAL-028",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:42:57.557289+00:00",
+  "elapsed_seconds": 9.401,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "655423bbc80de60db962b694a97ab0080cbce3b9bddb43af0168bdbc9349fea4",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7859,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 341,
+    "reasoning_output_tokens": 92
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-028",
+    "summary_ko": "회원정보 조회·수정 기능의 views.py 및 HTML 커밋이 완료되었고, 기본 코드를 AJAX 코드로 변경하는 작업도 완료되었다. 아직 push되지 않았다.",
+    "work_items": [
+      {
+        "description_ko": "회원정보 조회 및 수정 기능의 views.py·HTML을 AJAX 코드로 변경하고 커밋",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "completed",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "완료된 커밋을 원격 저장소에 push",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

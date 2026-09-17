@@ -1,0 +1,62 @@
+{
+  "id": "PM-REAL-020",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:42:35.515173+00:00",
+  "elapsed_seconds": 10.212,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "6da3a1f072529a2e102fa64418335dc852195927a23e71ef9d2a7023eeb80c20",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7910,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 371,
+    "reasoning_output_tokens": 110
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-020",
+    "summary_ko": "라플리 디버프 버전의 얼굴색을 먼지유령처럼 강한 색으로 수정할 예정입니다. 팩맘 기절 모션도 타일맴과 함께 작업할 예정입니다.",
+    "work_items": [
+      {
+        "description_ko": "라플리 디버프 버전의 얼굴색을 새파랗거나 새빨갛게 수정",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "팩맘 기절 모션을 타일맴과 함께 작업",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

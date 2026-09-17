@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-041",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:17:31.385456+00:00",
+  "elapsed_seconds": 7.404,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "2be0b3ef83ba2d4cdcfeb5f3fa46c5c22b1fe5d47b1938a024607d73f52ed3d7",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7853,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 257,
+    "reasoning_output_tokens": 90
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-041",
+    "summary_ko": "watched_ad_counts가 3을 초과할 때 오류를 발생시키는 작업이 남아 있다.",
+    "work_items": [
+      {
+        "description_ko": "watched_ad_counts 값이 3을 초과할 경우 오류를 발생시킨다.",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

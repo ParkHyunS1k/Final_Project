@@ -1,0 +1,34 @@
+{
+  "variants": [
+    [
+      "luna-medium",
+      "gpt-5.6-luna",
+      "medium"
+    ],
+    [
+      "terra-low",
+      "gpt-5.6-terra",
+      "low"
+    ],
+    [
+      "sol-low",
+      "gpt-5.6-sol",
+      "low"
+    ]
+  ],
+  "cases": "same 35 development cases, 15 holdout untouched",
+  "data_changes": false,
+  "baseline_reused": true,
+  "initial_account_usage_percent": {
+    "short_window": 8,
+    "weekly": 17
+  },
+  "manual_review_watchlist": [
+    "PM-REAL-012",
+    "PM-REAL-024",
+    "PM-REAL-038",
+    "PM-REAL-043",
+    "PM-REAL-048"
+  ],
+  "score_caution": "Selected provisional checks, not human-validated accuracy; distinguish 35-case raw score and 34-case score excluding PM-REAL-048."
+}

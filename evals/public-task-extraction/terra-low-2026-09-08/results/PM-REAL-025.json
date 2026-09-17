@@ -1,0 +1,62 @@
+{
+  "id": "PM-REAL-025",
+  "model_requested": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:19:27.354683+00:00",
+  "elapsed_seconds": 7.125,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "027719040a972c1c2adfa0cdca915bcd990eb4ff9690bbdc41a3d0dd5e985409",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 9233,
+    "cached_input_tokens": 8960,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 240,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-025",
+    "summary_ko": "보고된 두 버그 중 2번은 해결되었다고 보고되었고, 1번은 아직 수정 중입니다.",
+    "work_items": [
+      {
+        "description_ko": "버그 2번 해결",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "completed",
+        "modality": "asserted",
+        "assignee_login": "rebreather",
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "버그 1번 수정",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "in_progress",
+        "modality": "asserted",
+        "assignee_login": "rebreather",
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "본문에서 1번과 2번 버그의 구체적 내용은 확인할 수 없습니다."
+  },
+  "parse_error": null,
+  "errors": []
+}

@@ -1,0 +1,62 @@
+{
+  "id": "PM-REAL-027",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:16:51.197511+00:00",
+  "elapsed_seconds": 12.551,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "75df196d7cf9f63f1e2b5dec33a428ec29ba9731dfbae5ade828618a3415a73b",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7861,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 444,
+    "reasoning_output_tokens": 197
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-027",
+    "summary_ko": "product get 호출 코드는 아직 구현되지 않았으며, detailPage에서 사용하는 타입을 받아오는 방안이 언급되었다.",
+    "work_items": [
+      {
+        "description_ko": "product get을 호출하는 코드 구현",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "not_implemented",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "detailPage에서 사용하는 타입을 받아오는 방식 검토",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "proposed",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "타입 적용 방안의 확정 여부와 전체 이슈의 완료·릴리스 상태가 명시되지 않았다."
+  },
+  "parse_error": null,
+  "errors": []
+}

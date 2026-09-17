@@ -1,0 +1,62 @@
+{
+  "id": "PM-REAL-048",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:17:49.370528+00:00",
+  "elapsed_seconds": 15.441,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "325560147588902fac3f87635c3517d14f6f3202575db971850d30167de58e17",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7908,
+    "cached_input_tokens": 6912,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 636,
+    "reasoning_output_tokens": 376
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-048",
+    "summary_ko": "3시간으로 표시된 체크 항목이 완료된 것으로 기록되어 있습니다. ‘라벨’ 작업의 예상 소요 시간은 1시간으로 제시되었으나 작업 완료 여부는 확인되지 않습니다.",
+    "work_items": [
+      {
+        "description_ko": "3시간으로 표시된 체크 항목",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "completed",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "라벨 작업",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "unknown",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": 60,
+        "evidence_excerpt_indices": [
+          1
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "체크된 3시간 항목의 구체적 작업 내용과 ‘라벨’ 작업의 현재 상태가 제공되지 않았습니다."
+  },
+  "parse_error": null,
+  "errors": []
+}

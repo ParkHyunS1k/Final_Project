@@ -1,0 +1,62 @@
+{
+  "id": "PM-REAL-047",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:43:42.811174+00:00",
+  "elapsed_seconds": 11.594,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "d1e6759b527b21ff4485cdbc130c5f1e0c696c8da64bb04678f8fc57a3636edd",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7883,
+    "cached_input_tokens": 6912,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 446,
+    "reasoning_output_tokens": 181
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-047",
+    "summary_ko": "도서 유지 보수를 위한 보관 및 신규 도서 관리 규칙이 제시되어 있다. 해당 규칙의 실행 여부나 인수인계 문서 작성 완료 여부는 확인되지 않는다.",
+    "work_items": [
+      {
+        "description_ko": "책을 북스탠드를 이용해 세워서 보관한다.",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "unknown",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "description_ko": "새로운 책을 추가할 때 스티커를 부착한다.",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "unknown",
+        "modality": "conditional",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "규칙의 이행 상태, 담당자, 문서 작성 완료 여부가 제공되지 않았다."
+  },
+  "parse_error": null,
+  "errors": []
+}

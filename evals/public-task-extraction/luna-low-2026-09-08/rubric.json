@@ -1,0 +1,205 @@
+{
+  "status": "assistant-authored provisional checks; not human gold labels",
+  "created_before_bulk_results_review": true,
+  "notes": "PM-REAL-001 smoke result was already observed. All other checks were written before bulk results review. Checks are selective and do not cover all task omission or hallucination errors.",
+  "cases": {
+    "PM-REAL-001": {
+      "completion_not_true": true
+    },
+    "PM-REAL-005": {
+      "completion_not_true": true,
+      "has_any_state": [
+        "planned",
+        "in_progress"
+      ]
+    },
+    "PM-REAL-008": {
+      "completion_not_true": true,
+      "has_state": [
+        "completed"
+      ]
+    },
+    "PM-REAL-012": {
+      "completion_is": true,
+      "has_state": [
+        "completed"
+      ]
+    },
+    "PM-REAL-016": {
+      "completion_not_true": true,
+      "relation": "work_elsewhere",
+      "target_suffix": "/issues/41"
+    },
+    "PM-REAL-017": {
+      "completion_not_true": true,
+      "has_state": [
+        "planned"
+      ]
+    },
+    "PM-REAL-019": {
+      "completion_not_true": true,
+      "has_state": [
+        "planned"
+      ]
+    },
+    "PM-REAL-020": {
+      "completion_not_true": true,
+      "minimum_items": 2,
+      "has_state": [
+        "planned"
+      ]
+    },
+    "PM-REAL-021": {
+      "completion_is": true,
+      "has_state": [
+        "completed"
+      ]
+    },
+    "PM-REAL-022": {
+      "completion_not_true": true,
+      "has_state": [
+        "planned"
+      ]
+    },
+    "PM-REAL-023": {
+      "completion_not_true": true,
+      "has_state": [
+        "planned"
+      ]
+    },
+    "PM-REAL-024": {
+      "completion_is": true,
+      "has_state": [
+        "completed"
+      ]
+    },
+    "PM-REAL-025": {
+      "completion_not_true": true,
+      "has_state": [
+        "completed",
+        "in_progress"
+      ],
+      "needs_clarification": true
+    },
+    "PM-REAL-026": {
+      "completion_not_true": true,
+      "release_state": "not_released"
+    },
+    "PM-REAL-027": {
+      "completion_not_true": true,
+      "has_state": [
+        "not_implemented"
+      ]
+    },
+    "PM-REAL-028": {
+      "completion_not_true": true
+    },
+    "PM-REAL-029": {
+      "completion_not_true": true,
+      "release_state": "not_released"
+    },
+    "PM-REAL-030": {
+      "completion_not_true": true,
+      "has_state": [
+        "in_progress"
+      ]
+    },
+    "PM-REAL-031": {
+      "completion_not_true": true,
+      "has_state": [
+        "completed",
+        "in_progress"
+      ]
+    },
+    "PM-REAL-032": {
+      "release_state": "released",
+      "has_state": [
+        "completed"
+      ]
+    },
+    "PM-REAL-034": {
+      "completion_not_true": true,
+      "relation": "none",
+      "has_state": [
+        "planned"
+      ]
+    },
+    "PM-REAL-035": {
+      "completion_not_true": true,
+      "relation": "duplicate",
+      "target_suffix": "/issues/44143"
+    },
+    "PM-REAL-036": {
+      "completion_not_true": true,
+      "relation": "duplicate",
+      "target_suffix": "/issues/82"
+    },
+    "PM-REAL-037": {
+      "completion_not_true": true,
+      "relation": "possible_duplicate"
+    },
+    "PM-REAL-038": {
+      "remaining_minutes": 280,
+      "remaining_effort_total_once": true
+    },
+    "PM-REAL-039": {
+      "completion_not_true": true,
+      "has_any_state": [
+        "planned",
+        "not_implemented"
+      ]
+    },
+    "PM-REAL-041": {
+      "completion_not_true": true,
+      "has_any_state": [
+        "planned",
+        "not_implemented"
+      ]
+    },
+    "PM-REAL-043": {
+      "completion_not_true": true,
+      "has_modality": [
+        "conditional"
+      ]
+    },
+    "PM-REAL-044": {
+      "completion_not_true": true,
+      "has_state": [
+        "planned"
+      ]
+    },
+    "PM-REAL-045": {
+      "completion_not_true": true,
+      "minimum_items": 2,
+      "has_state": [
+        "planned"
+      ]
+    },
+    "PM-REAL-046": {
+      "completion_not_true": true,
+      "has_modality": [
+        "conditional"
+      ]
+    },
+    "PM-REAL-047": {
+      "completion_not_true": true
+    },
+    "PM-REAL-048": {
+      "completion_not_true": true,
+      "conflicting_estimate_minutes": [
+        60,
+        180
+      ],
+      "needs_clarification": true,
+      "no_single_estimate": true
+    },
+    "PM-REAL-049": {
+      "completion_not_true": true,
+      "estimated_minutes": 30
+    },
+    "PM-REAL-050": {
+      "completion_not_true": true,
+      "minimum_items": 2
+    }
+  }
+}

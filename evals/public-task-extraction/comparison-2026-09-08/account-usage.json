@@ -1,0 +1,27 @@
+{
+  "scope": "Account-wide snapshots, includes this conversation and potentially other activity; not per-model billing.",
+  "short_window_minutes": 300,
+  "weekly_window_minutes": 10080,
+  "snapshots": [
+    {
+      "stage": "before_new_runs",
+      "short_used_percent": 8,
+      "weekly_used_percent": 17
+    },
+    {
+      "stage": "after_luna_medium",
+      "short_used_percent": 22,
+      "weekly_used_percent": 19
+    },
+    {
+      "stage": "after_terra_low",
+      "short_used_percent": 27,
+      "weekly_used_percent": 20
+    },
+    {
+      "stage": "after_sol_low",
+      "short_used_percent": 35,
+      "weekly_used_percent": 22
+    }
+  ]
+}
