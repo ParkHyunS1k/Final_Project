@@ -1,0 +1,37 @@
+{
+  "_comment": "Stage 2(계획서 → 업무)의 LLM 출력 자리. 지금은 고정 JSON이다. 날짜 필드가 없다는 점이 핵심 — 날짜는 스케줄러가 계산한다.",
+  "members": [
+    {
+      "name": "김현민", "role": "backend", "weekly_hours": 12,
+      "busy": [["월", 540, 780, "자료구조"], ["수", 540, 780, "운영체제"], ["금", 600, 900, "알바"]]
+    },
+    {
+      "name": "이성경", "role": "ml", "weekly_hours": 14,
+      "busy": [["화", 540, 720, "기계학습"], ["목", 540, 720, "확률통계"]]
+    },
+    {
+      "name": "박지원", "role": "frontend", "weekly_hours": 9,
+      "busy": [["월", 780, 960, "HCI"], ["화", 780, 960, "웹프로그래밍"], ["토", 540, 1020, "알바"]]
+    },
+    {
+      "name": "최지원", "role": "pm", "weekly_hours": 8,
+      "busy": [["수", 780, 960, "기술경영"], ["금", 540, 720, "영어회화"]]
+    }
+  ],
+  "tasks": [
+    {"ref": "t1", "title": "아이디어 확정 및 요구사항 정의", "assignee": "최지원", "effort_hours": 6, "depends_on": [], "anchor": "접수 마감"},
+    {"ref": "t2", "title": "기획서 초안 작성", "assignee": "최지원", "effort_hours": 8, "depends_on": ["t1"], "anchor": "접수 마감"},
+    {"ref": "t3", "title": "화면 설계 및 와이어프레임", "assignee": "박지원", "effort_hours": 7, "depends_on": ["t1"], "anchor": "접수 마감"},
+    {"ref": "t4", "title": "기획서 최종본 제출 준비", "assignee": "최지원", "effort_hours": 4, "depends_on": ["t2", "t3"], "anchor": "접수 마감"},
+
+    {"ref": "t5", "title": "데이터 수집 및 전처리", "assignee": "이성경", "effort_hours": 16, "depends_on": ["t1"], "anchor": "중간 점검 멘토링"},
+    {"ref": "t6", "title": "API 서버 구현", "assignee": "김현민", "effort_hours": 20, "depends_on": ["t1"], "anchor": "중간 점검 멘토링"},
+    {"ref": "t7", "title": "모델 학습 파이프라인", "assignee": "이성경", "effort_hours": 18, "depends_on": ["t5"], "anchor": "중간 점검 멘토링"},
+    {"ref": "t8", "title": "프론트엔드 화면 구현", "assignee": "박지원", "effort_hours": 18, "depends_on": ["t3"], "anchor": "중간 점검 멘토링"},
+
+    {"ref": "t9", "title": "모델-서버 통합", "assignee": "김현민", "effort_hours": 10, "depends_on": ["t6", "t7"], "anchor": "본선 발표 및 시상식"},
+    {"ref": "t10", "title": "통합 테스트 및 버그 수정", "assignee": "박지원", "effort_hours": 12, "depends_on": ["t8", "t9"], "anchor": "본선 발표 및 시상식"},
+    {"ref": "t11", "title": "시연 영상 촬영·편집", "assignee": "박지원", "effort_hours": 6, "depends_on": ["t10"], "anchor": "본선 발표 및 시상식"},
+    {"ref": "t12", "title": "발표 자료 작성 및 리허설", "assignee": "최지원", "effort_hours": 10, "depends_on": ["t10"], "anchor": "본선 발표 및 시상식"}
+  ]
+}

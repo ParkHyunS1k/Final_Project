@@ -1,0 +1,556 @@
+{
+  "checked_at": "2026-09-08T08:40:11.866654+00:00",
+  "method": "Exact Python Unicode substring comparison against unmodified GitHub REST API fields captured during collection. No whitespace, spelling or Unicode normalization.",
+  "checks": [
+    {
+      "id": "PM-REAL-001",
+      "title_matches_source": true,
+      "excerpt_count": 2,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 16,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-002",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 23,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-003",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 20,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-004",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 13,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-005",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 11,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-006",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 19,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-007",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 22,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-008",
+      "title_matches_source": true,
+      "excerpt_count": 2,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 17,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-009",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 24,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-010",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 9,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-011",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 6,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-012",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 17,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-013",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 8,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-014",
+      "title_matches_source": true,
+      "excerpt_count": 2,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 16,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-015",
+      "title_matches_source": true,
+      "excerpt_count": 2,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 15,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-016",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 14,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-017",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 7,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-018",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 24,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-019",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 17,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-020",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 24,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-021",
+      "title_matches_source": true,
+      "excerpt_count": 2,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 8,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-022",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 10,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-023",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 4,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-024",
+      "title_matches_source": true,
+      "excerpt_count": 2,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 10,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-025",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 17,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-026",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 21,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-027",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 18,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-028",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 16,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-029",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 14,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-030",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 17,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-031",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 18,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-032",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 15,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-033",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 12,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-034",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 18,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-035",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 16,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-036",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 5,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-037",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 18,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-038",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 20,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-039",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 14,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-040",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 16,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-041",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 17,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-042",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 23,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-043",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 14,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-044",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 8,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-045",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 23,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-046",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 20,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-047",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 22,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-048",
+      "title_matches_source": true,
+      "excerpt_count": 2,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 14,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-049",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 12,
+      "source_account_types": [
+        "User"
+      ]
+    },
+    {
+      "id": "PM-REAL-050",
+      "title_matches_source": true,
+      "excerpt_count": 1,
+      "all_excerpts_match_source": true,
+      "text_edits": 0,
+      "quoted_whitespace_words": 21,
+      "source_account_types": [
+        "User"
+      ]
+    }
+  ]
+}

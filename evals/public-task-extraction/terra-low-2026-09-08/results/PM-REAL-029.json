@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-029",
+  "model_requested": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:19:34.682176+00:00",
+  "elapsed_seconds": 5.985,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "2a85b614b578b308744326aab276996dc59964bf63c8bc0c290886e3cbf40933",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 9242,
+    "cached_input_tokens": 8960,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 146,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-029",
+    "summary_ko": "QA 배포 서버에는 아직 업데이트하지 않았다고 보고되었다.",
+    "work_items": [
+      {
+        "description_ko": "QA 배포 서버 업데이트",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "not_implemented",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "not_released",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

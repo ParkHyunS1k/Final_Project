@@ -1,0 +1,50 @@
+{
+  "id": "PM-REAL-021",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:42:35.752341+00:00",
+  "elapsed_seconds": 10.081,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "5dea140a26d9c032fa6ebbfda2e6abef33e83a283556981eb45e43a19eb18a98",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7895,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 371,
+    "reasoning_output_tokens": 207
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-021",
+    "summary_ko": "작업자가 한글로 언어를 통일하겠다고 밝혔고, 이후 작업 완료가 보고되었습니다.",
+    "work_items": [
+      {
+        "description_ko": "한글로 언어를 통일하는 작업",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "completed",
+        "modality": "asserted",
+        "assignee_login": "ljjyu",
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0,
+          1
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": true,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

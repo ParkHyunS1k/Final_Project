@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-043",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T10:43:33.739247+00:00",
+  "elapsed_seconds": 5.225,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "24b1857864f8bf5042f549d191c206e93a6cf52eb9feb3de5f26511e3cb34e27",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7847,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 153,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-043",
+    "summary_ko": "API가 완성되면 실제 데이터에 맞게 코드를 수정할 예정입니다.",
+    "work_items": [
+      {
+        "description_ko": "API 완성 후 실제 데이터에 맞도록 코드를 수정",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "planned",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

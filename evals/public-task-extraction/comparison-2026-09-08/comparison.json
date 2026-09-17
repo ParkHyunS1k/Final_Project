@@ -1,0 +1,994 @@
+{
+  "generated_at": "2026-09-08T13:23:06.035507+00:00",
+  "interpretation": "Provisional selected checks, not human-validated accuracy. One trial per case per configuration.",
+  "excluded_from_secondary_score": [
+    "PM-REAL-048"
+  ],
+  "exclusion_predeclared_in": "plan.json",
+  "baseline_reused": true,
+  "new_model_invocations": 105,
+  "total_responses_compared": 140,
+  "holdout_cases_executed": 0,
+  "integrity": {
+    "baseline_manifest_valid": true,
+    "identical_case_prompts": true,
+    "identical_schema_and_rubric": true,
+    "dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682"
+  },
+  "variants": [
+    {
+      "variant": "luna-low",
+      "model_requested": "gpt-5.6-luna",
+      "reasoning_effort": "low",
+      "successful_responses": 35,
+      "raw_cases_passed": 32,
+      "raw_cases_total": 35,
+      "raw_checks_passed": 173,
+      "raw_checks_total": 177,
+      "excluding_048_cases_passed": 32,
+      "excluding_048_cases_total": 34,
+      "excluding_048_checks_passed": 169,
+      "excluding_048_checks_total": 171,
+      "raw_failed_cases": [
+        "PM-REAL-038",
+        "PM-REAL-043",
+        "PM-REAL-048"
+      ],
+      "clarification_cases": 14,
+      "latency_includes_cli_startup_seconds": {
+        "median": 9.007,
+        "min": 5.225,
+        "max": 13.585
+      },
+      "usage_totals": {
+        "input_tokens": 275228,
+        "cached_input_tokens": 82944,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 10759,
+        "reasoning_output_tokens": 3544
+      },
+      "tool_calls": 0,
+      "first_case_started_at": "2026-09-08T10:40:43.911552+00:00"
+    },
+    {
+      "variant": "luna-medium",
+      "model_requested": "gpt-5.6-luna",
+      "reasoning_effort": "medium",
+      "successful_responses": 35,
+      "raw_cases_passed": 33,
+      "raw_cases_total": 35,
+      "raw_checks_passed": 174,
+      "raw_checks_total": 177,
+      "excluding_048_cases_passed": 33,
+      "excluding_048_cases_total": 34,
+      "excluding_048_checks_passed": 170,
+      "excluding_048_checks_total": 171,
+      "raw_failed_cases": [
+        "PM-REAL-024",
+        "PM-REAL-048"
+      ],
+      "clarification_cases": 14,
+      "latency_includes_cli_startup_seconds": {
+        "median": 10.056,
+        "min": 7.404,
+        "max": 15.585
+      },
+      "usage_totals": {
+        "input_tokens": 275228,
+        "cached_input_tokens": 55296,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12879,
+        "reasoning_output_tokens": 5692
+      },
+      "tool_calls": 0,
+      "first_case_started_at": "2026-09-08T13:16:05.389360+00:00"
+    },
+    {
+      "variant": "terra-low",
+      "model_requested": "gpt-5.6-terra",
+      "reasoning_effort": "low",
+      "successful_responses": 35,
+      "raw_cases_passed": 34,
+      "raw_cases_total": 35,
+      "raw_checks_passed": 175,
+      "raw_checks_total": 177,
+      "excluding_048_cases_passed": 34,
+      "excluding_048_cases_total": 34,
+      "excluding_048_checks_passed": 171,
+      "excluding_048_checks_total": 171,
+      "raw_failed_cases": [
+        "PM-REAL-048"
+      ],
+      "clarification_cases": 5,
+      "latency_includes_cli_startup_seconds": {
+        "median": 7.016,
+        "min": 5.357,
+        "max": 9.441
+      },
+      "usage_totals": {
+        "input_tokens": 323353,
+        "cached_input_tokens": 215040,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 6589,
+        "reasoning_output_tokens": 0
+      },
+      "tool_calls": 0,
+      "first_case_started_at": "2026-09-08T13:19:01.619854+00:00"
+    },
+    {
+      "variant": "sol-low",
+      "model_requested": "gpt-5.6-sol",
+      "reasoning_effort": "low",
+      "successful_responses": 35,
+      "raw_cases_passed": 34,
+      "raw_cases_total": 35,
+      "raw_checks_passed": 176,
+      "raw_checks_total": 177,
+      "excluding_048_cases_passed": 33,
+      "excluding_048_cases_total": 34,
+      "excluding_048_checks_passed": 170,
+      "excluding_048_checks_total": 171,
+      "raw_failed_cases": [
+        "PM-REAL-025"
+      ],
+      "clarification_cases": 10,
+      "latency_includes_cli_startup_seconds": {
+        "median": 10.36,
+        "min": 7.321,
+        "max": 17.733
+      },
+      "usage_totals": {
+        "input_tokens": 323353,
+        "cached_input_tokens": 65280,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 7418,
+        "reasoning_output_tokens": 191
+      },
+      "tool_calls": 0,
+      "first_case_started_at": "2026-09-08T13:20:43.636308+00:00"
+    }
+  ],
+  "cases": {
+    "PM-REAL-001": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-001.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-001.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-001.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-001.json"
+      }
+    },
+    "PM-REAL-005": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-005.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-005.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-005.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-005.json"
+      }
+    },
+    "PM-REAL-008": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-008.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-008.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-008.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-008.json"
+      }
+    },
+    "PM-REAL-012": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-012.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-012.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-012.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-012.json"
+      }
+    },
+    "PM-REAL-016": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-016.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-016.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-016.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-016.json"
+      }
+    },
+    "PM-REAL-017": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-017.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-017.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-017.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-017.json"
+      }
+    },
+    "PM-REAL-019": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-019.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-019.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-019.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-019.json"
+      }
+    },
+    "PM-REAL-020": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-020.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-020.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-020.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-020.json"
+      }
+    },
+    "PM-REAL-021": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-021.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-021.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-021.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-021.json"
+      }
+    },
+    "PM-REAL-022": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-022.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-022.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-022.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-022.json"
+      }
+    },
+    "PM-REAL-023": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-023.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-023.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-023.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-023.json"
+      }
+    },
+    "PM-REAL-024": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-024.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": false,
+        "failed_checks": [
+          {
+            "check": "completion_is",
+            "passed": false,
+            "actual": null
+          }
+        ],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-024.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-024.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-024.json"
+      }
+    },
+    "PM-REAL-025": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-025.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-025.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-025.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": false,
+        "failed_checks": [
+          {
+            "check": "needs_clarification",
+            "passed": false,
+            "actual": false
+          }
+        ],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-025.json"
+      }
+    },
+    "PM-REAL-026": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-026.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-026.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-026.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-026.json"
+      }
+    },
+    "PM-REAL-027": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-027.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-027.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-027.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-027.json"
+      }
+    },
+    "PM-REAL-028": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-028.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-028.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-028.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-028.json"
+      }
+    },
+    "PM-REAL-029": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-029.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-029.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-029.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-029.json"
+      }
+    },
+    "PM-REAL-030": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-030.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-030.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-030.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-030.json"
+      }
+    },
+    "PM-REAL-031": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-031.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-031.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-031.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-031.json"
+      }
+    },
+    "PM-REAL-032": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-032.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-032.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-032.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-032.json"
+      }
+    },
+    "PM-REAL-034": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-034.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-034.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-034.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-034.json"
+      }
+    },
+    "PM-REAL-035": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-035.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-035.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-035.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-035.json"
+      }
+    },
+    "PM-REAL-036": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-036.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-036.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-036.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-036.json"
+      }
+    },
+    "PM-REAL-037": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-037.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-037.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-037.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-037.json"
+      }
+    },
+    "PM-REAL-038": {
+      "luna-low": {
+        "all_selected_checks_passed": false,
+        "failed_checks": [
+          {
+            "check": "remaining_effort_total_once",
+            "passed": false,
+            "actual": [
+              280,
+              280,
+              280
+            ]
+          }
+        ],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-038.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-038.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-038.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-038.json"
+      }
+    },
+    "PM-REAL-039": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-039.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-039.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-039.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-039.json"
+      }
+    },
+    "PM-REAL-041": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-041.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-041.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-041.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-041.json"
+      }
+    },
+    "PM-REAL-043": {
+      "luna-low": {
+        "all_selected_checks_passed": false,
+        "failed_checks": [
+          {
+            "check": "has_modality",
+            "passed": false,
+            "actual": [
+              "asserted"
+            ]
+          }
+        ],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-043.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-043.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-043.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-043.json"
+      }
+    },
+    "PM-REAL-044": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-044.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-044.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-044.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-044.json"
+      }
+    },
+    "PM-REAL-045": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-045.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-045.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-045.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-045.json"
+      }
+    },
+    "PM-REAL-046": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-046.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-046.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-046.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-046.json"
+      }
+    },
+    "PM-REAL-047": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-047.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-047.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-047.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-047.json"
+      }
+    },
+    "PM-REAL-048": {
+      "luna-low": {
+        "all_selected_checks_passed": false,
+        "failed_checks": [
+          {
+            "check": "conflicting_estimate_minutes",
+            "passed": false,
+            "actual": []
+          },
+          {
+            "check": "no_single_estimate",
+            "passed": false,
+            "actual": [
+              180,
+              60
+            ]
+          }
+        ],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-048.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": false,
+        "failed_checks": [
+          {
+            "check": "conflicting_estimate_minutes",
+            "passed": false,
+            "actual": []
+          },
+          {
+            "check": "no_single_estimate",
+            "passed": false,
+            "actual": [
+              60
+            ]
+          }
+        ],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-048.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": false,
+        "failed_checks": [
+          {
+            "check": "conflicting_estimate_minutes",
+            "passed": false,
+            "actual": []
+          },
+          {
+            "check": "no_single_estimate",
+            "passed": false,
+            "actual": [
+              180,
+              60
+            ]
+          }
+        ],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-048.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-048.json"
+      }
+    },
+    "PM-REAL-049": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-049.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-049.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-049.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-049.json"
+      }
+    },
+    "PM-REAL-050": {
+      "luna-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-low-2026-09-08/results/PM-REAL-050.json"
+      },
+      "luna-medium": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../luna-medium-2026-09-08/results/PM-REAL-050.json"
+      },
+      "terra-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../terra-low-2026-09-08/results/PM-REAL-050.json"
+      },
+      "sol-low": {
+        "all_selected_checks_passed": true,
+        "failed_checks": [],
+        "response_file": "../sol-low-2026-09-08/results/PM-REAL-050.json"
+      }
+    }
+  }
+}

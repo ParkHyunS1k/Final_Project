@@ -1,0 +1,49 @@
+{
+  "id": "PM-REAL-049",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-08T13:17:56.582421+00:00",
+  "elapsed_seconds": 11.254,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "8f9a684b709224b161ff24c0f8e807771a2e9af15f355ce5ef619010e39ee233",
+  "schema_sha256": "2ad66ba21df68b4c239dd1e572cf058d3ddaeef487ae15a4b3bd05fcf9173bbc",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "usage": {
+    "input_tokens": 7852,
+    "cached_input_tokens": 6912,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 354,
+    "reasoning_output_tokens": 161
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-049",
+    "summary_ko": "마이페이지 프로필 등록 작업의 예상 소요 시간은 0.5시간(30분)으로 제시되었다. 구현 또는 전체 이슈 완료 여부는 언급되지 않았다.",
+    "work_items": [
+      {
+        "description_ko": "마이페이지 프로필 등록 작업",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "unknown",
+        "modality": "asserted",
+        "assignee_login": null,
+        "remaining_minutes": null,
+        "estimated_minutes": 30,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": false,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "conflicting_estimate_minutes": [],
+    "needs_clarification": true,
+    "clarification_reason_ko": "작업 상태, 잔여 시간, 담당자 및 릴리스 여부가 제공되지 않았다."
+  },
+  "parse_error": null,
+  "errors": []
+}

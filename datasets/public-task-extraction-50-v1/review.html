@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProjectMate · 공개 원문 50건 검토</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f5f2;color:#272724;font:15px/1.6 system-ui,sans-serif}main{max-width:1100px;margin:36px auto;padding:0 24px}h1{font-size:28px;margin:0 0 8px}p{margin:8px 0}.muted,small{color:#686862}header{margin-bottom:24px}.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:16px;background:#fff;border:1px solid #dddcd5;border-radius:8px}input,select,button{font:inherit;padding:8px;border:1px solid #ccc;border-radius:5px;background:#fff}input[type=search]{flex:1;min-width:180px}button{cursor:pointer}button:disabled{opacity:.4;cursor:default}.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-top:18px}.panel{background:#fff;border:1px solid #dddcd5;border-radius:8px;padding:22px;overflow-wrap:anywhere}.panel h2{font-size:18px;margin:0 0 14px}.label{font-size:12px;font-weight:700;letter-spacing:.03em;color:#686862}.raw{white-space:pre-wrap;margin:12px 0;padding:16px;background:#f4f5f7;border-left:3px solid #748394;font-family:ui-monospace,monospace;line-height:1.8}a{color:#255ea8}#position{min-width:90px;text-align:center}.notice{background:#fff5db;border-radius:5px;padding:12px}#status{min-height:24px}.facts{white-space:pre-wrap}.meta{font-size:12px;color:#777}ul{padding-left:20px}@media(max-width:760px){.grid{grid-template-columns:1fr}main{padding:0 14px;margin-top:20px}}
+</style>
+<main>
+<header><p class="label">PROJECTMATE / PUBLIC SOURCE DATASET v1</p><h1>공개 원문 50건 검토</h1><p class="muted">한국어 40 · 영어 10 · 직접 만든 합성 사례 0건</p><p>왼쪽은 수정하지 않은 원문 발췌, 오른쪽은 사람이 검수해야 할 AI 해석입니다.</p></header>
+<div class="toolbar"><label>JSONL 파일 열기 <input id="files" type="file" accept=".jsonl" multiple></label><small>dataset.jsonl과 annotations.jsonl 선택 · 파일 내용은 외부로 전송하지 않습니다.</small></div>
+<p id="status" role="status">데이터를 불러오는 중입니다.</p>
+<div class="toolbar"><input id="search" type="search" placeholder="ID · 원문 · 해석 검색" aria-label="사례 검색"><select id="language" aria-label="언어"><option value="">모든 언어</option><option value="ko">한국어</option><option value="en">영어</option></select><button id="prev" type="button">이전</button><span id="position" aria-live="polite"></span><button id="next" type="button">다음</button></div>
+<div class="grid"><section class="panel" id="source"></section><section class="panel" id="annotation"></section></div>
+</main>
+<script>
+let data=[], labels=new Map(), filtered=[], index=0;
+const $=id=>document.getElementById(id);
+function node(tag,text,cls){const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el}
+function sourceLink(url){const a=node('a','실제 출처 열기 ↗');if(url.startsWith('https://github.com/'))a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a}
+function parse(text){return text.split(/\n/).filter(x=>x.trim()).map(x=>JSON.parse(x))}
+function install(rows){if(rows.length&&rows[0].input)data=rows;else if(rows.length&&rows[0].expected)labels=new Map(rows.map(r=>[r.id,r]));else throw Error('지원하는 JSONL 형식이 아닙니다.')}
+function filter(){const q=$('search').value.toLowerCase();filtered=data.filter(r=>(!$('language').value||r.language===$('language').value)&&JSON.stringify([r,labels.get(r.id)]).toLowerCase().includes(q));index=0;render()}
+function render(){
+ const left=$('source'),right=$('annotation');left.replaceChildren();right.replaceChildren();
+ $('position').textContent=filtered.length?`${index+1} / ${filtered.length}`:'0 / 0';$('prev').disabled=index===0;$('next').disabled=index>=filtered.length-1;
+ const r=filtered[index];if(!r){left.append(node('p',data.length?'검색 결과가 없습니다.':'dataset.jsonl 파일을 선택해주세요.'));return}
+ left.append(node('div',`${r.id} · ${r.language} · 원문`, 'label'),node('h2',r.input.thread_title_at_collection),node('p','제목은 수집 시점의 값입니다. 과거 제목·이전 DB 상태는 복원하지 않았습니다.','meta'));
+ r.input.excerpts.forEach((e,i)=>{
+  left.append(node('p',`발췌 ${i+1} · ${e.source_kind} · ${e.author_login}`,'label'),node('p',`작성 ${e.created_at} / 수정 ${e.updated_at}`,'meta'),node('div',e.text,'raw'),sourceLink(e.source_url),node('p',e.selection==='complete_field'?'해당 본문 전체 · 문자 수정 없음':'연속 구간 발췌 · 생략 구간 있음 · 문자 수정 없음','meta'));
+ });
+ const a=labels.get(r.id);right.append(node('div','검토용 주석 — 원문 아님','label'),node('h2',a?a.expected.category:'라벨 미로드'));
+ right.append(node('p','AI 작성 · 사람 검수 전 · 실제 DB 변경의 정답은 제공하지 않습니다.','notice'));
+ if(!a){right.append(node('p','annotations.jsonl을 추가로 선택하면 해석을 볼 수 있습니다.'));return}
+ right.append(node('p',a.expected.interpretation_ko),node('h3','하면 안 되는 해석'));
+ const ul=document.createElement('ul');a.expected.must_not.forEach(x=>ul.append(node('li',x)));right.append(ul);
+ const facts={};for(const k of ['remaining_minutes','estimated_minutes','estimated_minutes_candidates','due_date'])if(k in a.expected)facts[k]=a.expected[k];
+ right.append(node('h3','명시된 수치·날짜'),node('pre',JSON.stringify(facts,null,2),'facts'),node('small','null은 근거 없음이며 0이 아닙니다. 수치는 원문의 보고·예상 값이며 실제 완료를 검증한 값이 아닙니다.'));
+}
+$('files').addEventListener('change',async e=>{try{for(const f of e.target.files)install(parse(await f.text()));filter();$('status').textContent=`원문 ${data.length}건 · 주석 ${labels.size}건 로드됨`;}catch(err){$('status').textContent=`파일 읽기 실패: ${err.message}`}});
+$('search').addEventListener('input',filter);$('language').addEventListener('change',filter);$('prev').onclick=()=>{if(index>0){index--;render()}};$('next').onclick=()=>{if(index<filtered.length-1){index++;render()}};
+(async()=>{try{const results=await Promise.all(['dataset.jsonl','annotations.jsonl'].map(async name=>{const r=await fetch(name);if(!r.ok)throw Error('load');return parse(await r.text())}));results.forEach(install);filter();$('status').textContent=`원문 ${data.length}건 · 주석 ${labels.size}건 로드됨`;}catch{$('status').textContent='로컬 파일로 열었다면 위에서 두 JSONL 파일을 선택해주세요.';filter()}})();
+</script>
+</html>
