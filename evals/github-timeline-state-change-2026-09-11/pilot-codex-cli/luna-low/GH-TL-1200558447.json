@@ -1,0 +1,46 @@
+{
+  "id": "GH-TL-1200558447",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-10T16:08:34.154274+00:00",
+  "elapsed_seconds": 6.243,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "d07819476ad431399f99d33e45fec74c1109e36bc1e391cc83e4d83422df3c3b",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 10727,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 125,
+    "reasoning_output_tokens": 18
+  },
+  "rate_limits": null,
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1200558447",
+    "summary_ko": "프로젝트 칸반 보드 추가가 완료되었다고 명시되었습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "complete",
+        "task_id": "issue-4",
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null,
+  "errors": []
+}

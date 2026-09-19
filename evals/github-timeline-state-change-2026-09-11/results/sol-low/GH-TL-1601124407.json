@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1601124407",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:33:51.563783+00:00",
+  "elapsed_seconds": 5.949,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "0c6106a82afcd2cf896312aad24c9f3a4233608ea7768cc3a123fe422951562f",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1455,
+    "cached_input_tokens": 0,
+    "output_tokens": 229,
+    "reasoning_output_tokens": 135
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1601124407",
+    "summary_ko": "쿠키 Max Age를 1주일로 변경했다는 부분 작업 완료와 향후 인증 고도화 후 재설정 계획이 언급되었습니다. 전체 작업 완료나 별도의 확정된 상태 변경으로 보기는 어렵습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

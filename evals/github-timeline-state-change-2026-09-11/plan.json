@@ -1,0 +1,46 @@
+{
+  "created_before_model_outputs": "파일럿 2건(GH-TL-1200558447, GH-TL-1252482031, luna-low)만 실행한 뒤 작성",
+  "variants": {
+    "luna-low": [
+      "gpt-5.6-luna",
+      "low"
+    ],
+    "luna-medium": [
+      "gpt-5.6-luna",
+      "medium"
+    ],
+    "terra-low": [
+      "gpt-5.6-terra",
+      "low"
+    ],
+    "sol-low": [
+      "gpt-5.6-sol",
+      "low"
+    ]
+  },
+  "reference": "datasets/github-timeline-candidates-v1/labels/claude-blind-v1.jsonl (AI 작성, 사람 검토 전)",
+  "primary_metrics": [
+    "forbidden_hits",
+    "noop_false_positive_rate",
+    "complete_precision",
+    "decision_accuracy",
+    "change_recall"
+  ],
+  "sha256": {
+    "prompt.md": "06a84c7d41f06cd4fe77fa55ae33644b9194dab1b0f929c0c5dd4a43b2e484ab",
+    "schema.json": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+    "score.py": "5556e4897b39d34b46c33c53be223d005a1d1089bd50639861e01c3a7ee9d0bc",
+    "run.py": "ad96c14c7fc6dd41e333bfe880e328f7fb2896be2b8419c9bf871c1de7525254",
+    "sample.json": "9846862a6f30ad1b3fe4d5edfd38a81dac24ef15ad98a7403b01458c10100a31",
+    "labels": "eb6c568718a9fc4a30750c68f7d2711db734a342d4a689cbe351d1d0ecc420d3",
+    "candidates": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45"
+  },
+  "revised_before_full_run": "사용자가 API 키 사용을 지시해 Codex CLI(계정 한도) 대신 OpenAI Responses API로 전환. 한도 제약이 사라져 60건 표본 대신 제외를 뺀 전체 253건을 실행한다. sample.json은 기록용으로 남긴다.",
+  "runner": "openai_responses_api, strict JSON Schema, tools 없음, store=false",
+  "pilots_before_full_run": [
+    "pilot-codex-cli/luna-low 2건",
+    "results/luna-low 2건(API, 본 실행에 재사용)"
+  ],
+  "scope": "253 reviewed cases x 4 variants",
+  "estimated_cost_usd_before_run": "약 8 이하(API 가격 기준 추정)"
+}

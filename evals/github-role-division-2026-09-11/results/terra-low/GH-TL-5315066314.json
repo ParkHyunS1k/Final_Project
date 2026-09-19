@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5315066314",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:03.182832+00:00",
+  "elapsed_seconds": 2.268,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "0e2c626b0b18c513c92687c303e163d32b0489ba5bc15ef4a54f59288f3269e0",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 3396,
+    "cached_input_tokens": 0,
+    "output_tokens": 85,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5315066314",
+    "summary_ko": "PR #178이 dev에 머지되어 단위 테스트 및 커버리지 보강 작업은 완료되었으나, prod 배포 전이라 이슈는 열어 둔다고 명시했습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

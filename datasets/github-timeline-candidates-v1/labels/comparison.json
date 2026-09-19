@@ -1,0 +1,333 @@
+{
+  "lock_sha256": "eb6c568718a9fc4a30750c68f7d2711db734a342d4a689cbe351d1d0ecc420d3",
+  "totals": {
+    "cases": 253,
+    "label_complete": 41,
+    "observed_complete": 198,
+    "complete_both": 35,
+    "label_assignee": 2,
+    "observed_assignee": 36,
+    "assignee_both": 0,
+    "label_status_or_due": 39,
+    "label_creates": 13,
+    "observed_creates": 994,
+    "forbidden_total": 205,
+    "unmapped_observed": 82,
+    "cases_creates_without_label": 134,
+    "discarded": 47,
+    "discarded_with_change": 25,
+    "closed_but_label_not_complete": 163,
+    "target_closed/no_change/label_complete=False/after_24h": 5,
+    "forbidden_hit": 54,
+    "target_closed/propose_changes/label_complete=True/within_1m": 34,
+    "target_closed/propose_changes/label_complete=True/within_24h": 1,
+    "target_closed/propose_changes/label_complete=False/within_24h": 8,
+    "target_closed/no_change/label_complete=False/within_24h": 18,
+    "target_closed/needs_clarification/label_complete=False/within_1m": 9,
+    "target_closed/propose_changes/label_complete=False/after_24h": 1,
+    "target_closed/needs_clarification/label_complete=False/within_24h": 6,
+    "target_closed/no_change/label_complete=False/within_1m": 3,
+    "label_complete_not_closed": 6,
+    "target_not_closed/propose_changes/label_complete=True": 4,
+    "target_closed/propose_changes/label_complete=False/within_1m": 2,
+    "cases_creates_both": 3
+  },
+  "decision_by_record": {
+    "discarded / no_change": 22,
+    "discarded / other_changed": 15,
+    "discarded / target_changed": 10,
+    "needs_clarification / no_change": 18,
+    "needs_clarification / other_changed": 11,
+    "needs_clarification / target_changed": 17,
+    "no_change / no_change": 38,
+    "no_change / other_changed": 40,
+    "no_change / target_changed": 43,
+    "propose_changes / no_change": 22,
+    "propose_changes / other_changed": 14,
+    "propose_changes / target_changed": 50
+  },
+  "examples": {
+    "closed_but_label_not_complete": [
+      {
+        "id": "GH-TL-1087490673",
+        "anchor": "18731432dd94434dde3f342aab1817f52d68c560 프로젝트 시작 커밋. application.properties의 필요 내용을 작성하였으나",
+        "decision": "no_change",
+        "label_note": "커밋 설명 기록용 이슈에 남긴 메모.",
+        "observed": [
+          "complete:issue-4",
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1089695572",
+        "anchor": "Collect 모듈의 crontab이 미 실행중 상태 agent_update.py 스크립트 실행 후, crontab 정상 동작을 통해 해결",
+        "decision": "propose_changes",
+        "label_note": "원인과 조치 후 해결 보고. 같은 고객사 다른 이슈와 혼동 금지.",
+        "observed": [
+          "complete:issue-23",
+          "complete:issue-24"
+        ]
+      },
+      {
+        "id": "GH-TL-1100796410",
+        "anchor": "두번째 패턴이 다르게 출력되는 것 같습니다! <img width=\"649\" alt=\"image\" src=\"https://user-images.githubuserc",
+        "decision": "no_change",
+        "label_note": "과제 결과에 대한 버그 지적.",
+        "observed": [
+          "complete:issue-4",
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1200558447",
+        "anchor": "프로젝트 칸바 추가 완료 : [링크](https://github.com/users/Jang-Ahyoung/projects/3/views/1)",
+        "decision": "propose_changes",
+        "label_note": "칸바 추가 완료와 링크.",
+        "observed": [
+          "complete:issue-1",
+          "complete:issue-2",
+          "complete:issue-4",
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1204157085",
+        "anchor": "MySQL 선택 참고사항 https://db-engines.com/",
+        "decision": "no_change",
+        "label_note": "기술 선택 메모.",
+        "observed": [
+          "complete:issue-1",
+          "complete:issue-10",
+          "createTask:None"
+        ]
+      }
+    ],
+    "label_complete_not_closed": [
+      {
+        "id": "GH-TL-1475345158",
+        "anchor": "레벨 설정 및 레벨 랭킹 완료",
+        "decision": "propose_changes",
+        "label_note": "남아 있던 레벨 작업까지 완료.",
+        "observed": [
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1758791397",
+        "anchor": "상품 목록 구현 완료",
+        "decision": "propose_changes",
+        "label_note": "담당자의 구현 완료 보고.",
+        "observed": [
+          "createTask:None",
+          "renamed:issue-78",
+          "renamed:issue-79",
+          "renamed:issue-80"
+        ]
+      },
+      {
+        "id": "GH-TL-1820736387",
+        "anchor": "![Image](https://github.com/kookmin-sw/timebank-2023-docs/assets/105338988/ab2a9460-8de3-4",
+        "decision": "propose_changes",
+        "label_note": "원인과 해결 방법 보고.",
+        "observed": [
+          "assignee:issue-28",
+          "assignee:issue-29",
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-2483535857",
+        "anchor": "감사합니다~ 적용하니까 저도 사용하기 더 편하네요 ㅋㅋ (❁´◡`❁)",
+        "decision": "propose_changes",
+        "label_note": "제안받은 개선을 적용했다는 답.",
+        "observed": []
+      },
+      {
+        "id": "GH-TL-5405740032",
+        "anchor": "``` HANDOFF tool=antigravity branch=(none) done=yes at=2026-08-25T14:16:57+09:00 ``` - **남",
+        "decision": "propose_changes",
+        "label_note": "댓글 이슈는 이미 닫혔다. 벤더 연동 모듈과 키 설정, MOCK 바이패스 제거가 끝났다고 실측 보고.",
+        "observed": []
+      }
+    ],
+    "forbidden_hit": [
+      {
+        "id": "GH-TL-1087490673",
+        "anchor": "18731432dd94434dde3f342aab1817f52d68c560 프로젝트 시작 커밋. application.properties의 필요 내용을 작성하였으나",
+        "decision": "no_change",
+        "label_note": "커밋 설명 기록용 이슈에 남긴 메모.",
+        "observed": [
+          "complete:issue-4",
+          "createTask:None"
+        ],
+        "forbidden": {
+          "task_id": "issue-4",
+          "kind": "complete"
+        }
+      },
+      {
+        "id": "GH-TL-1089695572",
+        "anchor": "Collect 모듈의 crontab이 미 실행중 상태 agent_update.py 스크립트 실행 후, crontab 정상 동작을 통해 해결",
+        "decision": "propose_changes",
+        "label_note": "원인과 조치 후 해결 보고. 같은 고객사 다른 이슈와 혼동 금지.",
+        "observed": [
+          "complete:issue-23",
+          "complete:issue-24"
+        ],
+        "forbidden": {
+          "task_id": "issue-24",
+          "kind": "any"
+        }
+      },
+      {
+        "id": "GH-TL-1100796410",
+        "anchor": "두번째 패턴이 다르게 출력되는 것 같습니다! <img width=\"649\" alt=\"image\" src=\"https://user-images.githubuserc",
+        "decision": "no_change",
+        "label_note": "과제 결과에 대한 버그 지적.",
+        "observed": [
+          "complete:issue-4",
+          "createTask:None"
+        ],
+        "forbidden": {
+          "task_id": "issue-4",
+          "kind": "complete"
+        }
+      },
+      {
+        "id": "GH-TL-1204157085",
+        "anchor": "MySQL 선택 참고사항 https://db-engines.com/",
+        "decision": "no_change",
+        "label_note": "기술 선택 메모.",
+        "observed": [
+          "complete:issue-1",
+          "complete:issue-10",
+          "createTask:None"
+        ],
+        "forbidden": {
+          "task_id": "issue-10",
+          "kind": "complete"
+        }
+      },
+      {
+        "id": "GH-TL-1235036750",
+        "anchor": "현재 상황에서 once token 없이 최초 로그인시 카카오 동의로 로그인되도록 로직 수정하겠습니다",
+        "decision": "propose_changes",
+        "label_note": "담당자 없는 업무를 본인이 수정하겠다고 함.",
+        "observed": [
+          "complete:issue-50"
+        ],
+        "forbidden": {
+          "task_id": "issue-50",
+          "kind": "complete"
+        }
+      }
+    ],
+    "creates_without_label": [
+      {
+        "id": "GH-TL-1037147154",
+        "anchor": "페이지 기획 시 스플레시 페이지 역할이 크게 바뀔 수 있어서, 일단 보류.",
+        "decision": "no_change",
+        "label_note": "일단 보류. 서비스에 보류 상태가 없고 진행 중이었는지 알 수 없다.",
+        "observed": [
+          "createTask:None",
+          "renamed:issue-116"
+        ],
+        "observed_creates": 10
+      },
+      {
+        "id": "GH-TL-1087490673",
+        "anchor": "18731432dd94434dde3f342aab1817f52d68c560 프로젝트 시작 커밋. application.properties의 필요 내용을 작성하였으나",
+        "decision": "no_change",
+        "label_note": "커밋 설명 기록용 이슈에 남긴 메모.",
+        "observed": [
+          "complete:issue-4",
+          "createTask:None"
+        ],
+        "observed_creates": 2
+      },
+      {
+        "id": "GH-TL-1100796410",
+        "anchor": "두번째 패턴이 다르게 출력되는 것 같습니다! <img width=\"649\" alt=\"image\" src=\"https://user-images.githubuserc",
+        "decision": "no_change",
+        "label_note": "과제 결과에 대한 버그 지적.",
+        "observed": [
+          "complete:issue-4",
+          "createTask:None"
+        ],
+        "observed_creates": 1
+      },
+      {
+        "id": "GH-TL-1111226710",
+        "anchor": "스타일 작업중",
+        "decision": "propose_changes",
+        "label_note": "기능 구현 뒤 스타일 작업 중. 리스트 기능 구현은 공지사항 리스트이며 issue-6이 아니다.",
+        "observed": [
+          "createTask:None"
+        ],
+        "observed_creates": 2
+      },
+      {
+        "id": "GH-TL-1182897217",
+        "anchor": "아마 받은쪽지함에서는 보낸쪽지 ID +1 해서 보내보세욥",
+        "decision": "no_change",
+        "label_note": "추측성 해결 방법 제안.",
+        "observed": [
+          "createTask:None"
+        ],
+        "observed_creates": 2
+      }
+    ],
+    "discarded_with_change": [
+      {
+        "id": "GH-TL-1066015525",
+        "anchor": "## Deep Storage - 세그먼트 저장되는 공간. - 드루이드가 제공하지 않는 공간임. HDFS or S3 ## Zookeeper - coordinator",
+        "decision": "discarded",
+        "label_note": "개인 학습 노트 저장소. 이슈가 업무가 아니라 주제별 메모다.",
+        "observed": [
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1139186896",
+        "anchor": "SR기획은 잘 마무리 하셨나요? 엔지니어님들과의 피드백 시간을 적극적으로 활용하여 개선할 부분은 잘 개선하여 좋은 기획을 마무리 하시기 바랍니다. 꾸준하게 마일스",
+        "decision": "discarded",
+        "label_note": "개발 일지·KPT 회고 게시물. 이슈가 업무가 아니다.",
+        "observed": [
+          "assignee:issue-6",
+          "assignee:issue-8",
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1190468124",
+        "anchor": "오늘 하루 목표로 하신 것들을 다 해내신건가요? 👏 👏 매일 작업하시면서 본인이 어느정도 분량을 해낼 수 있는지 파악하시면 앞으로도 도움이 많이 되실거에요. 그리",
+        "decision": "discarded",
+        "label_note": "요일별 작업 일지 게시물. 이슈가 업무가 아니다.",
+        "observed": [
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1573465744",
+        "anchor": "### 1. 폴링방식에 CPU에서의 폴링방식 말고도 다른 위치에서의 폴링방식도 있는걸로 아는데 설명해주세요 > 답변 : 폴링은 컴퓨터 과학 및 관련 분야의 다양한",
+        "decision": "discarded",
+        "label_note": "스터디 질문·답변 저장소. 이슈가 업무가 아니다.",
+        "observed": [
+          "assignee:issue-21",
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-2092727872",
+        "anchor": "데이터 EDA - 변수별 히스토그램 - 바이올린 플랏 - 시계열 변화 - 히트맵",
+        "decision": "discarded",
+        "label_note": "날짜별 작업 기록 이슈. 이슈가 업무 단위가 아니다.",
+        "observed": [
+          "assignee:issue-7",
+          "complete:issue-7",
+          "renamed:issue-7"
+        ]
+      }
+    ]
+  }
+}

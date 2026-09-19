@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-3000664208",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:23.550622+00:00",
+  "elapsed_seconds": 4.007,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "480f48afa3ae4e89629f329b432f2e062fe1441b8798a5514ca0ad3f6099d588",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1511,
+    "cached_input_tokens": 0,
+    "output_tokens": 198,
+    "reasoning_output_tokens": 84
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-3000664208",
+    "summary_ko": "로보로보 마케팅 담당자에게 이메일 발송을 완료했다고 보고했습니다. 다만 이 업무에 대응하는 작업이 현재 목록에서 식별되지 않습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "완료된 이메일 발송 업무의 대상 작업을 특정할 수 없으며, 이미 종료된 회의록 작업 전체의 완료를 의미한다고 보기도 어렵습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

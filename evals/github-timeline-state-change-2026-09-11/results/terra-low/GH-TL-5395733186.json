@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5395733186",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:53.757675+00:00",
+  "elapsed_seconds": 3.313,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "6b6afbe15d01e224973ae49d0dc69349167262980d599f1b38fb6e935c2f517c",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 2703,
+    "cached_input_tokens": 0,
+    "output_tokens": 93,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5395733186",
+    "summary_ko": "이 이슈에서 지적한 CI 게이트 중 다수가 배선됐지만, external-places 경고 단계와 han-tiles 관련 대응 등 2건이 아직 남아 있어 이슈를 열어 둔다고 명시했다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

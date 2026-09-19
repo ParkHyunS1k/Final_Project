@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1214787217",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:50:47.354437+00:00",
+  "elapsed_seconds": 2.733,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "25f670f60b84c6a8a65f1a9b1aaa5d39ef31b069ef8731e1808bf0f88710e893",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1481,
+    "cached_input_tokens": 0,
+    "output_tokens": 117,
+    "reasoning_output_tokens": 41
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1214787217",
+    "summary_ko": "EC2 담당 계획이 언급되었지만 아직 확정된 상태 변경으로 보기 어렵고, RDS 담당자는 정해지지 않았습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

@@ -1,0 +1,1529 @@
+{
+  "method": "runs/*의 후보 풀에서 첫 검토용 300건을 고른다. 표준 Python만 사용한다.\n\n- 유형: A 대상 이슈가 이후 바뀜 120 / B 다른 이슈만 바뀜 80 / C 기간 안 변경 없음 100.\n- 저장소당 1건을 먼저 채우고, 모자랄 때만 2건째를 허용한다.\n- 각 유형 안에서 2025년 이전과 이후 사례를 번갈아 고른다(에이전트 작성 글 비중을 낮추기 위함).\n- 발췌에 AI 도구 서명 문자열이 있으면 고르지 않는다. 풀에는 남아 있어 교체용으로 쓸 수 있다.",
+  "seed": "github-timeline-v1-select",
+  "targets": {
+    "A_anchor_changed": 120,
+    "B_other_changed": 80,
+    "C_no_change": 100
+  },
+  "pool_candidates": 982,
+  "excluded_tool_signature": 12,
+  "selected": 300,
+  "by_bucket": {
+    "C_no_change": 100,
+    "B_other_changed": 80,
+    "A_anchor_changed": 120
+  },
+  "by_era": {
+    "before_2025": 155,
+    "2025_or_later": 145
+  },
+  "by_run": {
+    "all-years": 172,
+    "pre2025": 128
+  },
+  "repositories": 300,
+  "repositories_with_two": 0,
+  "cases": [
+    {
+      "id": "GH-TL-1000349103",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-1037147154",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1066015525",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1085607072",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1087490673",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1089695572",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1100796410",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1111226710",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1119188498",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1120792609",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1139186896",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1140285667",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1172407724",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1182897217",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1190468124",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1193264168",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1200558447",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1204157085",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1205462674",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1210307856",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1214679264",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1235036750",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1236328131",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1252482031",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-126945141",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1289855288",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1296185551",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1303118631",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1315285310",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1319442472",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-1326083345",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-1326265151",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1331241684",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1336361385",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1386326386",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1404747951",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1416680202",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1422397263",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1438568936",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1452642088",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1475345158",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1480892797",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1484022007",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1491450127",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1499912418",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1537492485",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1551427527",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1555912499",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1555920480",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1573465744",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-157685156",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1580653690",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-1601124407",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-1604265437",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1620557690",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-165961242",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1712701364",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1712751768",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1717985648",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1758791397",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1772895398",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1774984503",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-1775926333",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1820736387",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1840066442",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1848240147",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1872973827",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-1880160559",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1902094774",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1910390423",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1924312542",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-19524761",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-1972869914",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2002686549",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2016657571",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2026584886",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2035996362",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2049917164",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2061716635",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-206866582",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2092727872",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2106191359",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2107669547",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2118672720",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2138566488",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2241598131",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2246976928",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2284509177",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2286176428",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2327940119",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-234747388",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2351626501",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2390903723",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-239710186",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2418777909",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2423614975",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2429271606",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2429618466",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2441518364",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2443232833",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2449517541",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2453991471",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2463575371",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2483535857",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2495191074",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2525176222",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2525198883",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2527731665",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2558422863",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2604588859",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2627279179",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2686827549",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2746937268",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-277507453",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2784911847",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2816580182",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2829542482",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-283016398",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2885487516",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-289732996",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-2920949091",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-2961347104",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-300983058",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-3014812691",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3026248016",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-304519271",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-3055223787",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-312473709",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-317305522",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-3239930598",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3314595400",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-347396027",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-3609487241",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3642771271",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3692833750",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3744639801",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3782723702",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3830540590",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3904370601",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3913039711",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-3989217373",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4010688691",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4036204047",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4039430818",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4062685246",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4074399108",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-429804402",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-431659124",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4355542150",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4407717920",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-440942526",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-4412781234",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4517027675",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4569895901",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4591214654",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4615285467",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-462112707",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-4649586907",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-465060232",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-4654986096",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4702792680",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4719475853",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4768275336",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4885429507",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4892833965",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4924991418",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-492516187",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-4947107394",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4970548344",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-497219573",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4993843103",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-4998342964",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5010490291",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5030228910",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5057319133",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5065418424",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5076194693",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5082001111",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5083912288",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5084018302",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5087939324",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5100152409",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5128026756",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5131564359",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-518562193",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-5185807754",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5186267190",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5226723204",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5226782525",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5238099837",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-524167487",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5250181969",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5251170877",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5254672755",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5274604384",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5290202962",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5290436984",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5306121185",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5306305892",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5307475902",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5311191379",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5314100082",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5317433441",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5318536755",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-534035184",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-5351821030",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5382160561",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5386010664",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5386391757",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5389510845",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5389777840",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5395733186",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5405740032",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5407698506",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5412310427",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5446635650",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5446691959",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5446736128",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5446820327",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5454014092",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5458300152",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5458646630",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5472175317",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5472546135",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5486763094",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5486786490",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5490646631",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5497190111",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5503289357",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5504119390",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5510264477",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5513963497",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5518423209",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5521184920",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5532536318",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5533761340",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5537821403",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5544272265",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5545552766",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5548946801",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5549738467",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5557296558",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5559391877",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5563326668",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5569883662",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5571937682",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5572979018",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5576981962",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5576984950",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5577298631",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5577717159",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5579148276",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5579658983",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5585917455",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5588327361",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5594081668",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5594291350",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5595791190",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5596333105",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5596432264",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5599555916",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5609364685",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5610389931",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5610481865",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5611697385",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5613332079",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5614006450",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5614059250",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5614102232",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5616603417",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5618105922",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-5619359423",
+      "bucket": "C_no_change",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-564418312",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-579793773",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-600616708",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-622372272",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-648776498",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-655930634",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-673495134",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-673877279",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-687490620",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-692426488",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-707524705",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-716162660",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-727580038",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-792292388",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-803233296",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-819499140",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-842787597",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-850372243",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-873981699",
+      "bucket": "A_anchor_changed",
+      "run": "all-years"
+    },
+    {
+      "id": "GH-TL-874439060",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-876160895",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-894130245",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-894785695",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-932875484",
+      "bucket": "A_anchor_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-945276110",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-954316630",
+      "bucket": "B_other_changed",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-966828555",
+      "bucket": "C_no_change",
+      "run": "pre2025"
+    },
+    {
+      "id": "GH-TL-987679763",
+      "bucket": "B_other_changed",
+      "run": "all-years"
+    }
+  ]
+}

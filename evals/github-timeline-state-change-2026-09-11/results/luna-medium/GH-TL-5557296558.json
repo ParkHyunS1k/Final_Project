@@ -1,0 +1,51 @@
+{
+  "id": "GH-TL-5557296558",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:31:13.741793+00:00",
+  "elapsed_seconds": 8.162,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "69898f4c8d07d7e5ab63ac7ef4230fdf5fd46779eb93a037daa60f4153a48f17",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 2265,
+    "cached_input_tokens": 0,
+    "output_tokens": 572,
+    "reasoning_output_tokens": 437
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5557296558",
+    "summary_ko": "뷰어의 현재 운영 검증은 완료되었지만, 상위 이슈에 후속 작업이 남아 있어 전체 완료로 볼 수 없습니다. 작업은 진행 중 상태로 제안합니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "status",
+        "task_id": "issue-7",
+        "status": "in_progress",
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          1,
+          2
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

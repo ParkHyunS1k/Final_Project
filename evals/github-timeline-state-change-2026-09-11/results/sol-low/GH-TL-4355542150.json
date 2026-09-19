@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-4355542150",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:34:41.879544+00:00",
+  "elapsed_seconds": 3.313,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "16cfe9d1595dc746ec88ddf544343d71c5dfc8a6740d9d448e0e269a4c76bca9",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1576,
+    "cached_input_tokens": 0,
+    "output_tokens": 126,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-4355542150",
+    "summary_ko": "계약서 분석 기능은 체크리스트 API와 UI만 구현된 부분 구현 상태이며, 이미지 업로드와 OCR 분석은 미구현입니다. OCR 구현 여부에 대한 기획 확인이 필요해 확정적인 상태 변경을 제안하기 어렵습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "전체 작업이 완료되지 않았고, OCR 구현 여부가 아직 결정되지 않아 완료 또는 별도 작업 생성으로 확정할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

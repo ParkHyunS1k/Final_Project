@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5462357124",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:39.796327+00:00",
+  "elapsed_seconds": 2.625,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "2aba0cae40dced438daeaa04e8c6c12bf3c182b75e064df90639f26996935bcb",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 2026,
+    "cached_input_tokens": 0,
+    "output_tokens": 81,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5462357124",
+    "summary_ko": "계약·일정 에이전트의 호출 조건, 입력, 처리 방식, 출력 구조를 설명한 설계 답변입니다. 명시적인 작업 상태 변경 사실은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

@@ -1,0 +1,25 @@
+{
+  "locked_at": "2026-09-10T18:49:56.212442+00:00",
+  "file": "claude-blind-v1.jsonl",
+  "sha256": "75beb097f8374207ccf603b45dba5548da185284cacce526cda2909a07f2072c",
+  "rows": 50,
+  "observed_opened_before_lock": false,
+  "observed_seen_earlier_in_session": [],
+  "guidelines": "../../github-timeline-candidates-v1/labels/GUIDELINES.md와 동일(복사본)",
+  "decisions": {
+    "propose_changes": 22,
+    "no_change": 24,
+    "needs_clarification": 2,
+    "discarded": 2
+  },
+  "change_kinds": {
+    "createTask": 28,
+    "assignee": 1,
+    "complete": 5,
+    "dueAt": 1,
+    "status": 3
+  },
+  "creates_with_person": 8,
+  "forbidden": 30,
+  "suspected_agent_authored": 12
+}

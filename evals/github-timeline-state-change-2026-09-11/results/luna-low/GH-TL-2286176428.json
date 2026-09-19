@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-2286176428",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:27:49.956707+00:00",
+  "elapsed_seconds": 2.433,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "392b3aaaa8b1dc73c8b4df899abb9bd6e654ecd5f843a04a5980f9987d661284",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1403,
+    "cached_input_tokens": 0,
+    "output_tokens": 180,
+    "reasoning_output_tokens": 91
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-2286176428",
+    "summary_ko": "검색 기능과 마이페이지 관련 작업이 완료되었다는 진행 상황이 공유되었습니다. 그러나 해당 내용만으로 진행 상황 공유 이슈 전체의 완료나 별도 작업 상태 변경을 확정할 수 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

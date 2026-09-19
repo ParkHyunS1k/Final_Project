@@ -1,0 +1,63 @@
+{
+  "id": "GH-TL-1114819571",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:51:12.339999+00:00",
+  "elapsed_seconds": 13.206,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "f1395e96e1ca38689a5edb3ce0b8df41c3630645d8378ac6fbbbe33885ffa65b",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 2166,
+    "cached_input_tokens": 0,
+    "output_tokens": 1222,
+    "reasoning_output_tokens": 1034
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1114819571",
+    "summary_ko": "설계 및 구현 역할이 김예성(Y-eseong)과 김석원(isaccKim)에게 명시적으로 분담되었습니다. 현재 설계 태스크는 열려 있고 완료 사실은 확인되지 않습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "assignee",
+        "task_id": "issue-4",
+        "status": null,
+        "person": "Y-eseong",
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          2
+        ]
+      },
+      {
+        "kind": "assignee",
+        "task_id": "issue-4",
+        "status": null,
+        "person": "isaccKim",
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          2
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

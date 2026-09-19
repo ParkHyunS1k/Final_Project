@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-126945141",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:27:23.115518+00:00",
+  "elapsed_seconds": 5.091,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "f3adb1431d4b957e2c34593657e630d63885a6e3ee96d33f8653cda26a688ac0",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1613,
+    "cached_input_tokens": 0,
+    "output_tokens": 206,
+    "reasoning_output_tokens": 90
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-126945141",
+    "summary_ko": "다차원 배열 지원은 가능하다고 보고되었지만, 배열·구조체 상수 문법 전체 작업의 완료 여부는 확인되지 않습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "보고 내용이 다차원 배열 지원에만 한정되어 있어 issue-8 전체 작업이 완료되었는지, 또는 일부 기능만 해결되었는지 판단할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

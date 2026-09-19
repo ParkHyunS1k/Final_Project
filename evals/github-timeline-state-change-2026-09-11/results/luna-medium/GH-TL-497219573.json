@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-497219573",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:30:32.285074+00:00",
+  "elapsed_seconds": 2.396,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "78f48dd1b11d446ace1cf5919b985177e3a7ce6c148f69b5e8b5b538d476efc4",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1562,
+    "cached_input_tokens": 0,
+    "output_tokens": 121,
+    "reasoning_output_tokens": 34
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-497219573",
+    "summary_ko": "로그인하지 않은 상태에서 getMySponsor() 호출이 API 서버에 부담을 줄 수 있다는 문제 관찰입니다. 작업 완료, 진행 상태, 담당자 또는 일정 변경을 확정하는 내용은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

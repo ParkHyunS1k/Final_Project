@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-894785695",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:36:04.945166+00:00",
+  "elapsed_seconds": 2.301,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "0a1c419619e5f493a55cb53f16b8c6f9ead62c9368d3c81662bec90f74518aec",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1564,
+    "cached_input_tokens": 0,
+    "output_tokens": 110,
+    "reasoning_output_tokens": 20
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-894785695",
+    "summary_ko": "MEMBER 테이블과 RECOMMENDED 테이블의 외래 키 결합 실패 문제가 보고되었으며 해결이 필요하다는 내용입니다. 이는 문제 관찰일 뿐 확정된 작업 상태 변경은 아닙니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

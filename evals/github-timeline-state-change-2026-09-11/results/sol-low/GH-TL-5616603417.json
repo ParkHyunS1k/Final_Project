@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5616603417",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:35:51.954304+00:00",
+  "elapsed_seconds": 5.102,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "a4810c5a642bceaf984e2d774abfb042dbf0ebed15c36b26f6bc59c6d73fe843",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 2590,
+    "cached_input_tokens": 0,
+    "output_tokens": 208,
+    "reasoning_output_tokens": 89
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5616603417",
+    "summary_ko": "동일 msg_id를 서로 다른 actor가 동시에 제출할 때 중복 실행되는 동시성 결함이 보고되었고, 원자적 예약·검사·기록 및 회귀 테스트 보강이 요청되었습니다. 이는 기존 열린 작업 내부의 결함 관찰과 수정 요청이며 완료나 명시적 상태 변경 사실은 아닙니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1296185551",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:33:35.759820+00:00",
+  "elapsed_seconds": 3.447,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "6b83d03148cd89094b80abd0447c71f921b336d1193d763e1a0c464274cf3cfc",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1426,
+    "cached_input_tokens": 0,
+    "output_tokens": 122,
+    "reasoning_output_tokens": 27
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1296185551",
+    "summary_ko": "회원가입 기능 중 중복 확인 부분까지 완료되었다는 보고입니다. 전체 작업 완료로 보기는 어렵습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "일부 기능의 완료만 명시되어 있어 issue-35 전체가 완료되었는지 확정할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

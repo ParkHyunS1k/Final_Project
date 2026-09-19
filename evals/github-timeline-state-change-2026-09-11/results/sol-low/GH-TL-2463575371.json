@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-2463575371",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:34:19.192042+00:00",
+  "elapsed_seconds": 2.717,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "341e1eb403189c3b391ce8fdedc3c40f8e9d3e75f1ebc666ca078ad6d5165f18",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1498,
+    "cached_input_tokens": 0,
+    "output_tokens": 71,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-2463575371",
+    "summary_ko": "해당 이슈의 작업이 더 이상 진행되지 않는지 묻는 질문일 뿐, 확정된 상태 변경 사실은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

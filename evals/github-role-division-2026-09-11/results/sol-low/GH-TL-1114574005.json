@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1114574005",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:10.644388+00:00",
+  "elapsed_seconds": 5.332,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "604dad677221197bea7324cc2394dd3162b137f1f31dedc0f42d1d5e549a3164",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1396,
+    "cached_input_tokens": 0,
+    "output_tokens": 167,
+    "reasoning_output_tokens": 82
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1114574005",
+    "summary_ko": "역할 분담 방안에 긍정적으로 합의했지만, 프로젝트 진행 중 더 구체화하기로 한 논의 단계입니다. 확정된 과업 상태 변경은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

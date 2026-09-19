@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1846425740",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:22.074097+00:00",
+  "elapsed_seconds": 2.596,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "66487522e371ba51304aa0ee28cac25ed2ac21801d2aebd3bf3230c240866914",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 2313,
+    "cached_input_tokens": 0,
+    "output_tokens": 89,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1846425740",
+    "summary_ko": "중간 리뷰에서 시각화 정확성·가독성, 개인정보 동의, 기능 테스트 등에 관한 의견과 제안이 공유되었습니다. 확정된 작업 상태 변경이나 구체적으로 결정된 신규 작업은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

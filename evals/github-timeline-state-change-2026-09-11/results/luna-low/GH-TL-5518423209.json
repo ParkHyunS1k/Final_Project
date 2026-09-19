@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5518423209",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:51.602601+00:00",
+  "elapsed_seconds": 3.625,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "bb9660ac3bfdf7741ffe1039ba53c15c459f045a581ea541d38f0870da8ea358",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1519,
+    "cached_input_tokens": 0,
+    "output_tokens": 264,
+    "reasoning_output_tokens": 170
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5518423209",
+    "summary_ko": "해당 기능은 이번 라이브 데모 범위에서 제외되었고, 후속 개발 요구사항은 기존 #237에 통합되었습니다. 현재 작업을 완료하거나 새 작업을 생성한다는 확정적 상태 변경은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

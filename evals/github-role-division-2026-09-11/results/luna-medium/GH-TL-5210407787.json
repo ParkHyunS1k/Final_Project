@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5210407787",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:51:35.058227+00:00",
+  "elapsed_seconds": 5.374,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "4e8dd7ef161ac2b8f2627a024a1530bda51e8d3433622d5203721768e0b9eb9e",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1594,
+    "cached_input_tokens": 0,
+    "output_tokens": 410,
+    "reasoning_output_tokens": 273
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5210407787",
+    "summary_ko": "역할 분담과 개발 범위가 공유되었지만, 기존 작업과의 정확한 매칭 및 담당자 이름과 멤버 로그인 간 대응이 명확하지 않습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "지환·경용·현제라는 이름을 members의 로그인과 확실히 매칭할 수 없고, 각 범위 항목을 어떤 기존 작업에 적용할지도 특정되지 않아 담당자나 작업 상태를 안전하게 변경할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

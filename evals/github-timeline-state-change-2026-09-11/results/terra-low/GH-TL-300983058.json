@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-300983058",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:23.332615+00:00",
+  "elapsed_seconds": 2.398,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "0bbe833fbd953f4f92a66968e37e1216f50bb91ee6a7eaa2ce937a187d63be72",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1554,
+    "cached_input_tokens": 0,
+    "output_tokens": 89,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-300983058",
+    "summary_ko": "renderList 작업이 완료되었다고 보고되었습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "완료된 renderList 작업이 현재 작업 목록의 어느 과제에 해당하는지 명확하지 않으며, 스레드 과제 전체 완료 여부도 확인되지 않습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

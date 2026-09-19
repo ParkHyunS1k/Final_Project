@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-5579658983",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:59.051692+00:00",
+  "elapsed_seconds": 2.253,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "5496d80d6b0000545c8d66096aa21b196093589a0c63485de1ee50da4234df90",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1735,
+    "cached_input_tokens": 0,
+    "output_tokens": 129,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5579658983",
+    "summary_ko": "채널 관리 전체 선택 기능의 구현과 검증이 완료되었고 추가 차단 결함도 발견되지 않았습니다. 관련 작업 issue-37을 완료 상태로 변경할 수 있습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "complete",
+        "task_id": "issue-37",
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

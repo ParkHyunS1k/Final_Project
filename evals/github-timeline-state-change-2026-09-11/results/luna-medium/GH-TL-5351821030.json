@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5351821030",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:30:55.269889+00:00",
+  "elapsed_seconds": 5.529,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "c59e19c6c9b67881871d9e334d8e088613a693513323f089d5a6348903e87521",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 3320,
+    "cached_input_tokens": 0,
+    "output_tokens": 340,
+    "reasoning_output_tokens": 241
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5351821030",
+    "summary_ko": "온보딩 키워드 입력 복원 방향과 작업 범위가 확정되었고 JEON-DAEJIN 담당도 현재 작업 목록에 이미 반영되어 있습니다. 구현 완료나 명시적인 작업 착수 사실은 보고되지 않았습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

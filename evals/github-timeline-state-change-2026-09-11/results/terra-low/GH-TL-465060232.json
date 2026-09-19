@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-465060232",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:35.269524+00:00",
+  "elapsed_seconds": 2.53,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "4996951e51e59fe9ef36f8d64a0315afa606ceefeb69c6b54e1cd71a91a018df",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1673,
+    "cached_input_tokens": 0,
+    "output_tokens": 127,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-465060232",
+    "summary_ko": "앱 측 회원가입 구현은 서버 응답 양식에 맞춰 리팩토링까지 완료되었습니다. 다만 서버 측 검증과 네트워크 매니저 관련 사항은 미확정입니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "스레드 작업 전체의 완료가 아니라 앱 단위 구현 및 리팩토링만 완료되었다고 보고되어, 회원가입 기능 구현 작업 전체를 완료 처리하기에는 불확실합니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

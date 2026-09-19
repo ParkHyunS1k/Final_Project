@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-5290202962",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:33.754948+00:00",
+  "elapsed_seconds": 3.737,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "44915445e8cd91e1f002e328260eb5ac23f84defc61bc26f0b80269218bfe0de",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1725,
+    "cached_input_tokens": 0,
+    "output_tokens": 234,
+    "reasoning_output_tokens": 94
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5290202962",
+    "summary_ko": "Docker Compose의 실제 build/up 실행 검증을 별도 작업(#12)으로 이월하기로 결정되었습니다. 현재 앱 개발 작업 전체 완료를 나타내는 명확한 사실은 아닙니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "createTask",
+        "task_id": null,
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": "Docker Compose 실제 build/up 실행 검증하기",
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

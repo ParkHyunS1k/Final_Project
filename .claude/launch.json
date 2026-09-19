@@ -5,6 +5,12 @@
       "name": "projectmate-web",
       "port": 3000,
       "url": "http://localhost:3000"
+    },
+    {
+      "name": "github-timeline-review",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8791", "--directory", "datasets/github-timeline-candidates-v1"],
+      "port": 8791
     }
   ]
 }

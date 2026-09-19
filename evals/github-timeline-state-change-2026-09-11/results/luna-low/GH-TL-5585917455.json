@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-5585917455",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:59.303390+00:00",
+  "elapsed_seconds": 3.15,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "f663271fe1bc07ae9017000687012ca66e23096c32ed22e236afb9435d255838",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 2149,
+    "cached_input_tokens": 0,
+    "output_tokens": 230,
+    "reasoning_output_tokens": 105
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5585917455",
+    "summary_ko": "최소 안전장치를 기준으로 issue-368 작업을 시작했다고 명시되어 있습니다. 현재 issue-365는 계속 Open 상태이며 완료로 볼 수 없습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "status",
+        "task_id": "issue-368",
+        "status": "in_progress",
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

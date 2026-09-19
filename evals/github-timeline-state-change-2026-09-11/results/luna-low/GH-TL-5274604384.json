@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5274604384",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:32.948256+00:00",
+  "elapsed_seconds": 2.801,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "650159776e79803956aed72e1aab356077677e31447b05cf642204378b206955",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1632,
+    "cached_input_tokens": 0,
+    "output_tokens": 235,
+    "reasoning_output_tokens": 152
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5274604384",
+    "summary_ko": "면접 설정 페이지의 UI 및 기본 동작 개선 사항은 완료되었지만, API 연동 등 후속 작업이 남아 있어 전체 태스크 완료로 판단할 수 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

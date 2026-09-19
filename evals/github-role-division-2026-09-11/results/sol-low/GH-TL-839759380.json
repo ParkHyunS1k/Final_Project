@@ -1,0 +1,63 @@
+{
+  "id": "GH-TL-839759380",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:45.668822+00:00",
+  "elapsed_seconds": 9.407,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "20e464629a503109071a23e00a03f4b8c578f4c3973e1915488c644515abc75a",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1992,
+    "cached_input_tokens": 0,
+    "output_tokens": 454,
+    "reasoning_output_tokens": 228
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-839759380",
+    "summary_ko": "회의에서 사용자 빈도수 피처를 연속형·구간화 방식으로 실험해 다음 날까지 결과를 공유하고, 다음 회의까지 최종 피처와 모델의 비즈니스 해석을 검토하기로 정했습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "createTask",
+        "task_id": null,
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": "2021-05-13",
+        "title": "사용자 빈도수 피처를 연속형·구간화 방식으로 실험하고 결과 공유",
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          2
+        ]
+      },
+      {
+        "kind": "createTask",
+        "task_id": null,
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": "최종 피처와 모델의 비즈니스 관점 해석 검토",
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          2
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

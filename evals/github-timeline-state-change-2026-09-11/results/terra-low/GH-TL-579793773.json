@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-579793773",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:33:14.495223+00:00",
+  "elapsed_seconds": 2.452,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "d57f3b875f53fcdb805adf3f7f4d112ad7d61a8f071c5c63c5f4f07673af813c",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1485,
+    "cached_input_tokens": 0,
+    "output_tokens": 125,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-579793773",
+    "summary_ko": "내부 포털 AIMS 입력은 2월 중 시행 예정이며, 예산 확정은 2월 초까지 필요하다고 공유되었습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "dueAt",
+        "task_id": "issue-12",
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": "2020-02-07",
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

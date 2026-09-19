@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-4355542150",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:31.348527+00:00",
+  "elapsed_seconds": 2.39,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "16cfe9d1595dc746ec88ddf544343d71c5dfc8a6740d9d448e0e269a4c76bca9",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1576,
+    "cached_input_tokens": 0,
+    "output_tokens": 133,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-4355542150",
+    "summary_ko": "계약서 체크리스트 API와 UI는 구현되었지만, 이미지 업로드 및 OCR 분석은 미구현 상태입니다. OCR 구현 여부는 기획 확인이 필요합니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "스레드 작업은 OCR과 체크리스트를 함께 범위로 하나, 일부만 구현되었고 OCR 구현을 계속할지 확인이 필요하므로 전체 작업 완료나 구체적 후속 작업 생성을 확정할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

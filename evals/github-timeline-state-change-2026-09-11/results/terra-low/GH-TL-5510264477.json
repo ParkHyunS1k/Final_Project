@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5510264477",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:59.580782+00:00",
+  "elapsed_seconds": 1.989,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "f4f1586ec0d0e573c49275b3987a96bc91a4c826a972fe963baabe95fc6c126f",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1485,
+    "cached_input_tokens": 0,
+    "output_tokens": 70,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5510264477",
+    "summary_ko": "강의평 기능 개발은 우선순위가 낮고, 다른 일을 마친 뒤 시간이 남으면 진행한다는 계획입니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

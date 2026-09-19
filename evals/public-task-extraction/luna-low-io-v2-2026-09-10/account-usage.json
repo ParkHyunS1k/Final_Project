@@ -1,0 +1,11 @@
+{
+  "scope": "whole ChatGPT account; may include activity outside this evaluation",
+  "before": {
+    "short_window_used_percent": 12,
+    "weekly_used_percent": 74
+  },
+  "after": {
+    "short_window_used_percent": 20,
+    "weekly_used_percent": 76
+  }
+}

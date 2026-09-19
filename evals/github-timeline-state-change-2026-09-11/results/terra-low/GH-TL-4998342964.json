@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-4998342964",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:38.839600+00:00",
+  "elapsed_seconds": 2.472,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "dc936aeba50e0d240fc242244a2d4a97253dd4af2ed33b6ef5cc0a4e848b24fd",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1757,
+    "cached_input_tokens": 0,
+    "output_tokens": 117,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-4998342964",
+    "summary_ko": "DB 인터페이스 설계 채택과 P0 후보 감사 결과가 Draft PR로 제출되었으나, 완료·병합 사실은 확인되지 않습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "스레드 작업의 산출물이 Draft PR로 제출된 사실은 있으나, 작업 전체가 완료되었는지 또는 진행 중 상태로 변경해야 하는지 명시되지 않았습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

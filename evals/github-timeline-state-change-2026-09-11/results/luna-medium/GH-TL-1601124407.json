@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1601124407",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:29:39.328863+00:00",
+  "elapsed_seconds": 5.302,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "0c6106a82afcd2cf896312aad24c9f3a4233608ea7768cc3a123fe422951562f",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1455,
+    "cached_input_tokens": 0,
+    "output_tokens": 403,
+    "reasoning_output_tokens": 268
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1601124407",
+    "summary_ko": "쿠키 Max Age를 1주일로 변경했으며, 유저 인증 고도화 이후 재설정할 예정이라는 내용입니다. 기존 작업의 완료나 명확한 상태 변경을 확정하기에는 부분적·조건부 보고입니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "로그인/로그아웃 로직 작업(issue-45)의 일부 변경 사항만 언급되었고, 작업 전체의 완료 여부나 진행 상태를 확정할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

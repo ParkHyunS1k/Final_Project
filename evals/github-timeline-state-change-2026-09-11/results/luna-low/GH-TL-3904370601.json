@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-3904370601",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:08.701532+00:00",
+  "elapsed_seconds": 4.198,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "7a289c4dfdf823fde64788772772770baef0b662a9cf667516b5d2d41a7e24d5",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1257,
+    "cached_input_tokens": 0,
+    "output_tokens": 103,
+    "reasoning_output_tokens": 24
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-3904370601",
+    "summary_ko": "로컬 개발 완료 후 테스트와 메인 반영 전에 진행할 절차를 설명한 내용이지만, 특정 작업의 상태 변경을 확정하지는 않습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

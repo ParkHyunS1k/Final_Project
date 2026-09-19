@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5251170877",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:46.936960+00:00",
+  "elapsed_seconds": 1.941,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "ea2496256bbf1c8e680d1183a2f317af305b6de6e12c16fc8afdcaba4a774172",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1883,
+    "cached_input_tokens": 0,
+    "output_tokens": 88,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5251170877",
+    "summary_ko": "배포 절차 문서에 빌드번호 규칙, 재제출 시 sync 순서, 릴리즈에서 개발용 sync 명령을 피해야 하는 내용이 누락·오류로 보고되었습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

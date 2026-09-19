@@ -1,0 +1,1452 @@
+{
+  "query_version": "github-timeline-v1",
+  "collected_at": "2026-09-10T18:35:18.552988+00:00",
+  "args": {
+    "repo": [],
+    "search": [
+      "역할 분담 is:issue comments:>0",
+      "역할분담 is:issue comments:>0",
+      "업무 분담 is:issue comments:>0",
+      "회의록 담당 is:issue comments:>0",
+      "담당자 배정 is:issue comments:>0",
+      "액션 아이템 is:issue comments:>0",
+      "맡겠습니다 is:issue",
+      "맡아서 is:issue comments:>0",
+      "회의 결과 is:issue comments:>0",
+      "R&R is:issue comments:>0"
+    ],
+    "out": "datasets/github-role-division-candidates-v1/runs/search-2026-09-11",
+    "max_repos": 240,
+    "per_repo": 2,
+    "window_hours": 48,
+    "lang": "ko",
+    "seed": "github-role-division-v1",
+    "anchor_regex": "역할\\s*분담|업무\\s*분담|분담|담당자|담당(하|할|합|해|은|는|으로|:)|맡(아|기|을|겠|습|으|는)|R&R|액션\\s*아이템|action item|배정|어사인"
+  },
+  "candidates": 163,
+  "with_observed_change": 128,
+  "repositories": [
+    {
+      "repository": "kqmdmsow/half-fifty",
+      "issues": 52,
+      "eligible_anchors": 4,
+      "picked": 2
+    },
+    {
+      "repository": "daahunii/DVM_project",
+      "issues": 6,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "yoonjin09/lab-13-mini-project",
+      "issues": 7,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "blackcowman/2023OSSL_Miniproject",
+      "issues": 6,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "2022SCYM/TeamProject2022OSS",
+      "issues": 8,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "17-1-SKKU-OSS/126B",
+      "issues": 9,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "computerthirteen/computer_network_13th",
+      "issues": 13,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "JuHyang/Project_comnet",
+      "issues": 9,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Lee-SungKyu/OSSteam14",
+      "issues": 5,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "mk5436/loffy1411.github.io",
+      "issues": 8,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Daegu-Agent-Crew/creative-loop-engineering2",
+      "issues": 29,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "gkswls321/SKinfosec",
+      "issues": 34,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "hhyein/project-opensource",
+      "issues": 12,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "ossproject2022/burgerproject",
+      "issues": 5,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "lcy061/Mini-project",
+      "issues": 14,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "mayeonn/Group10",
+      "issues": 13,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "sungwonBOK/FutsalGame",
+      "issues": 13,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "park-sohyeon/Senior-Project",
+      "issues": 9,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "2022OSS-teampro/TeamProject",
+      "issues": 6,
+      "eligible_anchors": 4,
+      "picked": 2
+    },
+    {
+      "repository": "maesamco/maesamco-backend",
+      "issues": 96,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "wan500kim/kickWorks",
+      "issues": 51,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "lsy0314/sintoburi",
+      "issues": 53,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "haram22/2022OSS_team_KH",
+      "issues": 7,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "2017-Capstone-2nd-Viewreful-Team-12/Master",
+      "issues": 7,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "harrylim1359/Creativity_Project_Competition",
+      "issues": 34,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "KimHuiEun/E-BookSystem",
+      "issues": 19,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "1argeD/w6",
+      "issues": 15,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "AssortRock-KDT6-Unreal-PowerAde/ProjectPG",
+      "issues": 14,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "100-hours-a-week/KTB4-19th-wiki",
+      "issues": 35,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "codms0201jjap/miniproject",
+      "issues": 12,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Kim-buyeon/Real-estate-rental-platform",
+      "issues": 11,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "100-hours-a-week/KTB4-8th-wiki",
+      "issues": 54,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "hanium-reaction/reaction-backend",
+      "issues": 118,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "Hacklipse/LASP_2026",
+      "issues": 11,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "100-hours-a-week/KTB4-17th-wiki",
+      "issues": 46,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "mindexxo/rag-agent",
+      "issues": 76,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "HanSupace/MCM_memory_tag",
+      "issues": 24,
+      "eligible_anchors": 4,
+      "picked": 2
+    },
+    {
+      "repository": "team-SAGO/SAGO-backend",
+      "issues": 34,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "TeamProject-2022OSS/miniProject",
+      "issues": 5,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "ts825360/payload-lab",
+      "issues": 24,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "IT-Cotato/COTATO-FE-v2",
+      "issues": 211,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "KwonMoonjeong/API-Crawling-Module-Project",
+      "issues": 6,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "wooriapt79/mulberry-research-lab",
+      "issues": 120,
+      "eligible_anchors": 19,
+      "picked": 2
+    },
+    {
+      "repository": "leesang100/Capstone2",
+      "issues": 9,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "qpae123/team-",
+      "issues": 10,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "yeongyeongkim/pbl5_team7",
+      "issues": 18,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "sejongresearch/2021.Summer.SejongKaggler",
+      "issues": 15,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Dubutoto/StockRadar",
+      "issues": 132,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "okseong/EnactBrowser",
+      "issues": 17,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "healim01/OSS_CRUDTeam14",
+      "issues": 15,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "adapterz/wku-iksan-store-BE",
+      "issues": 26,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "kimsk920825/team1_wanted_onboarding",
+      "issues": 80,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Azderica/Project-Avoid-Corona-IOS-App",
+      "issues": 8,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "PocketStock-PDA/backend",
+      "issues": 124,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "d-mario24/k9s",
+      "issues": 41,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "wooriapt79/mulberry_ecosystem_AgenticAI",
+      "issues": 14,
+      "eligible_anchors": 4,
+      "picked": 2
+    },
+    {
+      "repository": "nhnacademy-aiot1-5/meeting-minutes",
+      "issues": 26,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "SSUHYUNKIM/special",
+      "issues": 33,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "nhnacademy-aiot1-5/docs",
+      "issues": 51,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "codestates/GatherCoding",
+      "issues": 56,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "wooriapt79/mulberry-open-api",
+      "issues": 65,
+      "eligible_anchors": 6,
+      "picked": 2
+    },
+    {
+      "repository": "4thIS/opensource_contest_tmax",
+      "issues": 13,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "ilikeinow12/team2_wanted_onboarding",
+      "issues": 30,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "sehonge/EncoreFirstProject",
+      "issues": 17,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "sergiobuilds/til",
+      "issues": 35,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "codestates/pick-and-roll",
+      "issues": 56,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Yumi-Park996/TIL",
+      "issues": 27,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "100-hours-a-week/15-team-service-wiki",
+      "issues": 90,
+      "eligible_anchors": 6,
+      "picked": 2
+    },
+    {
+      "repository": "devlee328288/Alpha_Stack",
+      "issues": 75,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "chestnutbread/Red-horse",
+      "issues": 65,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "pababark21-kr/term_prj01",
+      "issues": 7,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "ChungPa/GoJob",
+      "issues": 22,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "lukehongg/CRUD_miniProject",
+      "issues": 5,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "yudohwi/git_mdp_2team",
+      "issues": 14,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "bada021024/teamproject1",
+      "issues": 6,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "GHeeJeon/goormthon-challenge",
+      "issues": 15,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "2026-Lecture-Analyzer/lecture-report-core",
+      "issues": 23,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "hanggonembedded/ProjectNS",
+      "issues": 7,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "100-hours-a-week/KTB4-20th-wiki",
+      "issues": 41,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "Ae-Ti/CodeAtlas",
+      "issues": 16,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "GiPyoo/inandout",
+      "issues": 40,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "2022OSST22/No3",
+      "issues": 5,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "HDRT-team-2/HDRT-Final-Project",
+      "issues": 191,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "LuisYou/Term_Project_19",
+      "issues": 19,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "sejongresearch/SituationClassifier",
+      "issues": 22,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "codestates/SEMO",
+      "issues": 72,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "codestates/DONUT",
+      "issues": 39,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "wjrmffldrhrl/goldenblock",
+      "issues": 32,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "ghpk98/OS-Term-Project",
+      "issues": 12,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "codestates/Pointrip",
+      "issues": 72,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "ICGPS/SoloObjectRental",
+      "issues": 40,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "CCCloudPlatform/AgenticCP-Core",
+      "issues": 91,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "codestates/RoyalDiary-client",
+      "issues": 89,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "sejongresearch/FaceIdentification",
+      "issues": 6,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "yunjunhojj/Mango-Market",
+      "issues": 7,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "yewonseowill/aiprof",
+      "issues": 14,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "ljh7857/moappteamproject",
+      "issues": 10,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "sjin9696/Aduino_C_sharp_1Team",
+      "issues": 13,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Falcon-in-KAU/Course",
+      "issues": 8,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "chsop/team4_wanted_onboarding",
+      "issues": 52,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "ysys29/p6.teamTrello",
+      "issues": 32,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "cetin072/survival-interactive-series",
+      "issues": 37,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "kyeob1107/Four-A",
+      "issues": 5,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "devcourse-de7-1-team-5/backend",
+      "issues": 36,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Seeds-kr/Seeds-GrowthHub",
+      "issues": 21,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "jhw7500/wlan-package",
+      "issues": 31,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "SagiK-Repository/Learn_CleanArchitecture",
+      "issues": 25,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "taehyuk1222/fridge-recipe-webapp",
+      "issues": 11,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Team-A-Ka/A-ka_backend",
+      "issues": 50,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "100-hours-a-week/14-team-dojangkok-cloud",
+      "issues": 289,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "LeeYudok/agents-scaffold",
+      "issues": 22,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "100-hours-a-week/14-team-dojangkok-wiki",
+      "issues": 163,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "skn-ai14-250409/SKN14-2nd-1Team",
+      "issues": 11,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "YSbookcase/ParTeaProject",
+      "issues": 48,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "PKNU-Ojakgyo/.github",
+      "issues": 5,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "DevSquad10/b2b-service-platform",
+      "issues": 113,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "hanaro4-dIA/dia_pb_fe",
+      "issues": 95,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "hanaro4-dIA/dia_be",
+      "issues": 116,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "soooii/Shoux-Kream",
+      "issues": 281,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "chunjaeTIVE/TIVE",
+      "issues": 29,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "alwaysY0ung/Univ-Study-Manager",
+      "issues": 13,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "orm-final-101/dalim_api",
+      "issues": 92,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "VisionGYM/Fake-Face-Detector",
+      "issues": 5,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "social-archive/kb5_mnb_demo",
+      "issues": 6,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "9oormthon-univ/2024_BEOTKKOTTHON_TEAM_19_BE",
+      "issues": 20,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "Kimgabe/AIFFEL_DLthone",
+      "issues": 5,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "kimyeonsooo/opensourceBasic",
+      "issues": 27,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "OSSL02/2023OSSL",
+      "issues": 9,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Front-line-dev/markup-educator",
+      "issues": 32,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "FLYAI4/project-plan",
+      "issues": 5,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "jakebae87/119",
+      "issues": 12,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Sfarm18/Sfarm",
+      "issues": 51,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "cupicks/cupicks-fe",
+      "issues": 111,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "BOOKPROJECT00/USED-BOOK",
+      "issues": 12,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "seonghwan7694/marine-city",
+      "issues": 30,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "gyseong/-vegetable_project",
+      "issues": 16,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "Kim-kanghyun/Team_project",
+      "issues": 6,
+      "eligible_anchors": 11,
+      "picked": 2
+    },
+    {
+      "repository": "ossTeamPR/mini_project",
+      "issues": 10,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "OSSorganization/management_employee",
+      "issues": 6,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "100-hours-a-week/KTB4-4th-wiki",
+      "issues": 78,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "yoons6586/SKS",
+      "issues": 9,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "rhgusdn112/FITORYProject",
+      "issues": 47,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Capstone-202002/Pathfinder",
+      "issues": 20,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "futureplatform-op/admin",
+      "issues": 193,
+      "eligible_anchors": 560,
+      "picked": 2
+    },
+    {
+      "repository": "100-hours-a-week/2-team-planit-wiki",
+      "issues": 139,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "100-hours-a-week/12-codoc-12-wiki",
+      "issues": 286,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "nnstreamer-preprocessor/nnstreamer",
+      "issues": 21,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Team-likelion-2nd-Project/likelion-devops-7th-team04",
+      "issues": 212,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "100-hours-a-week/KTB4-16th-wiki",
+      "issues": 32,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "shaun0927/ce-study",
+      "issues": 88,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Team-likelion-2nd-Project/likelion-devops-7th-team02",
+      "issues": 94,
+      "eligible_anchors": 10,
+      "picked": 2
+    },
+    {
+      "repository": "woody868/vite-sample",
+      "issues": 7,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "doplee2/news",
+      "issues": 117,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "Jangmyun/copcesium",
+      "issues": 97,
+      "eligible_anchors": 4,
+      "picked": 2
+    },
+    {
+      "repository": "BoBeenLee/bbl-ai-lab",
+      "issues": 31,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "catchSOLmind/cheongyeon-be",
+      "issues": 88,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "CREFLEINC/omf-mes",
+      "issues": 298,
+      "eligible_anchors": 27,
+      "picked": 2
+    },
+    {
+      "repository": "jacob-modoo/modooGuide",
+      "issues": 101,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "team-youngkk/masit-on",
+      "issues": 135,
+      "eligible_anchors": 7,
+      "picked": 2
+    },
+    {
+      "repository": "heopath/TravelGuide-Project-Team1",
+      "issues": 114,
+      "eligible_anchors": 7,
+      "picked": 2
+    },
+    {
+      "repository": "samhan0303/Samhan-Public",
+      "issues": 242,
+      "eligible_anchors": 11,
+      "picked": 2
+    },
+    {
+      "repository": "dohyun-jose-kim/agent-collaboration",
+      "issues": 38,
+      "eligible_anchors": 16,
+      "picked": 2
+    },
+    {
+      "repository": "open-my-dev-com/drawing-report",
+      "issues": 23,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "SKNETWORKS-FAMILY-AICAMP/SKN27-2nd-2TEAM",
+      "issues": 16,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Team-IZ/Backend",
+      "issues": 21,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "coals0115/webcam-filter-wasm",
+      "issues": 7,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "haesongkk/SE_Tetris_Team1",
+      "issues": 44,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "ihw33/ai-orchestra-v02",
+      "issues": 73,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "GovOn-Org/GovOn",
+      "issues": 271,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "ihw33/personal-journal-hub",
+      "issues": 28,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "skn-ai14-250409/SKN14-Final-4Team",
+      "issues": 159,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "100-hours-a-week/14-YG-BE",
+      "issues": 131,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "holelung/Saintra_BE",
+      "issues": 9,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Vactor0911/fablab-booking-system",
+      "issues": 118,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "100-hours-a-week/4-bull4zo-wiki",
+      "issues": 113,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "CSPaceMaker/python-racingcar",
+      "issues": 14,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "hi-sujung/hisujung-msa-k8s",
+      "issues": 13,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "beyond-sw-camp/beyond-sw-camp-be01_last-dance",
+      "issues": 99,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "9-1379/T3-R0-Document",
+      "issues": 28,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "KraftonJungle4th/Classroom4_Week05_Team2_malloc-lab",
+      "issues": 48,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "tukcom2023CD/MBTI",
+      "issues": 61,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "OnNaNOn/OMG",
+      "issues": 25,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "Kosta-Juniors/kosta-market",
+      "issues": 98,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "nurimeansworld/strawberry_market",
+      "issues": 74,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "hesthers/cowork-practice",
+      "issues": 6,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "luma200ok/meetinghub",
+      "issues": 16,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "bbelieff/salespt-log",
+      "issues": 26,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "92-jun/CovelopFit",
+      "issues": 10,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "skku-amang/main",
+      "issues": 295,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "KR-LeeJiHyun/Board",
+      "issues": 38,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "kgu-developers/aics-team-project-server",
+      "issues": 104,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "Relief-Post-Office/Relief-Post-Office",
+      "issues": 13,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "kevinpark2021/team3_wanted_onboarding",
+      "issues": 24,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "SKNETWORKS-FAMILY-AICAMP/SKN21-FINAL-3TEAM",
+      "issues": 50,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "daanta-real/Hexagram_semi",
+      "issues": 31,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "haley10309/Do-day",
+      "issues": 13,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "KAU-SMART-PETS/Capstone_FE",
+      "issues": 14,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "codestates/MUNADU-client",
+      "issues": 107,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "100-hours-a-week/KTB4-6th-wiki",
+      "issues": 51,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "CCCloudPlatform/HeartBeat",
+      "issues": 23,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "njy622/Onnanana_second-Projct",
+      "issues": 132,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "woowacourse/happypeople",
+      "issues": 54,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "SUNJOOSOFT/onggijonggi-chat",
+      "issues": 104,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "yourssu/Soomsil-Web",
+      "issues": 148,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "magic-academy-ma/Magic-Academy",
+      "issues": 83,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "movi-ai-challenge/movi_backend",
+      "issues": 56,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "LikeLion-14th-Bridgenote/AI",
+      "issues": 11,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Codeit-AI10-Part4-3Team/AI10-Part4-3Team-Advanced-Project",
+      "issues": 27,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "umc-phoneshim/PhoneShim-Android",
+      "issues": 7,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "bjw202/process-rnd-harness",
+      "issues": 113,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "soldatj/2601_study",
+      "issues": 23,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "seonhu22/qr_order",
+      "issues": 80,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "dongtan-91-dong-welfare-center/rag_for_accounting",
+      "issues": 210,
+      "eligible_anchors": 18,
+      "picked": 2
+    },
+    {
+      "repository": "wingcraft-co/nnai",
+      "issues": 5,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "nxtcloud-edu/2026-kookmin-ai-workflow-team4",
+      "issues": 9,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "SKNETWORKS-FAMILY-AICAMP/SKN27-FINAL-3Team",
+      "issues": 139,
+      "eligible_anchors": 70,
+      "picked": 2
+    },
+    {
+      "repository": "STAIxBWLB/hwp-cli",
+      "issues": 49,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "journey-101/main",
+      "issues": 27,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "nhnacademy-be12-4vidia/docs",
+      "issues": 208,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "100-hours-a-week/19-team-project-wiki",
+      "issues": 201,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "devworld-ltd/markdownEditor",
+      "issues": 66,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "nb02-CODIIT-team2/CODIIT-backend",
+      "issues": 151,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Team-ReturnTrue/.github",
+      "issues": 20,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "jexists/SKN30-FINAL-1Team-dev",
+      "issues": 24,
+      "eligible_anchors": 3,
+      "picked": 2
+    },
+    {
+      "repository": "AI-HealthCare-05/AH_05_04",
+      "issues": 216,
+      "eligible_anchors": 11,
+      "picked": 2
+    },
+    {
+      "repository": "cetin072/taejang_homepage",
+      "issues": 79,
+      "eligible_anchors": 10,
+      "picked": 2
+    },
+    {
+      "repository": "Ahnjisan/FinGuardOps",
+      "issues": 139,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "GBSW-ReMake/GONE-server-V1",
+      "issues": 81,
+      "eligible_anchors": 5,
+      "picked": 2
+    },
+    {
+      "repository": "Passtival/Passtival-server",
+      "issues": 98,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "BangCheck/BangCheck",
+      "issues": 183,
+      "eligible_anchors": 16,
+      "picked": 2
+    },
+    {
+      "repository": "s1ns3nz0/fried-mushroom",
+      "issues": 190,
+      "eligible_anchors": 175,
+      "picked": 2
+    },
+    {
+      "repository": "sparta-spring4/Commerce-Final-Project-MiriYum",
+      "issues": 287,
+      "eligible_anchors": 43,
+      "picked": 2
+    },
+    {
+      "repository": "kms8720/GeSTure",
+      "issues": 20,
+      "eligible_anchors": 0,
+      "picked": 0
+    },
+    {
+      "repository": "Chodabeen/miniproject-contacts",
+      "issues": 6,
+      "eligible_anchors": 1,
+      "picked": 1
+    },
+    {
+      "repository": "Hanwha-Moirai/Alloc-BE",
+      "issues": 32,
+      "eligible_anchors": 2,
+      "picked": 2
+    },
+    {
+      "repository": "uuuuj/a2z",
+      "issues": 249,
+      "eligible_anchors": 22,
+      "picked": 2
+    }
+  ],
+  "skipped_repositories": {
+    "leegkssk2000-commits/vultr-z": "timeline_truncated_issue_566",
+    "woowacourse/working-scholars": "in_v1_dataset",
+    "jsg0912/beat_warrior": "in_v1_dataset",
+    "thuako/estate-buy-or-stay": "timeline_truncated_issue_28"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5024993610",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:51:31.748065+00:00",
+  "elapsed_seconds": 3.307,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "235bfc5a53820fd630e434bad4afacc31e8add14c9c8dd66e8ed817627e092a7",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1862,
+    "cached_input_tokens": 0,
+    "output_tokens": 240,
+    "reasoning_output_tokens": 148
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5024993610",
+    "summary_ko": "해당 이슈는 오탐으로 종료되었고 설계된 기능으로 확인되었습니다. 다만 오탐·미추적 처리는 완료 상태 변경 대상이 아니므로 제안할 작업 상태 변경이 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}
