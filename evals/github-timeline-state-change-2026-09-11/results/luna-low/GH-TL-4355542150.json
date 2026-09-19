@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-4355542150",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:12.902970+00:00",
+  "elapsed_seconds": 2.454,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "16cfe9d1595dc746ec88ddf544343d71c5dfc8a6740d9d448e0e269a4c76bca9",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1576,
+    "cached_input_tokens": 0,
+    "output_tokens": 133,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-4355542150",
+    "summary_ko": "계약서 분석 기능은 체크리스트 일부만 구현되었고, 이미지 업로드와 OCR 추출·분석은 미구현입니다. OCR 구현 여부는 기획 확인이 필요하므로 현재 작업을 완료 처리할 수 없습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "작업이 부분 구현 상태이며 OCR 실제 구현 여부에 대한 기획 확인이 필요하다고 명시되어 있어, issue-69의 확정 상태 변경을 판단할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

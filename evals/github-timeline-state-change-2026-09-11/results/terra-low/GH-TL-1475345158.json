@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1475345158",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:31:57.570950+00:00",
+  "elapsed_seconds": 2.994,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "df5763276fc8ae2f76801411f71f0357b8c93dec17afbd6565c976f56d047a88",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1541,
+    "cached_input_tokens": 0,
+    "output_tokens": 122,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1475345158",
+    "summary_ko": "레벨 설정과 레벨 랭킹은 완료되었으나, 이슈 전체 작업의 완료 여부는 확정할 수 없습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "스레드 작업에는 포인트·기부와 레벨 작업이 포함되어 있으며, 최신 보고는 레벨 관련 부분만 완료되었다고 명시합니다. 이슈 전체를 완료 처리할 수 있는지 확인이 필요합니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

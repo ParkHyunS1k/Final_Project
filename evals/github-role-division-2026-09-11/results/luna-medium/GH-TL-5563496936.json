@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-5563496936",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:51:40.434862+00:00",
+  "elapsed_seconds": 2.871,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "137398c10d62b9bab535c7c0f7a777477a0294f3af733414407ea7f5d03776f6",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1594,
+    "cached_input_tokens": 0,
+    "output_tokens": 200,
+    "reasoning_output_tokens": 80
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5563496936",
+    "summary_ko": "self-assign 워크플로우 재검증이 성공했고 목적을 달성하여 issue-134를 닫는다고 보고되었습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "complete",
+        "task_id": "issue-134",
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          1
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

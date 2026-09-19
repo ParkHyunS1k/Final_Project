@@ -1,0 +1,9 @@
+[ProjectMate 역할 중심 구현 계획]
+
+목표: 8일 안에 초대부터 진행 현황 확인까지 사용할 수 있는 흐름을 완성한다.
+필요 전문성과 업무:
+- React와 접근성 경험이 필요한 반응형 프로젝트 dashboard, loading/error 상태 구현. 예상 공수 8시간.
+- Workers API와 SQLite 경험이 필요한 D1 schema, 초대·업무 API 구현. 예상 공수 10시간.
+- 사용자 조사와 information architecture 경험이 필요한 사용자 흐름, mobile wireframe 제작. 예상 공수 6시간.
+- 일정 조율과 test 설계 경험이 필요한 acceptance criteria, 통합 QA checklist 작성. 예상 공수 5시간.
+각 업무의 담당자 이름은 회의에서 아직 확정하지 않았으며 전문성을 기준으로 제안한 뒤 팀장이 검토한다.

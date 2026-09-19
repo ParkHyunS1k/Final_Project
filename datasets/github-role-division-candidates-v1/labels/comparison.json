@@ -1,0 +1,260 @@
+{
+  "lock_sha256": "75beb097f8374207ccf603b45dba5548da185284cacce526cda2909a07f2072c",
+  "totals": {
+    "cases": 48,
+    "label_complete": 5,
+    "observed_complete": 61,
+    "complete_both": 5,
+    "closed_but_label_not_complete": 56,
+    "target_closed/propose_changes/label_complete=False/within_1m": 1,
+    "label_assignee": 1,
+    "observed_assignee": 11,
+    "assignee_both": 0,
+    "label_status_or_due": 4,
+    "label_creates": 28,
+    "observed_creates": 327,
+    "cases_creates_both": 10,
+    "forbidden_total": 30,
+    "unmapped_observed": 15,
+    "target_closed/needs_clarification/label_complete=False/within_1m": 1,
+    "forbidden_hit": 12,
+    "target_closed/propose_changes/label_complete=False/within_24h": 4,
+    "cases_creates_without_label": 24,
+    "discarded": 2,
+    "discarded_with_change": 1,
+    "target_closed/propose_changes/label_complete=True/within_1m": 5,
+    "target_closed/no_change/label_complete=False/within_24h": 3,
+    "target_closed/no_change/label_complete=False/within_1m": 2,
+    "target_closed/no_change/label_complete=False/after_24h": 2
+  },
+  "decision_by_record": {
+    "discarded / no_change": 1,
+    "discarded / other_changed": 1,
+    "needs_clarification / no_change": 1,
+    "needs_clarification / target_changed": 1,
+    "no_change / no_change": 5,
+    "no_change / other_changed": 9,
+    "no_change / target_changed": 10,
+    "propose_changes / no_change": 3,
+    "propose_changes / other_changed": 8,
+    "propose_changes / target_changed": 11
+  },
+  "examples": {
+    "closed_but_label_not_complete": [
+      {
+        "id": "GH-TL-1114005742",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "propose_changes",
+        "label_note": "두 사람이 각자 맡을 범위를 합의.",
+        "observed": [
+          "complete:issue-2",
+          "complete:issue-4",
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1120369479",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "needs_clarification",
+        "label_note": "검색·wiki 담당 의사와 함수 묶음 제안이 섞인 분담 논의 중.",
+        "observed": [
+          "complete:issue-7",
+          "reopened:issue-7"
+        ]
+      },
+      {
+        "id": "GH-TL-1214787217",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "propose_changes",
+        "label_note": "EC2는 담당이 정해졌고 RDS 담당은 미정. 계정 매핑 불가로 담당자 비움.",
+        "observed": [
+          "complete:issue-3",
+          "complete:issue-8",
+          "createTask:None",
+          "reopened:issue-3"
+        ]
+      },
+      {
+        "id": "GH-TL-1296454567",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "propose_changes",
+        "label_note": "웹 서버와 클라이언트 담당을 제안하고 상대가 동의.",
+        "observed": [
+          "complete:issue-21",
+          "createTask:None"
+        ]
+      },
+      {
+        "id": "GH-TL-1344403501",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "propose_changes",
+        "label_note": "본인이 PPT와 발표를 맡고 상대에게 Q&A 대비를 요청.",
+        "observed": [
+          "assignee:issue-19",
+          "complete:issue-19",
+          "createTask:None",
+          "renamed:issue-19"
+        ]
+      }
+    ],
+    "label_complete_not_closed": [],
+    "forbidden_hit": [
+      {
+        "id": "GH-TL-1296454567",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "propose_changes",
+        "label_note": "웹 서버와 클라이언트 담당을 제안하고 상대가 동의.",
+        "observed": [
+          "complete:issue-21",
+          "createTask:None"
+        ],
+        "forbidden": {
+          "task_id": "issue-21",
+          "kind": "complete"
+        }
+      },
+      {
+        "id": "GH-TL-1975936779",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "propose_changes",
+        "label_note": "특정인에게 액션 아이템 선정과 종료를 요청.",
+        "observed": [
+          "assignee:issue-25",
+          "complete:issue-15",
+          "complete:issue-18",
+          "complete:issue-2",
+          "complete:issue-21",
+          "complete:issue-25"
+        ],
+        "forbidden": {
+          "task_id": "issue-15",
+          "kind": "complete"
+        }
+      },
+      {
+        "id": "GH-TL-3768383057",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "propose_changes",
+        "label_note": "IAM 계정 생성 완료. GCP 계정 설정 업무와 혼동 금지.",
+        "observed": [
+          "complete:issue-26",
+          "complete:issue-27",
+          "complete:issue-28",
+          "complete:issue-29",
+          "complete:issue-31",
+          "complete:issue-33"
+        ],
+        "forbidden": {
+          "task_id": "issue-31",
+          "kind": "any"
+        }
+      },
+      {
+        "id": "GH-TL-4660615390",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "no_change",
+        "label_note": "구현 범위 권장 의견.",
+        "observed": [
+          "assignee:issue-29",
+          "assignee:issue-31",
+          "assignee:issue-45",
+          "assignee:issue-46",
+          "assignee:issue-47",
+          "complete:issue-29"
+        ],
+        "forbidden": {
+          "task_id": "issue-37",
+          "kind": "complete"
+        }
+      },
+      {
+        "id": "GH-TL-4880873604",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "no_change",
+        "label_note": "배정 작업이 다른 PR과 겹쳐 PR을 닫고 다음 배정을 요청.",
+        "observed": [
+          "complete:issue-101",
+          "complete:issue-45",
+          "createTask:None"
+        ],
+        "forbidden": {
+          "task_id": "issue-45",
+          "kind": "complete"
+        }
+      }
+    ],
+    "creates_without_label": [
+      {
+        "id": "GH-TL-1509733813",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "no_change",
+        "label_note": "아이디어 회의 내용. 담당·결정된 작업이 없다.",
+        "observed": [
+          "createTask:None"
+        ],
+        "observed_creates": 1
+      },
+      {
+        "id": "GH-TL-1846425740",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "no_change",
+        "label_note": "중간 리뷰 피드백 기록.",
+        "observed": [
+          "createTask:None"
+        ],
+        "observed_creates": 4
+      },
+      {
+        "id": "GH-TL-1975936779",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "propose_changes",
+        "label_note": "특정인에게 액션 아이템 선정과 종료를 요청.",
+        "observed": [
+          "assignee:issue-25",
+          "complete:issue-15",
+          "complete:issue-18",
+          "complete:issue-2",
+          "complete:issue-21",
+          "complete:issue-25"
+        ],
+        "observed_creates": 5
+      },
+      {
+        "id": "GH-TL-3000664208",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "no_change",
+        "label_note": "이미 닫힌 회의록 이슈에 외부 메일 발신 완료 보고. 대응 업무가 목록에 없다.",
+        "observed": [
+          "createTask:None"
+        ],
+        "observed_creates": 4
+      },
+      {
+        "id": "GH-TL-3404123492",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "no_change",
+        "label_note": "기존 WBS 담당자 안내와 담당 결정 방식 제안.",
+        "observed": [
+          "assignee:issue-11",
+          "assignee:issue-13",
+          "complete:issue-11",
+          "complete:issue-3",
+          "complete:issue-4",
+          "complete:issue-5"
+        ],
+        "observed_creates": 7
+      }
+    ],
+    "discarded_with_change": [
+      {
+        "id": "GH-TL-3155197537",
+        "anchor": "(원문은 원본 링크에서 확인)",
+        "decision": "discarded",
+        "label_note": "사람 이름별 업무 일지 이슈. 이슈가 업무 단위가 아니다.",
+        "observed": [
+          "createTask:None"
+        ]
+      }
+    ]
+  }
+}

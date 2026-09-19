@@ -1,0 +1,41 @@
+{
+  "created_before_model_outputs": true,
+  "dataset": "datasets/github-role-division-candidates-v1 (역할 분담·회의록형 50건, 제외 2건 → 48건)",
+  "reference": "labels/claude-blind-v1.jsonl (AI 작성, 사람 검토 전, 이후 기록 비공개로 작성·잠금)",
+  "variants": {
+    "luna-low": [
+      "gpt-5.6-luna",
+      "low"
+    ],
+    "luna-medium": [
+      "gpt-5.6-luna",
+      "medium"
+    ],
+    "terra-low": [
+      "gpt-5.6-terra",
+      "low"
+    ],
+    "sol-low": [
+      "gpt-5.6-sol",
+      "low"
+    ]
+  },
+  "runner": "openai_responses_api, strict JSON Schema, tools 없음, store=false",
+  "same_as": "evals/github-timeline-state-change-2026-09-11 의 prompt.md·schema.json·run.py와 동일(데이터 경로만 다름)",
+  "added_metrics": "새 업무 수·담당자 계정 일치, 담당자 변경 일치(score.py)",
+  "primary_metrics": [
+    "create_count_recall",
+    "create_person",
+    "create_on_no_change_cases",
+    "forbidden_hits",
+    "decision_accuracy"
+  ],
+  "sha256": {
+    "prompt.md": "06a84c7d41f06cd4fe77fa55ae33644b9194dab1b0f929c0c5dd4a43b2e484ab",
+    "schema.json": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+    "run.py": "9a1ac89b6e8d648b425d24f2cc5c5fab08bad1efa95db7daf7ae93b4bb39553f",
+    "score.py": "225add631aeb095227fadb124623b2e6d68e08b7b945ecd9e72284db73a34444",
+    "labels": "75beb097f8374207ccf603b45dba5548da185284cacce526cda2909a07f2072c",
+    "candidates": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1296185551",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:29:27.798413+00:00",
+  "elapsed_seconds": 2.971,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "6b83d03148cd89094b80abd0447c71f921b336d1193d763e1a0c464274cf3cfc",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1426,
+    "cached_input_tokens": 0,
+    "output_tokens": 224,
+    "reasoning_output_tokens": 118
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1296185551",
+    "summary_ko": "회원가입 기능에서 중복확인 단계까지 완료되었지만, 전체 기능의 완료 여부는 확인되지 않습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "기존 issue-35의 일부 단계만 완료된 부분 보고이며, 전체 회원가입 기능을 완료로 처리할지 또는 진행 중으로 변경할지 판단할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

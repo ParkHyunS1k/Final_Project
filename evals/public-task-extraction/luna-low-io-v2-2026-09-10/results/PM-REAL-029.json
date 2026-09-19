@@ -1,0 +1,36 @@
+{
+  "id": "PM-REAL-029",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-10T12:21:43.875250+00:00",
+  "elapsed_seconds": 6.161,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "407809dc068b24f9873f096229c20bb464e8aad97c2121a68799126ae492907d",
+  "schema_sha256": "5855cb3ee348aa28f04bc9810b3624098658c3f2a7c4f67938741bbfdbee47c0",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "context_overrides_sha256": "f5f5466a50b8b0506a36e587c7a5527e2923f8b4751f9745800587a2e66c5617",
+  "usage": {
+    "input_tokens": 10207,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 193,
+    "reasoning_output_tokens": 105
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-029",
+    "summary_ko": "QA 배포 서버에는 아직 변경 사항이 업데이트되지 않았습니다.",
+    "work_items": [],
+    "effort_mentions": [],
+    "whole_thread_completion_reported": null,
+    "release_state": "not_released",
+    "relation": "none",
+    "relation_target_url": null,
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

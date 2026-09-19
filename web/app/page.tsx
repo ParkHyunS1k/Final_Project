@@ -40,6 +40,7 @@ import {
   type Schedule,
   type Task,
 } from '@/lib/sprint';
+import { meetingSuggestions } from '@/lib/meeting-suggestions';
 
 export type Lifecycle =
   | 'legacy'
@@ -358,6 +359,15 @@ function Dashboard({
     !state.me.leftAt;
   const tasks = s?.tasks ?? [];
   const done = tasks.filter((t) => t.done).length;
+  const meetingProposals =
+    state && plan
+      ? meetingSuggestions(
+          tasks,
+          plan,
+          state.members.map((m) => ({ person: m.person, displayName: m.display_name })),
+          new Date(state.asOf),
+        )
+      : [];
   const deadline = state?.policy?.deadlineAt ?? null;
   const remainingHours = deadline
     ? (Date.parse(deadline) - Date.parse(state?.asOf ?? '1970-01-01')) / 3600000
@@ -593,6 +603,53 @@ function Dashboard({
                       <button className="text-link" onClick={() => setTab('plan')}>
                         실행 계획 보기 <ArrowRight size={16} />
                       </button>
+                    </div>
+                    <div className="section-heading task-heading">
+                      <h2>회의 제안</h2>
+                      <span className="tiny muted">
+                        공통 공수 · 의존관계 기반 계산
+                      </span>
+                    </div>
+                    <div className="task-list">
+                      {meetingProposals.length === 0 ? (
+                        <p className="empty-copy">지금은 따로 모일 일이 없습니다.</p>
+                      ) : (
+                        <>
+                          {meetingProposals.map((sug) => (
+                            <div className="task-row" key={sug.id}>
+                              <Sparkles size={18} />
+                              <div>
+                                <b>{sug.title}</b>
+                                <span>
+                                  {sug.suggestedAt
+                                    ? seoulTime(sug.suggestedAt) + ' KST'
+                                    : '시점 미정'}{' '}
+                                  · {sug.reason}
+                                </span>
+                                <ul className="tiny muted">
+                                  {sug.agenda.map((item, i) => (
+                                    <li key={i}>{item}</li>
+                                  ))}
+                                </ul>
+                                <span className="tiny muted">
+                                  관련 담당자:{' '}
+                                  {sug.people
+                                    .map(
+                                      (p) =>
+                                        state!.members.find((m) => m.person === p)
+                                          ?.display_name ?? '담당자 미정',
+                                    )
+                                    .join(', ')}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                          <p className="tiny muted">
+                            회의 후 회의록을 변경안 검토에 붙여넣으면 업무
+                            변경안을 만들 수 있습니다.
+                          </p>
+                        </>
+                      )}
                     </div>
                     <div className="section-heading task-heading">
                       <h2>최근 체크인</h2>

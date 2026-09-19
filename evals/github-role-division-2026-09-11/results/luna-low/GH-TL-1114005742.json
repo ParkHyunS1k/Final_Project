@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1114005742",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:50:43.217493+00:00",
+  "elapsed_seconds": 5.495,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "40c9c22d07e6e40deee982fbe011af1afa8ef161aac50fde16258d5d4e4cfc1b",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1348,
+    "cached_input_tokens": 0,
+    "output_tokens": 320,
+    "reasoning_output_tokens": 155
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1114005742",
+    "summary_ko": "1~6번과 7~10번 및 메인 함수의 담당자가 합의되었지만, 현재 작업 목록의 어떤 작업에 해당하는지 명확하지 않습니다. 기존 작업의 일부만 담당하는 내용이므로 특정 작업 상태나 담당자를 확정해 변경하기 어렵습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "대화에서 언급한 1~6번, 7~10번, 메인 함수가 현재 작업 목록의 어느 작업인지 식별되지 않으며, 기존 작업의 일부 업무만 나누는 내용이라 definite한 작업 단위 변경으로 매핑할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

@@ -1,0 +1,55 @@
+{
+  "id": "PM-REAL-048",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-10T12:22:23.277247+00:00",
+  "elapsed_seconds": 10.093,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "cb3a80f4e5a40e5cb261388149e3b20c31fd3455df11b4365d39ba08e32c44d8",
+  "schema_sha256": "5855cb3ee348aa28f04bc9810b3624098658c3f2a7c4f67938741bbfdbee47c0",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "context_overrides_sha256": "f5f5466a50b8b0506a36e587c7a5527e2923f8b4751f9745800587a2e66c5617",
+  "usage": {
+    "input_tokens": 10272,
+    "cached_input_tokens": 7936,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 287,
+    "reasoning_output_tokens": 103
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-048",
+    "summary_ko": "관리자 레이아웃 관련 예상 소요 시간이 3시간과 1시간으로 다르게 기재되어 있습니다.",
+    "work_items": [],
+    "effort_mentions": [
+      {
+        "kind": "estimated",
+        "minutes": 180,
+        "scope": "whole_thread",
+        "work_item_indices": [],
+        "evidence_excerpt_indices": [
+          0
+        ]
+      },
+      {
+        "kind": "estimated",
+        "minutes": 60,
+        "scope": "whole_thread",
+        "work_item_indices": [],
+        "evidence_excerpt_indices": [
+          1
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": null,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "needs_clarification": true,
+    "clarification_reason_ko": "구체적인 작업 내용과 예상 소요 시간의 적용 범위가 없으며, 3시간과 1시간의 추정치가 서로 다릅니다."
+  },
+  "parse_error": null,
+  "errors": []
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1484022007",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:27:31.185331+00:00",
+  "elapsed_seconds": 3.045,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "52d9a9d07e2da0f33bb6e4e91868a8873fc1b95b09877d0265652c27a968966f",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1463,
+    "cached_input_tokens": 0,
+    "output_tokens": 134,
+    "reasoning_output_tokens": 54
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1484022007",
+    "summary_ko": "trace 저장 여부를 선택하는 옵션과 오류 발생 시 trace를 공유하는 기능에 대한 내용이지만, 작업 완료나 진행 상태를 확정적으로 보고하지 않았습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1125100581",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:51:14.240672+00:00",
+  "elapsed_seconds": 2.043,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "13e11d35013062954f27d9868c3852ef21f86c7f3a0cdb71a16438d8bbc48206",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1318,
+    "cached_input_tokens": 0,
+    "output_tokens": 110,
+    "reasoning_output_tokens": 39
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1125100581",
+    "summary_ko": "파일 부분을 담당할 수 있는지 묻는 요청일 뿐, 담당 확정이나 작업 시작 사실은 확인되지 않습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

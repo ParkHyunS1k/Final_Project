@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-5585917455",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:35:41.503854+00:00",
+  "elapsed_seconds": 4.834,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "f663271fe1bc07ae9017000687012ca66e23096c32ed22e236afb9435d255838",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 2149,
+    "cached_input_tokens": 0,
+    "output_tokens": 232,
+    "reasoning_output_tokens": 102
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5585917455",
+    "summary_ko": "#368 작업을 시작했다고 명시했으며, 현재 과제는 열려 있습니다. #365는 계속 Open으로 유지한다고 밝혔으므로 완료 변경은 제안하지 않습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "status",
+        "task_id": "issue-368",
+        "status": "in_progress",
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5420727658",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:51:37.455375+00:00",
+  "elapsed_seconds": 5.247,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "332c310d0c05039d618631a5cd7bc53c1a382fcc6d4b040a608dc0d97a15e8df",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 3010,
+    "cached_input_tokens": 0,
+    "output_tokens": 210,
+    "reasoning_output_tokens": 107
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5420727658",
+    "summary_ko": "문서의 진행 현황이 오래되었고 일부 구현 상태가 잘못 기록되었다는 사실 및 갱신 제안이 공유되었습니다. 그러나 현재 작업의 완료·진행·담당자·잔여 시간·기한을 확정하는 내용은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

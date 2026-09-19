@@ -1,0 +1,76 @@
+{
+  "id": "GH-TL-1321332870",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:17.382189+00:00",
+  "elapsed_seconds": 11.478,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "5667ce03d1bc42434b6e202a98c1bd5bfffd1300690c4dd72c38c4148c05854f",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1925,
+    "cached_input_tokens": 0,
+    "output_tokens": 524,
+    "reasoning_output_tokens": 252
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1321332870",
+    "summary_ko": "3주차 역할 분담이 확정되어 기존 로깅 과제의 담당자를 지정하고, CI/CD·인프라 및 문서화·테스트 관련 과제를 새로 생성할 수 있습니다. 선택 사항으로 표시된 Webhook 알림은 제외합니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "assignee",
+        "task_id": "issue-16",
+        "status": null,
+        "person": "junsj119",
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          2
+        ]
+      },
+      {
+        "kind": "createTask",
+        "task_id": null,
+        "status": null,
+        "person": "iswoos",
+        "remaining_hours": null,
+        "due_at": null,
+        "title": "CI/CD + AWS + RDS 구축",
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          2
+        ]
+      },
+      {
+        "kind": "createTask",
+        "task_id": null,
+        "status": null,
+        "person": "ahn-sj",
+        "remaining_hours": null,
+        "due_at": null,
+        "title": "Spring REST Docs 도입 및 Jacoco 테스트 커버리지 95% 이상 달성과 테스트 코드 작성",
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          2
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

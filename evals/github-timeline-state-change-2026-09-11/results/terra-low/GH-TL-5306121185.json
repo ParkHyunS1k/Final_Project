@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5306121185",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:48.803762+00:00",
+  "elapsed_seconds": 2.388,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "c5bd5adfdd49206a682609dee64bfcfba899d14a731feea744261373fe95b921",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1588,
+    "cached_input_tokens": 0,
+    "output_tokens": 81,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5306121185",
+    "summary_ko": "OpenAI adapter PR #29가 main에 병합되었습니다. 아이 음성 안전 문구 매핑 불변식은 현재 이슈의 E2E에서 검증할 예정입니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

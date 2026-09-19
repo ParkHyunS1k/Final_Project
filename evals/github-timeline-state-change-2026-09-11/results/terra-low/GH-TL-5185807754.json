@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-5185807754",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:32:44.173792+00:00",
+  "elapsed_seconds": 2.377,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "393b9348c7a95529eb83b50e0dac35d652b4954b4fa76db79e2af226ac0f2c97",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 2194,
+    "cached_input_tokens": 0,
+    "output_tokens": 144,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5185807754",
+    "summary_ko": "모델트리 `Type` 속성을 변환 모델에 적재해 달라는 구체적 신규 요청이 확정되었습니다. 기존 작업 목록에는 이 요청을 직접 다루는 작업이 없습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "createTask",
+        "task_id": null,
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": "모델 변환 시 모델트리 `Type` 속성 적재",
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

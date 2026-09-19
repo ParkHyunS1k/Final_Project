@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-5290436984",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:34.295828+00:00",
+  "elapsed_seconds": 4.327,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "1d370e6dcdc735c54096484e63ee262358df665854831a371381f18151ce67c6",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1754,
+    "cached_input_tokens": 0,
+    "output_tokens": 282,
+    "reasoning_output_tokens": 125
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5290436984",
+    "summary_ko": "기존 연동과 판정 개선은 완료되었지만, 오늘 잔반율 분석을 위한 YOLO 모델의 `create_meal_log` 연동은 미해결입니다. 이를 별도 백엔드 작업으로 생성하는 것이 적절합니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "createTask",
+        "task_id": null,
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": "YOLO 잔반 분석 모델을 create_meal_log에 연결",
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}
