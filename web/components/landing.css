@@ -37,10 +37,11 @@ body:has(.rl) {
   font-size: clamp(36px, 5.2vw, 72px);
 }
 .rl .kicker {
-  margin: 0 0 18px;
+  margin: 0 0 16px;
   color: var(--heat);
-  font: 600 13px/1 var(--font-geist-mono), monospace;
-  letter-spacing: 0.14em;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
 }
 .rl .lead {
   margin: 22px 0 0;
@@ -185,22 +186,8 @@ body:has(.rl) {
   color: var(--heat);
 }
 
-/* 2. 규칙: 뒤로 7일이 흐르는 타임랩스를 어둡게 깐다. */
-.rules {
-  position: relative;
-  overflow: hidden;
-}
-.rules-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.3;
-  mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
-}
+/* 2. 규칙 */
 .rules-body {
-  position: relative;
   max-width: 1280px;
   margin: 0 auto;
   padding: 22svh clamp(16px, 6vw, 96px) 16svh;
@@ -732,6 +719,17 @@ body:has(.rl) {
   height: 100svh;
   overflow: hidden;
 }
+/* 모니터 화면 속으로 카메라가 들어가며 암전되고, 그대로 출발 신호로 이어진다. */
+#dive {
+  height: calc(100svh + 100svh);
+}
+.dive video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 #go {
   height: calc(100svh + 160svh);
 }
@@ -742,23 +740,21 @@ body:has(.rl) {
   height: calc(100svh + 220svh);
 }
 #radio {
-  height: calc(100svh + 260svh);
+  height: calc(100svh + 200svh);
 }
 #closing {
   height: calc(100svh + 150svh);
 }
 
 /* 시네마틱: 영상이 화면을 채우고 큰 글자가 흐림에서 떠오른다. */
-.cine video,
-.radio video {
+.cine video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.cine .pin-stage::after,
-.radio .pin-stage::after {
+.cine .pin-stage::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -937,7 +933,7 @@ body:has(.rl) {
   transform: translate(-50%, 16px);
 }
 
-/* 팀 무전: 무전 영상 뒤로 단톡 말풍선이 흩어져 있다가 변경안 카드로 모인다. */
+/* 회의 정리: 단톡 말풍선이 흩어져 있다가 변경안 카드로 모인다. */
 .pilot {
   margin-left: 8px;
   padding: 3px 8px;
@@ -946,20 +942,19 @@ body:has(.rl) {
   font-size: 11px;
   letter-spacing: 0;
 }
-.radio video,
-.radio .cine-copy,
-.radio .pin-stage::after {
-  opacity: calc(1 - clamp(0, (var(--p, 0) - 0.3) * 6, 1));
+.radio .cine-copy {
+  top: 12svh;
+  bottom: auto;
 }
 .radio-field {
   position: absolute;
   inset: 0;
-  --c: clamp(0, (var(--p, 0) - 0.6) * 5, 1);
+  --c: clamp(0, (var(--p, 0) - 0.45) * 4, 1);
 }
 .bubble {
   position: absolute;
   left: 50%;
-  top: 45%;
+  top: 62%;
   max-width: 300px;
   margin: 0;
   padding: 12px 16px;
@@ -986,12 +981,12 @@ body:has(.rl) {
   border-color: var(--heat);
 }
 .b1 {
-  --x: -26vw;
-  --y: -18svh;
+  --x: -24vw;
+  --y: -12svh;
 }
 .b2 {
-  --x: 18vw;
-  --y: -24svh;
+  --x: 20vw;
+  --y: -16svh;
 }
 .b3 {
   --x: -22vw;
@@ -1003,12 +998,12 @@ body:has(.rl) {
 }
 .b5 {
   --x: -2vw;
-  --y: 26svh;
+  --y: 20svh;
 }
 .proposal2 {
   position: absolute;
   left: 50%;
-  top: 45%;
+  top: 60%;
   display: grid;
   gap: 10px;
   width: min(380px, calc(100% - 32px));
@@ -1318,13 +1313,30 @@ body:has(.rl) {
     max-width: 210px;
     font-size: 13px;
   }
-  .b1,
-  .b3 {
-    --x: -16vw;
+  /* 좁은 화면에서는 말풍선을 좌우로 번갈아 세로로 펼친다. */
+  .bubble,
+  .proposal2 {
+    top: 55%;
   }
-  .b2,
+  .b1 {
+    --x: -14vw;
+    --y: -16svh;
+  }
+  .b2 {
+    --x: 12vw;
+    --y: -4svh;
+  }
+  .b3 {
+    --x: -14vw;
+    --y: 8svh;
+  }
   .b4 {
-    --x: 16vw;
+    --x: 12vw;
+    --y: 18svh;
+  }
+  .b5 {
+    --x: -6vw;
+    --y: 28svh;
   }
   .mosaic-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1338,6 +1350,10 @@ body:has(.rl) {
   }
   .tile.cta h2 {
     font-size: 30px;
+  }
+  /* 휴대폰에는 모니터가 없으니 줌인 전환도 뺀다. */
+  #dive {
+    display: none;
   }
   .tile.c,
   .tile.d,
@@ -1360,6 +1376,9 @@ body:has(.rl) {
   }
   .pin-stage {
     position: relative;
+  }
+  #dive {
+    display: none;
   }
   .mosaic-grid {
     --z: 1;

@@ -79,11 +79,6 @@ export function LandingPage() {
     if (!reduced.matches && !phone.matches) {
       heroVideo.src = '/landing/race.mp4';
       for (const v of videos) v.src = v.dataset.src!;
-      // 배경 영상은 스크롤과 무관하게 조용히 반복 재생한다.
-      for (const v of root.querySelectorAll<HTMLVideoElement>('video[data-bg]')) {
-        v.src = v.dataset.bg!;
-        v.play().catch(() => {});
-      }
     }
     // 영상별 목표 시각. 탐색이 끝나면(seeked) 그사이 바뀐 목표로 다시 맞춘다.
     const targets = new Map<HTMLVideoElement, number>();
@@ -291,16 +286,8 @@ export function LandingPage() {
         </section>
 
         <section className="rules" id="rules">
-          <video
-            className="rules-bg"
-            data-bg="/landing/timelapse.mp4"
-            muted
-            loop
-            playsInline
-            aria-hidden="true"
-          />
           <div className="rules-body">
-            <p className="kicker">REGULATION</p>
+            <p className="kicker">규칙</p>
             <h2>
               출발하면,
               <br />
@@ -340,7 +327,7 @@ export function LandingPage() {
         <section className="feat" id="setup">
           <div className="stage">
             <div className="feat-copy">
-              <p className="kicker">PRE-RACE</p>
+              <p className="kicker">출발 전 설계</p>
               <h2>
                 출발 전에,
                 <br />
@@ -498,6 +485,18 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section className="pin dive" id="dive" data-pin aria-hidden="true">
+          <div className="pin-stage">
+            <video
+              data-src="/landing/dive.mp4"
+              poster="/landing/dive.jpg"
+              muted
+              playsInline
+              preload="auto"
+            />
+          </div>
+        </section>
+
         <section className="pin cine" id="go" data-pin>
           <div className="pin-stage">
             <video
@@ -510,7 +509,7 @@ export function LandingPage() {
               aria-hidden="true"
             />
             <div className="cine-copy">
-              <p className="kicker">LIGHTS OUT</p>
+              <p className="kicker">출발</p>
               <p className="cine-line">
                 <span data-on="0.12">불이 모두 꺼지면,</span>
                 <span data-on="0.56">168시간이 시작된다.</span>
@@ -531,7 +530,7 @@ export function LandingPage() {
               aria-hidden="true"
             />
             <div className="cine-copy center">
-              <p className="kicker">PIT STOP · 체크인</p>
+              <p className="kicker">체크인</p>
               <p className="cine-line big">
                 <span data-on="0.15">밀리는 순간,</span>
                 <span data-on="0.4">바로 뜬다.</span>
@@ -546,7 +545,7 @@ export function LandingPage() {
         <section className="pin tele" id="telemetry" data-pin>
           <div className="pin-stage tele-stage">
             <div className="tele-copy">
-              <p className="kicker">TELEMETRY</p>
+              <p className="kicker">일정 재계산</p>
               <h2>
                 &ldquo;거의 다 했어요&rdquo;는
                 <br />
@@ -600,41 +599,32 @@ export function LandingPage() {
 
         <section className="pin radio" id="radio" data-pin>
           <div className="pin-stage radio-stage">
-            <video
-              data-src="/landing/radio.mp4"
-              data-range="0,0.4"
-              poster="/landing/radio.jpg"
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-            />
             <div className="cine-copy">
               <p className="kicker">
-                TEAM RADIO <span className="pilot">파일럿</span>
+                회의 정리 <span className="pilot">파일럿</span>
               </p>
               <p className="cine-line">
-                <span data-on="0.08">회의는 끝났다.</span>
-                <span data-on="0.24">할 일만 남긴다.</span>
+                <span data-on="0.02">회의는 끝났다.</span>
+                <span data-on="0.1">할 일만 남긴다.</span>
               </p>
             </div>
             <div className="radio-field">
-              <p className="bubble b1" data-on="0.48">
+              <p className="bubble b1" data-on="0.18">
                 <b>준호</b>참가 신청 API 누가 맡아요?
               </p>
-              <p className="bubble b2 key" data-on="0.5">
+              <p className="bubble b2 key" data-on="0.22">
                 <b>하린</b>제가 맡을게요. 4시간이면 돼요.
               </p>
-              <p className="bubble b3" data-on="0.52">
+              <p className="bubble b3" data-on="0.26">
                 <b>민서</b>API 나오면 화면에 붙일게요.
               </p>
-              <p className="bubble b4" data-on="0.54">
+              <p className="bubble b4" data-on="0.3">
                 <b>수빈</b>검색 필터는 내일 오전까지요.
               </p>
-              <p className="bubble b5" data-on="0.56">
+              <p className="bubble b5" data-on="0.34">
                 <b>준호</b>그럼 통합 테스트는 목요일!
               </p>
-              <div className="proposal2" data-on="0.8">
+              <div className="proposal2" data-on="0.72">
                 <small>변경안 · 원문 근거 있음</small>
                 <b>참가 신청 API</b>
                 <div>
@@ -644,12 +634,12 @@ export function LandingPage() {
                   <span>남은 공수</span>미정 → 4시간
                 </div>
                 <q>제가 맡을게요. 4시간이면 돼요.</q>
-                <p className="stamp swap" data-on="0.9">
+                <p className="stamp swap" data-on="0.86">
                   <span className="before">승인 대기</span>
                   <span className="after">팀장 승인 · 반영됨</span>
                 </p>
               </div>
-              <p className="radio-note" data-on="0.8">
+              <p className="radio-note" data-on="0.72">
                 단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안한다. 적용은 사람이
                 승인해야만 된다.
               </p>
@@ -660,7 +650,7 @@ export function LandingPage() {
         <section className="scene" id="finish" data-pin>
           <div className="stage">
             <div className="copy">
-              <p className="kicker">CHEQUERED FLAG</p>
+              <p className="kicker">완주</p>
               <h2>
                 끝냈다는 말은,
                 <br />
@@ -718,7 +708,7 @@ export function LandingPage() {
                 <small>목표 잠금 · 이월 없음</small>
               </div>
               <div className="tile cta">
-                <p className="kicker">NEXT RACE</p>
+                <p className="kicker">다음 7일</p>
                 <h2>
                   다음 7일,
                   <br />
