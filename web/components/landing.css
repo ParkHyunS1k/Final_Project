@@ -186,15 +186,24 @@ body:has(.rl) {
   color: var(--heat);
 }
 
-/* 2. 규칙 */
+/* 2. 규칙: 고정해 두고 규칙이 한 줄씩 떠오른다. 다음 줄이 나오면 앞줄은 물러난다. */
+#rules {
+  height: calc(100svh + 170svh);
+}
+#rules .pin-stage {
+  display: grid;
+  align-content: center;
+}
 .rules-body {
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 22svh clamp(16px, 6vw, 96px) 16svh;
+  padding: 0 clamp(16px, 6vw, 96px);
+  box-sizing: border-box;
 }
 .rule-list {
   list-style: none;
-  margin: 72px 0 0;
+  margin: 48px 0 0;
   padding: 0;
   border-top: 1px solid var(--line);
 }
@@ -203,8 +212,17 @@ body:has(.rl) {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 24px;
   align-items: center;
-  padding: 36px 0;
+  padding: 28px 0;
   border-bottom: 1px solid var(--line);
+  transition: opacity 0.6s, filter 0.6s, transform 0.6s;
+}
+.rule-list li:not(.on) {
+  opacity: 0;
+  filter: blur(12px);
+  transform: translateY(24px);
+}
+.rule-list li.on:has(+ li.on) {
+  opacity: 0.3;
 }
 .rule-list strong {
   font-size: clamp(40px, 6vw, 84px);
@@ -214,10 +232,13 @@ body:has(.rl) {
 }
 .rule-list li:first-child strong {
   color: var(--heat);
+}
+.rule-list strong span {
   font-family: var(--font-geist-mono), monospace;
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.06em;
 }
-.rule-list span {
+.rule-list li > span {
   color: var(--dim);
   font-size: 17px;
   line-height: 1.65;

@@ -61,10 +61,6 @@ export function cursorAt(t, keys) {
   return { x: prev.x, y: prev.y, press: Boolean(prev.press) && t - prev.t < 0.04 };
 }
 
-export function countUp(target, progress) {
-  return Math.round(target * clamp(progress));
-}
-
 // 구간별로 굴러가는 숫자. segs = [[from, to, p0, p1], ...] (p0 오름차순).
 // 아직 첫 구간이 시작되지 않았으면 첫 from, 이후에는 지나온 마지막 구간의 값.
 export function rollAt(progress, segs) {

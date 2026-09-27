@@ -7,7 +7,6 @@ import {
   raceClock,
   featureAt,
   cursorAt,
-  countUp,
   rollAt,
 } from '@/lib/landing-race.mjs';
 import './landing.css';
@@ -65,7 +64,6 @@ export function LandingPage() {
     const menu = [...setup.querySelectorAll<HTMLElement>('.app-side [data-pane]')];
     // 고정 구간(data-pin)마다 진행률 --p를 주고, 안쪽 [data-on] 요소를 켜고 끈다.
     const pins = [...root.querySelectorAll<HTMLElement>('[data-pin]')];
-    const counters = [...root.querySelectorAll<HTMLElement>('[data-count]')];
     const go = root.querySelector<HTMLElement>('#go')!;
     const finish = root.querySelector<HTMLElement>('#finish')!;
     const hud = root.querySelector<HTMLElement>('.hud')!;
@@ -158,10 +156,9 @@ export function LandingPage() {
       stageOf(sec).style.setProperty('--p', String(p));
       sec.querySelectorAll<HTMLElement>('[data-on]').forEach((el) => toggleOn(el, p));
       sec.querySelectorAll<HTMLElement>('[data-roll]').forEach((el) => {
-        el.textContent = signed(
-          rollAt(p, parseRoll(el.dataset.roll!)),
-          el.dataset.unit ?? '',
-        );
+        const v = rollAt(p, parseRoll(el.dataset.roll!));
+        const unit = el.dataset.unit ?? '';
+        el.textContent = el.dataset.sign === undefined ? v + unit : signed(v, unit);
       });
       const v = sec.querySelector<HTMLVideoElement>('video[data-src]');
       if (v) {
@@ -187,12 +184,6 @@ export function LandingPage() {
       scrub(heroVideo, videoP);
       syncSetup(vh);
       for (const sec of pins) syncPin(sec, vh);
-      for (const el of counters) {
-        const p = reduced.matches
-          ? 1
-          : clamp((vh * 0.9 - el.getBoundingClientRect().top) / (vh * 0.45));
-        el.textContent = String(countUp(Number(el.dataset.count), p));
-      }
       // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 출발 신호가 꺼진 뒤부터 흐른다.
       const top = (el: HTMLElement) => el.getBoundingClientRect().top + scrollY;
       const start = top(go) + (go.offsetHeight - stageOf(go).offsetHeight) * LIGHTS_OUT;
@@ -285,7 +276,8 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="rules" id="rules">
+        <section className="pin rules" id="rules" data-pin>
+          <div className="pin-stage">
           <div className="rules-body">
             <p className="kicker">규칙</p>
             <h2>
@@ -294,9 +286,9 @@ export function LandingPage() {
               멈출 수 없다.
             </h2>
             <ol className="rule-list">
-              <li>
+              <li data-on="0.06">
                 <strong>
-                  <span data-count="168">168</span>시간
+                  <span data-roll="0,168,0.06,0.3">168</span>시간
                 </strong>
                 <span>
                   출발을 누른 시각부터 정확히 7일.
@@ -304,7 +296,7 @@ export function LandingPage() {
                   준비하는 동안은 시간이 흐르지 않는다.
                 </span>
               </li>
-              <li>
+              <li data-on="0.38">
                 <strong>목표 잠금</strong>
                 <span>
                   출발 후에는 목표·범위·결과물을
@@ -312,7 +304,7 @@ export function LandingPage() {
                   누구도, 어떤 경로로도 바꿀 수 없다.
                 </span>
               </li>
-              <li>
+              <li data-on="0.66">
                 <strong>연장 없음</strong>
                 <span>
                   기한이 지나면 자동으로 종료.
@@ -321,6 +313,7 @@ export function LandingPage() {
                 </span>
               </li>
             </ol>
+          </div>
           </div>
         </section>
 
@@ -582,7 +575,7 @@ export function LandingPage() {
               </div>
               <div className="tele-big" data-on="0.35">
                 <small>로그인 구현 · 마감 대비</small>
-                <strong data-roll="0,2,0.35,0.5|2,-1,0.66,0.8" data-unit="h">
+                <strong data-roll="0,2,0.35,0.5|2,-1,0.66,0.8" data-unit="h" data-sign>
                   0h
                 </strong>
                 <span className="verdict swap" data-on="0.8">

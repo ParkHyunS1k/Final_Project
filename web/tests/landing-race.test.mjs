@@ -37,7 +37,7 @@ test('race clock runs from 168h on day 1 down to the finish time on day 6', () =
   assert.equal(raceClock(0.5).day, 3);
 });
 
-import { featureAt, cursorAt, countUp } from '../lib/landing-race.mjs';
+import { featureAt, cursorAt } from '../lib/landing-race.mjs';
 
 test('feature list splits progress into items and stays on the last item', () => {
   assert.deepEqual(featureAt(0, 3), { item: 0, t: 0 });
@@ -57,12 +57,6 @@ test('cursor eases between keys and presses briefly at press keys', () => {
   assert.equal(cursorAt(0.52, keys).press, true);
   assert.equal(cursorAt(0.6, keys).press, false);
   assert.deepEqual(cursorAt(2, keys), { x: 100, y: 50, press: false });
-});
-
-test('count up is bounded', () => {
-  assert.equal(countUp(168, 0.5), 84);
-  assert.equal(countUp(168, 3), 168);
-  assert.equal(countUp(168, -1), 0);
 });
 
 import { rollAt } from '../lib/landing-race.mjs';
