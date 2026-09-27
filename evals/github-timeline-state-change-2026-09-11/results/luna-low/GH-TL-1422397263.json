@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-1422397263",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:27:28.460431+00:00",
+  "elapsed_seconds": 3.033,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "b5693cec992e6601b1c9cf39f7291f6cf828d022c417e8f9d9d3faf76d4f9c8d",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1577,
+    "cached_input_tokens": 0,
+    "output_tokens": 254,
+    "reasoning_output_tokens": 133
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1422397263",
+    "summary_ko": "코루틴으로 변경하는 작업이 진행되었지만, 변경 후 JSON 역직렬화 문제가 발생해 해결 완료로 볼 수 없습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "status",
+        "task_id": "issue-24",
+        "status": "in_progress",
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          1
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

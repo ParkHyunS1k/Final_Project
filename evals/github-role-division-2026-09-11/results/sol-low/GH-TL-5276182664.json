@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5276182664",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:37.717141+00:00",
+  "elapsed_seconds": 4.351,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "4f3d1468b1ab483730cd3f14fbb3aa05fa6fd695ac42d1f68299e3b6f5e8f7e7",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 3360,
+    "cached_input_tokens": 0,
+    "output_tokens": 152,
+    "reasoning_output_tokens": 56
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5276182664",
+    "summary_ko": "issue-124의 작업 범위와 해결 방법을 정리하고 담당자에게 작업을 요청했지만, 담당자는 이미 jeomseon0516으로 지정되어 있습니다. 작업 시작이나 완료 등 새로운 확정 상태는 보고되지 않았습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

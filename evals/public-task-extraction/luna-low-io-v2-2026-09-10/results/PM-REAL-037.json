@@ -1,0 +1,36 @@
+{
+  "id": "PM-REAL-037",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-10T12:22:02.664447+00:00",
+  "elapsed_seconds": 5.536,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "51ace5bce1dc81b23b08bcd782e98c30c681bbfcc25ad71d8ba35f7f4f6ed6eb",
+  "schema_sha256": "5855cb3ee348aa28f04bc9810b3624098658c3f2a7c4f67938741bbfdbee47c0",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "context_overrides_sha256": "f5f5466a50b8b0506a36e587c7a5527e2923f8b4751f9745800587a2e66c5617",
+  "usage": {
+    "input_tokens": 10198,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 153,
+    "reasoning_output_tokens": 40
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-037",
+    "summary_ko": "관련 이슈가 본 이슈의 중복인지 질문하고 있다.",
+    "work_items": [],
+    "effort_mentions": [],
+    "whole_thread_completion_reported": null,
+    "release_state": "unknown",
+    "relation": "possible_duplicate",
+    "relation_target_url": "https://github.com/camunda-cloud/zeebe/issues/6848",
+    "needs_clarification": true,
+    "clarification_reason_ko": "관련 이슈가 실제 중복인지 확인되지 않았다."
+  },
+  "parse_error": null,
+  "errors": []
+}

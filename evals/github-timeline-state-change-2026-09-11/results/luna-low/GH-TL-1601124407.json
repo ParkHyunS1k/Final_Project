@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1601124407",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:27:35.041724+00:00",
+  "elapsed_seconds": 4.101,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "0c6106a82afcd2cf896312aad24c9f3a4233608ea7768cc3a123fe422951562f",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1455,
+    "cached_input_tokens": 0,
+    "output_tokens": 307,
+    "reasoning_output_tokens": 158
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1601124407",
+    "summary_ko": "쿠키 Max Age를 1주일로 변경했다는 내용이 있으나, 인증 고도화 작업 이후 재설정 예정이라는 조건이 함께 있어 작업 완료나 명확한 상태 변경으로 판단하기 어렵습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "쿠키 설정 변경은 언급되었지만 해당 변경이 어떤 작업에 귀속되는지와 현재 확정된 상태인지가 불명확하며, 인증 고도화 이후 재설정된다는 조건도 있어 definite한 작업 상태 변경을 제안하기 어렵습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

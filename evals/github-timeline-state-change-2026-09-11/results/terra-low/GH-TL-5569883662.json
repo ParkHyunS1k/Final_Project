@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5569883662",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:33:03.535668+00:00",
+  "elapsed_seconds": 2.707,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "efcf76cef519ec7512d228b1829e53c71395275bd4d4e56894c1b9cb87b3daeb",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1644,
+    "cached_input_tokens": 0,
+    "output_tokens": 112,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5569883662",
+    "summary_ko": "Live API 프론트 연동 구현과 검증은 완료됐지만, 실제 호출은 SA 인증 토큰 계약 문제로 차단되어 있습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "연동 구현의 완료 범위와 실제 Live API 연동 완료 여부가 인증 문제로 분리되어 있어, 이 이슈 전체를 완료 처리하면 부정확할 수 있습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

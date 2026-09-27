@@ -1,0 +1,25 @@
+{
+  "locked_at": "2026-09-10T15:11:20.337131+00:00",
+  "file": "claude-blind-v1.jsonl",
+  "sha256": "eb6c568718a9fc4a30750c68f7d2711db734a342d4a689cbe351d1d0ecc420d3",
+  "rows": 300,
+  "observed_opened_before_lock": false,
+  "observed_seen_earlier_in_session": [
+    "GH-TL-5382160561"
+  ],
+  "decisions": {
+    "no_change": 121,
+    "discarded": 47,
+    "needs_clarification": 46,
+    "propose_changes": 86
+  },
+  "change_kinds": {
+    "complete": 41,
+    "status": 36,
+    "assignee": 2,
+    "createTask": 13,
+    "dueAt": 3
+  },
+  "forbidden": 205,
+  "suspected_agent_authored": 54
+}

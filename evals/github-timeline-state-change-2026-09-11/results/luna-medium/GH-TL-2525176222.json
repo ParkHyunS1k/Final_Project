@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-2525176222",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:30:03.284907+00:00",
+  "elapsed_seconds": 3.096,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "f9f0e23e3fe1da0af994939769bb070cb943ad6070f6f41f557e1483cc9bd9b2",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1847,
+    "cached_input_tokens": 0,
+    "output_tokens": 122,
+    "reasoning_output_tokens": 27
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-2525176222",
+    "summary_ko": "React sparkling snow에 지원하고 싶은 옵션으로 눈송이 양, 낙하 속도, 크기, 투명도가 언급되었습니다. 이는 아이디어와 요구사항 논의일 뿐 확정된 작업 상태 변경은 아닙니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

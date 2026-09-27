@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1772895398",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:27:39.146646+00:00",
+  "elapsed_seconds": 4.186,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "656b13a9d10c49430dce829eb3ed28b928419d27ad77724b905856dd6e49d8a3",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1377,
+    "cached_input_tokens": 0,
+    "output_tokens": 201,
+    "reasoning_output_tokens": 111
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1772895398",
+    "summary_ko": "Eager 변경으로 삭제는 동작하지만, Lazy 방식으로 해결될 때까지 이슈를 열어두기로 했습니다. 문제의 원인과 현상에 대한 분석만 있으며 완료된 상태 변경은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

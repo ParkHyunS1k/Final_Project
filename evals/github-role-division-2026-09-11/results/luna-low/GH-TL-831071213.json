@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-831071213",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:51:08.047945+00:00",
+  "elapsed_seconds": 2.628,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "764c7a86206e1aec8b4b103b5f8cf7265290ff732daafcee6345144b16f95e82",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1179,
+    "cached_input_tokens": 0,
+    "output_tokens": 78,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-831071213",
+    "summary_ko": "기능을 각각 5개씩 맡자는 제안에 동의하는 내용이지만, 구체적인 역할 배정이나 담당자 지정은 확정되지 않았습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

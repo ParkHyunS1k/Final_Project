@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Project switching clears invitation and dashboard state via full navigation. */
 import { useEffect, useState, type ReactNode } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   SidebarProvider,
   Sidebar,
@@ -189,6 +190,7 @@ export function ProjectWorkspace({
         if (workspaceViews.some((v) => v.id === params.get('view')))
           setView(params.get('view')!);
         setInvite(token);
+        setCreating(!token && params.get('create') === '1');
         setProjects(data.projects);
         setSelected(params.get('project') || data.projects[0]?.id || '');
         if (token)
@@ -218,7 +220,7 @@ export function ProjectWorkspace({
         completionCriteria: f.get('criteria'),
         agreed: f.get('agreed') === 'on',
       });
-      location.assign('/?project=' + encodeURIComponent(result.projectId));
+      location.assign('/workspace?project=' + encodeURIComponent(result.projectId));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -259,7 +261,7 @@ export function ProjectWorkspace({
                       history.replaceState(
                         null,
                         '',
-                        '/?project=' + encodeURIComponent(p.id),
+                        '/workspace?project=' + encodeURIComponent(p.id),
                       );
                     }}
                   >
@@ -428,7 +430,7 @@ export function ProjectWorkspace({
                         goalVersion: preview.details.goal_version,
                       });
                       location.replace(
-                        '/?project=' + encodeURIComponent(result.projectId),
+                        '/workspace?project=' + encodeURIComponent(result.projectId),
                       );
                     } catch (e) {
                       const changed = (e as { details?: InvitePreview })
@@ -448,7 +450,7 @@ export function ProjectWorkspace({
                 </button>
               </>
             )}
-            <a className="btn" href="/">
+            <a className="btn" href="/workspace">
               내 프로젝트로 돌아가기
             </a>
           </section>
@@ -460,7 +462,14 @@ export function ProjectWorkspace({
             <p>목표를 정하고 팀원을 초대해 7일 동안 함께 진행합니다.</p>
           </section>
         ) : !loaded ? (
-          <p className="project-panel">프로젝트를 불러오는 중입니다.</p>
+          <section className="project-panel" aria-busy="true">
+            <p className="tiny muted">프로젝트를 불러오는 중입니다.</p>
+            <div className="loading-skeleton" aria-hidden="true">
+              <Skeleton className="h-8 w-1/3" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-32" />
+            </div>
+          </section>
         ) : null}
       </SidebarInset>
     </SidebarProvider>
@@ -492,7 +501,7 @@ export function ProjectDetails({
       });
       if (result.token)
         setLink(
-          location.origin + '/?invite=' + encodeURIComponent(result.token),
+          location.origin + '/workspace?invite=' + encodeURIComponent(result.token),
         );
       await refresh();
       setMessage(

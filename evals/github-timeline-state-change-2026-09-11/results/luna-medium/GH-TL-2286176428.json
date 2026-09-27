@@ -1,0 +1,52 @@
+{
+  "id": "GH-TL-2286176428",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:29:56.993374+00:00",
+  "elapsed_seconds": 4.646,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "392b3aaaa8b1dc73c8b4df899abb9bd6e654ecd5f843a04a5980f9987d661284",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1403,
+    "cached_input_tokens": 0,
+    "output_tokens": 395,
+    "reasoning_output_tokens": 262
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-2286176428",
+    "summary_ko": "검색 기능과 마이페이지 관련 기능·CSS 수정이 완료되었다는 진행 보고가 있습니다. 전체 진행상황 태스크(issue-5)는 진행 중으로 제안합니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "status",
+        "task_id": "issue-5",
+        "status": "in_progress",
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0,
+          1,
+          2
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

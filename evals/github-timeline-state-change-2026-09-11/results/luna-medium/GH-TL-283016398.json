@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-283016398",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:30:09.311343+00:00",
+  "elapsed_seconds": 3.642,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "a79fc3b58383bc43222815c296bda43d6b6d9c213db8ecd63ee21f9b9f1b07b6",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1249,
+    "cached_input_tokens": 0,
+    "output_tokens": 173,
+    "reasoning_output_tokens": 95
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-283016398",
+    "summary_ko": "MIT 라이선스로 결정되었으며 관련 내용을 추가할 수 있다는 의견입니다. 실제 추가 작업이 완료되었거나 시작되었다는 사실은 확인되지 않습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

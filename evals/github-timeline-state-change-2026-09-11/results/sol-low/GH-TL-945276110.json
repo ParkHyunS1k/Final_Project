@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-945276110",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:36:05.036062+00:00",
+  "elapsed_seconds": 5.089,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "fbaa7b432732a94e7364dc2a41b001c3d5b4026136c564a74b182e94c05922d4",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1373,
+    "cached_input_tokens": 0,
+    "output_tokens": 177,
+    "reasoning_output_tokens": 81
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-945276110",
+    "summary_ko": "메인화면은 구현되었지만 표시 방향을 가로에서 세로로 바꾸기 위한 디자인 변경이 남아 있습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "기존 구현 완료와 추가 변경 필요가 함께 보고되어 전체 과제의 완료 여부가 불분명합니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

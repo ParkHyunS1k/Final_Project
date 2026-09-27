@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-727580038",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:29:11.996057+00:00",
+  "elapsed_seconds": 2.123,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "222f6e42d0ccb8972e450a049a878f323f70d756161e7eb86700a3a6eebd0dba",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1392,
+    "cached_input_tokens": 0,
+    "output_tokens": 129,
+    "reasoning_output_tokens": 41
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-727580038",
+    "summary_ko": "OAuth 로그인·회원가입 기능에 필요한 벤더별 API 키가 존재하지만, 팀원 논의 후 공유할 예정이라는 내용입니다. 현재 작업 상태나 담당자 변경을 확정하는 사실은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

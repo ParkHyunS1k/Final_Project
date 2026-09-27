@@ -1,0 +1,61 @@
+{
+  "id": "PM-REAL-049",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-10T12:22:26.035406+00:00",
+  "elapsed_seconds": 10.155,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "aebd0a5c729697ab85e69ec0ed8f29e95ca968522e75f426d7861930a179f9c6",
+  "schema_sha256": "5855cb3ee348aa28f04bc9810b3624098658c3f2a7c4f67938741bbfdbee47c0",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "context_overrides_sha256": "f5f5466a50b8b0506a36e587c7a5527e2923f8b4751f9745800587a2e66c5617",
+  "usage": {
+    "input_tokens": 10191,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 312,
+    "reasoning_output_tokens": 141
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-049",
+    "summary_ko": "마이페이지 프로필 등록 작업의 예상 소요 시간은 30분입니다.",
+    "work_items": [
+      {
+        "description_ko": "마이페이지 프로필 등록",
+        "target": "current_thread",
+        "referenced_issue_url": null,
+        "state": "unknown",
+        "modality": "asserted",
+        "condition_ko": null,
+        "assignee_login": null,
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "effort_mentions": [
+      {
+        "kind": "estimated",
+        "minutes": 30,
+        "scope": "single_work_item",
+        "work_item_indices": [
+          0
+        ],
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ],
+    "whole_thread_completion_reported": null,
+    "release_state": "unknown",
+    "relation": "none",
+    "relation_target_url": null,
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

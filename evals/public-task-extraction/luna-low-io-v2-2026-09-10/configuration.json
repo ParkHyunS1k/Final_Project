@@ -1,0 +1,19 @@
+{
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "cases": "35 development cases; 15 holdout cases untouched",
+  "baseline": "../luna-low-2026-09-08",
+  "changes": [
+    "explicit thread, excerpt index, source kind, and known-context input envelope",
+    "verbatim adjacent section heading restored for PM-REAL-048",
+    "effort mentions separated from work items and given explicit scope",
+    "conditions represented in both modality and condition_ko",
+    "latest state, assignment evidence, relation, and completion consistency rules clarified"
+  ],
+  "pm_real_048_source_verification": {
+    "api_url": "https://api.github.com/repos/BIPA-8-3/BIZSurvey_FRONT/issues/106",
+    "retrieved_at": "2026-09-10",
+    "updated_at": "2023-12-13T12:46:16Z",
+    "source_body_sha256": "51d8c70d463f2bdd5ed150934938c79d272757210c710e260be96c45cf9654ba"
+  }
+}

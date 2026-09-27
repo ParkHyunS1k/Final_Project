@@ -1,0 +1,36 @@
+{
+  "id": "PM-REAL-026",
+  "model_requested": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "authentication": "existing_chatgpt_login; API-key environment variables removed",
+  "started_at": "2026-09-10T12:21:35.887125+00:00",
+  "elapsed_seconds": 5.955,
+  "status": "success",
+  "exit_code": 0,
+  "prompt_sha256": "03adc417eda3df9035786d5129a38affd0b4b42c5ea4a6829eb8941e39977edd",
+  "schema_sha256": "5855cb3ee348aa28f04bc9810b3624098658c3f2a7c4f67938741bbfdbee47c0",
+  "source_dataset_sha256": "a77a2db5d7ff529f74c280108f0a7c5a3151f940e583b7dbbb4ae58df191d682",
+  "context_overrides_sha256": "f5f5466a50b8b0506a36e587c7a5527e2923f8b4751f9745800587a2e66c5617",
+  "usage": {
+    "input_tokens": 10211,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 163,
+    "reasoning_output_tokens": 65
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "PM-REAL-026",
+    "summary_ko": "개발 중인 v1.2 기준 UI는 아직 배포되지 않았으며 변경되어 보일 수 있습니다.",
+    "work_items": [],
+    "effort_mentions": [],
+    "whole_thread_completion_reported": null,
+    "release_state": "not_released",
+    "relation": "none",
+    "relation_target_url": null,
+    "needs_clarification": false,
+    "clarification_reason_ko": null
+  },
+  "parse_error": null,
+  "errors": []
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5446820327",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:28:44.621816+00:00",
+  "elapsed_seconds": 2.792,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "a81af24fb58a1133fd6d804962f6bbc7812227dcd3cc270feb9b8a90d3a6d6fc",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1892,
+    "cached_input_tokens": 0,
+    "output_tokens": 129,
+    "reasoning_output_tokens": 31
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5446820327",
+    "summary_ko": "OCR 유통기한 상태를 미인식·AI 예상·확인 필요·확실로 구분하고 처리 방향에 동의하는 의견이 제시되었습니다. 구현 완료나 작업 착수 등 확정적인 작업 상태 변경은 확인되지 않습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

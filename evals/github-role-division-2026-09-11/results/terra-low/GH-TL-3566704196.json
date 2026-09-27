@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-3566704196",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:51:55.237002+00:00",
+  "elapsed_seconds": 2.724,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "8525a5bdef56de7aaeff474b051deab3e80ae9ed9185f51fda5fc14c5a418670",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1674,
+    "cached_input_tokens": 0,
+    "output_tokens": 90,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-3566704196",
+    "summary_ko": "파손 처리와 문의·관리자 답변 페이지 구현은 담당자 판단 및 일정에 따라 결정할 계획으로 언급되었습니다. 회원 등급 계산 방식에 대한 설명도 있으나 확정된 작업 상태 변경은 없습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

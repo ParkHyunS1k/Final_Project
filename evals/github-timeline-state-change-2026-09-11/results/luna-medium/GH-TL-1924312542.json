@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-1924312542",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:29:50.544538+00:00",
+  "elapsed_seconds": 2.616,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "3487893c819960586e8b8da6dcad278f6f87038eb931534408e6e33228639b0f",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1728,
+    "cached_input_tokens": 0,
+    "output_tokens": 177,
+    "reasoning_output_tokens": 57
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1924312542",
+    "summary_ko": "검색 시 사랑·일상 카테고리 미조회 버그가 수정되어 재배포되었고 정상 작동이 확인되었습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "complete",
+        "task_id": "issue-46",
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": null,
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

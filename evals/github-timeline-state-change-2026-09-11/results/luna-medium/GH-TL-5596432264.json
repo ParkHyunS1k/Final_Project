@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5596432264",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:31:23.101302+00:00",
+  "elapsed_seconds": 3.908,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "df937bcd41ddf9fbbdccd4c9d1a3d105f52dea592b6370e7881f6af7b29e13c0",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 3298,
+    "cached_input_tokens": 0,
+    "output_tokens": 220,
+    "reasoning_output_tokens": 128
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5596432264",
+    "summary_ko": "#13·#14는 완료 및 수정되었다고 보고되지만 현재 작업 목록에 해당 작업이 없어 반영할 수 없습니다. 현재 목록에 있는 작업들은 최신 보고상 명확한 상태 변경이 확인되지 않습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

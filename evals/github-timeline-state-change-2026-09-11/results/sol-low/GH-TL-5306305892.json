@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5306305892",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:35:10.452569+00:00",
+  "elapsed_seconds": 6.332,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "be73ad0ffd0bd74e2bcc60a32721c5e3f8ad14ffb0b2e6c20853ad19cb1e24d8",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1468,
+    "cached_input_tokens": 0,
+    "output_tokens": 169,
+    "reasoning_output_tokens": 61
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5306305892",
+    "summary_ko": "#46이 닫히면 현재 에픽을 완료할 수 있다는 조건부 설명입니다. 아직 완료 사실은 확정되지 않았습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "완료가 #46 종료를 조건으로 하고 있으며, 현재 작업 목록에 #46의 상태도 없어 확정적인 상태 변경을 제안할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

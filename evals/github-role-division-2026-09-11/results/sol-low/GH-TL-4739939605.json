@@ -1,0 +1,50 @@
+{
+  "id": "GH-TL-4739939605",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:29.605788+00:00",
+  "elapsed_seconds": 3.984,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "80544753c4f65cdede80c5477b5b95fc1f74285fabc0c33c408129b611fc87d9",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1987,
+    "cached_input_tokens": 0,
+    "output_tokens": 187,
+    "reasoning_output_tokens": 51
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-4739939605",
+    "summary_ko": "현재 이슈의 중간 발표 MVP 기준일이 2026-07-14로 명시되어 있습니다. 담당자와 열린 상태는 이미 현재 작업 목록에 반영되어 있습니다.",
+    "decision": "propose_changes",
+    "clarification_reason_ko": null,
+    "changes": [
+      {
+        "kind": "dueAt",
+        "task_id": "issue-15",
+        "status": null,
+        "person": null,
+        "remaining_hours": null,
+        "due_at": "2026-07-14",
+        "title": null,
+        "basis": "fact",
+        "evidence_excerpt_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  "parse_error": null
+}

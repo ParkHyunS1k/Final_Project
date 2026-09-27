@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1422397263",
+  "variant": "terra-low",
+  "model_requested": "gpt-5.6-terra",
+  "model_reported": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:31:56.897234+00:00",
+  "elapsed_seconds": 2.205,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "b5693cec992e6601b1c9cf39f7291f6cf828d022c417e8f9d9d3faf76d4f9c8d",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1577,
+    "cached_input_tokens": 0,
+    "output_tokens": 126,
+    "reasoning_output_tokens": 0
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1422397263",
+    "summary_ko": "코루틴으로 변경되었으나, 변경 후 JSON 역직렬화에서 product 값이 할당되지 않는 새 문제가 보고되었습니다.",
+    "decision": "needs_clarification",
+    "clarification_reason_ko": "코루틴 변경으로 기존 메인 스레드 예외가 완전히 해결되었는지는 명시되지 않았고, 새로 보고된 역직렬화 문제의 대상 작업도 기존 이슈인지 별도 작업인지 확정할 수 없습니다.",
+    "changes": []
+  },
+  "parse_error": null
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-1975936779",
+  "variant": "luna-low",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:50:51.400528+00:00",
+  "elapsed_seconds": 3.101,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "00df450e260127615be4a0abbe85337c41584a97c660ca45bcd795cc8d0cd409",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1450,
+    "cached_input_tokens": 0,
+    "output_tokens": 126,
+    "reasoning_output_tokens": 43
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-1975936779",
+    "summary_ko": "Afresh2에게 액션 아이템을 선정하고 확인한 뒤 이슈를 종료해 달라는 요청입니다. 작업 완료나 명시적인 담당자 변경 사실은 확인되지 않습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5098707209",
+  "variant": "sol-low",
+  "model_requested": "gpt-5.6-sol",
+  "model_reported": "gpt-5.6-sol",
+  "reasoning_effort": "low",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T18:52:34.435875+00:00",
+  "elapsed_seconds": 5.359,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "59e81520208d9e5b8e82d7944e870e1111ebe8140af0123ac235c726e25e8546",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "67d52e11de32cd51f7dc4ea5b5c159584645ee51acd623911beeb36b7780cd7f",
+  "usage": {
+    "input_tokens": 1410,
+    "cached_input_tokens": 0,
+    "output_tokens": 219,
+    "reasoning_output_tokens": 128
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5098707209",
+    "summary_ko": "issue-3의 업무가 병렬 업무 분담에 따라 issue-9로 대체되었다는 보고입니다. 대체·취소는 완료로 처리할 수 없고 지원되는 변경 유형에도 해당하지 않습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5030228910",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:30:34.684430+00:00",
+  "elapsed_seconds": 2.517,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "66b6eb46f0eb5ffffc3acc49cdb51445a192d059f55118d7b134a36304b292cc",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1523,
+    "cached_input_tokens": 0,
+    "output_tokens": 128,
+    "reasoning_output_tokens": 39
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5030228910",
+    "summary_ko": "출처 PDF 클릭 기능의 후보 구현과 테스트가 롤백된 커밋에 보존되어 있다는 공유 내용입니다. 현재 작업의 완료, 진행 상태 또는 새로운 확정 작업을 나타내지는 않습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

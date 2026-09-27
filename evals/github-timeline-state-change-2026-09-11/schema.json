@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {"type": "string", "description": "The supplied case ID."},
+    "summary_ko": {"type": "string", "description": "Concise Korean interpretation, at most two sentences."},
+    "decision": {"type": "string", "enum": ["propose_changes", "no_change", "needs_clarification"]},
+    "clarification_reason_ko": {
+      "type": ["string", "null"],
+      "description": "Korean reason when decision is needs_clarification, otherwise null."
+    },
+    "changes": {
+      "type": "array",
+      "description": "Proposed changes. Empty unless decision is propose_changes.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {"type": "string", "enum": ["complete", "status", "assignee", "remaining", "dueAt", "createTask"]},
+          "task_id": {"type": ["string", "null"], "description": "A task_id from current_tasks; null only for createTask."},
+          "status": {"type": ["string", "null"], "enum": ["todo", "in_progress", null]},
+          "person": {"type": ["string", "null"], "description": "A login from members for assignee or createTask, otherwise null."},
+          "remaining_hours": {"type": ["number", "null"]},
+          "due_at": {"type": ["string", "null"], "description": "Explicit date or time as stated, otherwise null."},
+          "title": {"type": ["string", "null"], "description": "New task title for createTask, otherwise null."},
+          "basis": {"type": "string", "enum": ["fact", "estimate"]},
+          "evidence_excerpt_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}}
+        },
+        "required": ["kind", "task_id", "status", "person", "remaining_hours", "due_at", "title", "basis",
+                     "evidence_excerpt_indices"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["id", "summary_ko", "decision", "clarification_reason_ko", "changes"],
+  "additionalProperties": false
+}

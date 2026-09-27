@@ -1,0 +1,114 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "The supplied case ID."
+    },
+    "summary_ko": {
+      "type": "string",
+      "description": "A concise Korean interpretation, at most two sentences."
+    },
+    "work_items": {
+      "type": "array",
+      "description": "Distinct current tasks. Merge chronological reports about the same task and keep the latest reported state.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description_ko": {
+            "type": "string",
+            "description": "Concise Korean task description without copying a source quote."
+          },
+          "target": {
+            "type": "string",
+            "enum": ["current_thread", "subtask", "referenced_issue", "unknown"]
+          },
+          "referenced_issue_url": {
+            "type": ["string", "null"],
+            "description": "Explicit referenced issue URL, otherwise null."
+          },
+          "state": {
+            "type": "string",
+            "enum": ["planned", "in_progress", "completed", "blocked", "deferred", "not_implemented", "unknown"],
+            "description": "Latest state reported by the supplied excerpts, not independent verification."
+          },
+          "modality": {
+            "type": "string",
+            "enum": ["asserted", "proposed", "conditional", "question"],
+            "description": "Conditional takes precedence when a prerequisite controls the work."
+          },
+          "condition_ko": {
+            "type": ["string", "null"],
+            "description": "Korean prerequisite when modality is conditional, otherwise null."
+          },
+          "assignee_login": {
+            "type": ["string", "null"],
+            "description": "Only an explicitly assigned or clearly self-assigned login; authorship or completion alone is insufficient."
+          },
+          "evidence_excerpt_indices": {
+            "type": "array",
+            "items": {"type": "integer", "minimum": 0}
+          }
+        },
+        "required": [
+          "description_ko", "target", "referenced_issue_url", "state", "modality",
+          "condition_ko", "assignee_login", "evidence_excerpt_indices"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "effort_mentions": {
+      "type": "array",
+      "description": "Every explicit duration once, separate from work items so shared effort is not duplicated.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {"type": "string", "enum": ["estimated", "remaining"]},
+          "minutes": {"type": "number", "minimum": 0},
+          "scope": {
+            "type": "string",
+            "enum": ["whole_thread", "single_work_item", "work_item_group", "unknown"]
+          },
+          "work_item_indices": {
+            "type": "array",
+            "items": {"type": "integer", "minimum": 0},
+            "description": "Referenced work_items indices; empty only for whole_thread or unknown scope."
+          },
+          "evidence_excerpt_indices": {
+            "type": "array",
+            "items": {"type": "integer", "minimum": 0}
+          }
+        },
+        "required": ["kind", "minutes", "scope", "work_item_indices", "evidence_excerpt_indices"],
+        "additionalProperties": false
+      }
+    },
+    "whole_thread_completion_reported": {
+      "type": ["boolean", "null"],
+      "description": "True only for a clear report that the entire current issue is complete; null when scope is uncertain."
+    },
+    "release_state": {
+      "type": "string",
+      "enum": ["released", "not_released", "unknown"]
+    },
+    "relation": {
+      "type": "string",
+      "enum": ["duplicate", "possible_duplicate", "work_elsewhere", "none"]
+    },
+    "relation_target_url": {
+      "type": ["string", "null"],
+      "description": "Explicit related issue URL, resolving a bare number against the current repository; otherwise null."
+    },
+    "needs_clarification": {"type": "boolean"},
+    "clarification_reason_ko": {
+      "type": ["string", "null"],
+      "description": "Concise Korean reason when ambiguity prevents a definite interpretation."
+    }
+  },
+  "required": [
+    "id", "summary_ko", "work_items", "effort_mentions",
+    "whole_thread_completion_reported", "release_state", "relation",
+    "relation_target_url", "needs_clarification", "clarification_reason_ko"
+  ],
+  "additionalProperties": false
+}

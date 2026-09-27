@@ -1,0 +1,36 @@
+{
+  "id": "GH-TL-5497190111",
+  "variant": "luna-medium",
+  "model_requested": "gpt-5.6-luna",
+  "model_reported": "gpt-5.6-luna",
+  "reasoning_effort": "medium",
+  "runner": "openai_responses_api",
+  "authentication": "api_key_from_dotenv",
+  "started_at": "2026-09-10T16:31:05.860965+00:00",
+  "elapsed_seconds": 1.875,
+  "retries": 0,
+  "status": "success",
+  "api_status": "completed",
+  "incomplete_details": null,
+  "http_error": null,
+  "error_detail": null,
+  "refusal": false,
+  "prompt_sha256": "7cff73c26ef1fd0ead6ede5d43461cdc92dc9dee169a023d58ae109390262bee",
+  "schema_sha256": "6f7b3a41eefe8ec45b4fb4dc4a18efd4de090a4c92585716e6de9565d964cf6e",
+  "candidates_sha256": "4c652cc8910032d492af19d594f2f59866c51508348a96d4559b2d994f521b45",
+  "usage": {
+    "input_tokens": 1818,
+    "cached_input_tokens": 0,
+    "output_tokens": 126,
+    "reasoning_output_tokens": 40
+  },
+  "tool_calls": [],
+  "response": {
+    "id": "GH-TL-5497190111",
+    "summary_ko": "Goal과 Issue 범위를 판단하는 운영 원칙 변경에 대한 승인 내용입니다. 특정 작업의 완료, 진행, 담당자, 기한 또는 잔여 시간 변경은 명시되지 않았습니다.",
+    "decision": "no_change",
+    "clarification_reason_ko": null,
+    "changes": []
+  },
+  "parse_error": null
+}

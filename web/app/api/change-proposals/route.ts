@@ -1,5 +1,6 @@
 // AI 변경안 생성·조회·승인·되돌리기. 모델 출력은 여기서 DB를 바꾸지 못하고,
 // 사용자가 선택·편집·승인한 항목만 기존 원자적 저장 경계를 지난다.
+import { env } from 'cloudflare:workers';
 import { identity, member, actorOf, projectState, AccessError } from '@/lib/projects';
 import {
   database,
@@ -33,7 +34,25 @@ import { readReplay, replayCases } from '@/lib/change-review-replay';
 export const dynamic = 'force-dynamic';
 
 // 운영 모델은 아직 연결하지 않았다(사용자 결정 2026-09-09). 가짜 모델로 흐름만 잇는다.
+// PROJECTMATE_LIVE_MODEL binding이 명시된 경우에만 개발 전용 실제 모델
+// 어댑터로 바꾼다(사용자 결정 2026-09-14: 담당자 배정 확인용 개발·검증 도구).
+// secret은 파일로 읽지 않고 Workers binding에서 어댑터로 명시 주입한다.
+type DevModelBindings = {
+  PROJECTMATE_LIVE_MODEL?: string;
+  OPENAI_API_KEY?: string;
+  PROJECTMATE_MODEL?: string;
+  PROJECTMATE_REASONING_EFFORT?: string;
+};
+const devBindings = env as unknown as DevModelBindings;
 let model: Model = fakeModel();
+if (devBindings.PROJECTMATE_LIVE_MODEL) {
+  const { devLiveModel } = await import('@/lib/dev-live-model');
+  model = devLiveModel({
+    apiKey: devBindings.OPENAI_API_KEY,
+    model: devBindings.PROJECTMATE_MODEL,
+    reasoningEffort: devBindings.PROJECTMATE_REASONING_EFFORT,
+  });
+}
 export function useModel(next: Model) {
   model = next;
 }
