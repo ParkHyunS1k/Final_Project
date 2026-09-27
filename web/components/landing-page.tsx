@@ -518,12 +518,12 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="pin cine" id="pit" data-pin>
+        <section className="pin cine" id="checkin" data-pin>
           <div className="pin-stage">
             <video
-              data-src="/landing/pit.mp4"
+              data-src="/landing/checkin.mp4"
               data-range="0,0.8"
-              poster="/landing/pit.jpg"
+              poster="/landing/checkin.jpg"
               muted
               playsInline
               preload="auto"

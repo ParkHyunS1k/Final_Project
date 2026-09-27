@@ -733,7 +733,7 @@ body:has(.rl) {
 #go {
   height: calc(100svh + 160svh);
 }
-#pit {
+#checkin {
   height: calc(100svh + 180svh);
 }
 #telemetry {
