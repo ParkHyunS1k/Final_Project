@@ -490,13 +490,14 @@ body:has(.rl) {
   overflow: hidden;
   padding: 0;
 }
-.finish img {
+.finish video {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 8;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
 }
 .flag {
+  display: none;
   position: absolute;
   inset: 0 0 auto;
   height: 28px;
@@ -623,6 +624,9 @@ body:has(.rl) {
   }
   .hero-end {
     display: none;
+  }
+  .flag {
+    display: block;
   }
   .scene {
     height: auto;

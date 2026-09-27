@@ -18,6 +18,7 @@ export function LandingPage() {
     const root = rootRef.current!;
     const hero = root.querySelector<HTMLElement>('.hero')!;
     const video = root.querySelector<HTMLVideoElement>('.hero video')!;
+    const finishVideo = root.querySelector<HTMLVideoElement>('.finish video')!;
     const scenes = [...root.querySelectorAll<HTMLElement>('[data-steps]')];
     const rules = root.querySelector<HTMLElement>('#rules')!;
     const lights = root.querySelector<HTMLElement>('#lights')!;
@@ -27,16 +28,21 @@ export function LandingPage() {
     const hudClock = hud.querySelector<HTMLElement>('.hud-clock')!;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const phone = matchMedia('(max-width: 767px)');
-    if (!reduced.matches && !phone.matches) video.src = '/landing/race.mp4';
-    let target = 0;
+    if (!reduced.matches && !phone.matches) {
+      video.src = '/landing/race.mp4';
+      finishVideo.src = '/landing/finish.mp4';
+    }
+    // 영상별 목표 시각. 탐색이 끝나면(seeked) 그사이 바뀐 목표로 다시 맞춘다.
+    const targets = new Map<HTMLVideoElement, number>();
     let frame = 0;
 
-    function seek() {
-      if (!video.seeking && video.readyState >= 2) {
-        if (Math.abs(video.currentTime - target) > 0.03)
-          video.currentTime = target;
-      }
+    function scrub(v: HTMLVideoElement, progress?: number) {
+      if (progress !== undefined) targets.set(v, frameAt(progress, v.duration));
+      const t = targets.get(v) ?? 0;
+      if (!v.seeking && v.readyState >= 2 && Math.abs(v.currentTime - t) > 0.03)
+        v.currentTime = t;
     }
+    const onSeeked = (e: Event) => scrub(e.target as HTMLVideoElement);
     function sync() {
       frame = 0;
       const vh = innerHeight;
@@ -47,22 +53,18 @@ export function LandingPage() {
         vh,
       );
       root.style.setProperty('--hero', String(heroP));
-      target = frameAt(heroP, video.duration);
-      seek();
+      scrub(video, heroP);
       for (const scene of scenes) {
         const stage = scene.firstElementChild as HTMLElement;
         const max = Number(scene.dataset.steps);
-        const step = reduced.matches
-          ? max
-          : stepAt(
-              sceneProgress(
-                scene.getBoundingClientRect().top,
-                scene.offsetHeight,
-                stage.offsetHeight,
-                vh,
-              ),
-              max,
-            );
+        const progress = sceneProgress(
+          scene.getBoundingClientRect().top,
+          scene.offsetHeight,
+          stage.offsetHeight,
+          vh,
+        );
+        const step = reduced.matches ? max : stepAt(progress, max);
+        if (scene.id === 'finish') scrub(finishVideo, progress);
         scene
           .querySelectorAll<HTMLElement>('[data-at]')
           .forEach((el) =>
@@ -85,15 +87,19 @@ export function LandingPage() {
     function onScroll() {
       if (!frame) frame = requestAnimationFrame(sync);
     }
-    video.addEventListener('loadeddata', sync);
-    video.addEventListener('seeked', seek);
+    for (const v of [video, finishVideo]) {
+      v.addEventListener('loadeddata', sync);
+      v.addEventListener('seeked', onSeeked);
+    }
     addEventListener('scroll', onScroll, { passive: true });
     addEventListener('resize', onScroll);
     sync();
     return () => {
       cancelAnimationFrame(frame);
-      video.removeEventListener('loadeddata', sync);
-      video.removeEventListener('seeked', seek);
+      for (const v of [video, finishVideo]) {
+        v.removeEventListener('loadeddata', sync);
+        v.removeEventListener('seeked', onSeeked);
+      }
       removeEventListener('scroll', onScroll);
       removeEventListener('resize', onScroll);
     };
@@ -373,8 +379,13 @@ export function LandingPage() {
               </p>
             </div>
             <div className="panel finish">
-              {/* eslint-disable-next-line @next/next/no-img-element -- 장식용 정지 화면 */}
-              <img src="/landing/car.jpg" alt="" />
+              <video
+                muted
+                playsInline
+                preload="auto"
+                poster="/landing/car.jpg"
+                aria-hidden="true"
+              />
               <div className="flag" data-at="3" />
               <ul>
                 <li data-at="1">모임 검색 · 참가 신청 작동</li>
