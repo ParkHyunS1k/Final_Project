@@ -32,3 +32,35 @@ export function raceClock(progress) {
     .join(':');
   return { day, text };
 }
+
+// 기기 고정 + 세로 기능 목록 섹션: 전체 진행률을 (몇 번째 항목, 항목 안 진행률)로 나눈다.
+export function featureAt(progress, count) {
+  const scaled = clamp(progress) * count;
+  const item = Math.min(count - 1, Math.floor(scaled));
+  return { item, t: Math.min(1, scaled - item) };
+}
+
+// 커서 경로. keys = [{ t, x, y, press? }] (t 오름차순, x·y는 화면 기준 %).
+// 두 지점 사이는 부드럽게 이동하고, press가 있는 지점에서 잠깐 누른 상태가 된다.
+export function cursorAt(t, keys) {
+  if (!keys.length) return { x: 0, y: 0, press: false };
+  let prev = keys[0];
+  for (const key of keys) {
+    if (t < key.t) {
+      const span = key.t - prev.t;
+      const k = span > 0 ? (t - prev.t) / span : 1;
+      const e = k * k * (3 - 2 * k);
+      return {
+        x: prev.x + (key.x - prev.x) * e,
+        y: prev.y + (key.y - prev.y) * e,
+        press: Boolean(prev.press) && t - prev.t < 0.04,
+      };
+    }
+    prev = key;
+  }
+  return { x: prev.x, y: prev.y, press: Boolean(prev.press) && t - prev.t < 0.04 };
+}
+
+export function countUp(target, progress) {
+  return Math.round(target * clamp(progress));
+}

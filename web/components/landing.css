@@ -102,13 +102,37 @@ body:has(.rl) {
 
 /* 1. 히어로: 스크롤하면 7이 레이스카로 바뀌어 튀어나간다. */
 .hero {
-  height: 300svh;
+  height: 380svh;
 }
 .hero-stage {
   position: sticky;
   top: 0;
   height: 100svh;
   overflow: hidden;
+  /* 영상이 끝나면 화면을 채우던 무대가 둥근 카드로 줄어들며 다음 섹션으로 넘어간다. */
+  clip-path: inset(
+    calc(var(--shrink, 0) * 9%) calc(var(--shrink, 0) * 6%)
+      round calc(var(--shrink, 0) * 40px)
+  );
+}
+/* 헤드라인은 줄마다 흐림에서 떠오른다. */
+.hero-copy .line {
+  display: block;
+  animation: rl-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.hero-copy .line + .line {
+  animation-delay: 0.14s;
+}
+.hero-copy .lead,
+.hero-copy .hero-actions {
+  animation: rl-rise 0.9s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+    filter: blur(10px);
+  }
 }
 .hero video,
 .hero-still {
@@ -242,102 +266,392 @@ body:has(.rl) {
   display: inline;
 }
 
-/* 출발 신호 */
-.pods {
+/* 설계: 모니터를 고정하고 왼쪽 목록을 따라 화면 속 앱이 바뀐다. */
+.feat {
+  height: calc(100svh + 300svh);
+}
+.feat .stage {
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: clamp(24px, 3vw, 48px);
+  max-width: 1600px;
+  padding: 72px clamp(16px, 4vw, 64px);
+}
+.feat-copy h2 {
+  font-size: clamp(34px, 3.8vw, 60px);
+}
+.feat-list {
+  list-style: none;
+  margin: 44px 0 0;
+  padding: 0;
+}
+.feat-list li {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+  color: #5d5b56;
+  transition: color 0.3s;
+}
+.feat-list li.active {
+  color: var(--text);
+}
+.feat-list b {
+  display: block;
+  font-size: clamp(20px, 1.7vw, 26px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.feat-list p {
+  max-height: 0;
+  margin: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: var(--dim);
+  font-size: 16px;
+  line-height: 1.6;
+  transition: max-height 0.4s, opacity 0.4s, margin 0.4s;
+}
+.feat-list li.active p {
+  max-height: 6em;
+  margin-top: 10px;
+  opacity: 1;
+}
+.feat-list .bar {
+  display: block;
+  height: 2px;
+  margin-top: 14px;
+  background:
+    linear-gradient(var(--heat), var(--heat)) 0 0 / calc(var(--t, 0) * 100%) 100% no-repeat,
+    var(--line);
+}
+/* 모니터는 누운 채 떠오르며 정면으로 서고, 마우스를 따라 살짝 기운다. */
+.monitor {
+  position: relative;
+  /* 화면 속 글씨가 읽히도록 오른쪽 여백까지 넘쳐 크게 둔다. */
+  width: 116%;
+  transform-origin: 50% 85%;
+  transform: perspective(1800px)
+    rotateX(calc((1 - var(--enter, 1)) * 28deg - var(--my, 0) * 2deg))
+    rotateY(calc(var(--mx, 0) * 3deg))
+    translateY(calc((1 - var(--enter, 1)) * 80px))
+    scale(calc(0.86 + var(--enter, 1) * 0.14));
+  opacity: calc(0.15 + var(--enter, 1));
+}
+.monitor img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mask-image: radial-gradient(ellipse 60% 62% at 50% 44%, #000 70%, transparent 100%);
+}
+/* 이미지 속 빈 화면 자리(측정값). 안쪽 크기는 화면 폭 기준 단위 --u로 잡는다. */
+.screen {
+  position: absolute;
+  left: 15.27%;
+  top: 15.44%;
+  width: 69.41%;
+  height: 56.1%;
+  container-type: inline-size;
+  overflow: hidden;
+  border-radius: 0.5cqw;
+  background: #fff;
+  color: #20251f;
+  font-family: var(--font-noto-kr), sans-serif;
+}
+.app {
+  --u: 1.05cqw;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: calc(18 * var(--u)) minmax(0, 1fr);
+  height: 100%;
 }
-.pod {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 16px 8px;
-  border-radius: 16px;
-  background: #0b0b0c;
+.app-side {
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.5 * var(--u));
+  padding: calc(2.4 * var(--u)) calc(1.4 * var(--u));
+  border-right: 1px solid #e5e7e1;
+  background: #f5f5f3;
+  color: #5a6451;
+  font-size: calc(1.45 * var(--u));
 }
-.pod i {
-  width: clamp(36px, 5vw, 56px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #262628;
-  transition: background 0.2s, box-shadow 0.2s;
+.app-side strong {
+  margin-bottom: calc(1.4 * var(--u));
+  color: #20251f;
+  font-size: calc(1.8 * var(--u));
+  font-weight: 900;
 }
-.pod.on i {
-  background: var(--bad);
-  box-shadow: 0 0 28px rgb(255 59 48 / 0.7);
+.app-side span {
+  padding: calc(0.7 * var(--u)) calc(0.9 * var(--u));
+  border-radius: calc(0.7 * var(--u));
+  transition: background 0.3s, color 0.3s;
 }
-.lights:has(.go.on) .pod i {
-  background: #262628;
-  box-shadow: none;
-}
-.pod span {
-  display: grid;
-  gap: 4px;
-  text-align: center;
+.app-side span.on {
+  background: #e7ebe3;
+  color: #243923;
   font-weight: 700;
 }
-.pod b {
-  color: var(--dim);
-  font: 500 12px var(--font-geist-mono), monospace;
+.app-main {
+  position: relative;
+}
+.pane {
+  position: absolute;
+  inset: 0;
+  padding: calc(2.6 * var(--u)) calc(3.2 * var(--u));
   opacity: 0;
+  transform: translateY(calc(2 * var(--u)));
+  transition: opacity 0.45s, transform 0.45s;
 }
-.pod.on b {
+.pane.active {
   opacity: 1;
-  color: var(--good);
+  transform: none;
 }
-.go {
-  margin: 28px 0 0;
-  font-size: clamp(40px, 5vw, 64px);
-  font-weight: 900;
+.pane .s-eyebrow {
+  color: #8a927f;
+  font-size: calc(1.2 * var(--u));
+  font-weight: 700;
+}
+.pane h3 {
+  margin: calc(0.4 * var(--u)) 0 calc(1.6 * var(--u));
+  font-size: calc(2.9 * var(--u));
+  font-weight: 800;
   letter-spacing: -0.04em;
-  color: var(--heat);
 }
-.go small {
-  display: block;
-  margin-top: 6px;
-  color: var(--dim);
-  font: 500 14px var(--font-geist-mono), monospace;
-  letter-spacing: 0;
-}
-
-/* 랩 차트 */
-.laps {
+.goal {
   display: grid;
-  gap: 6px;
+  gap: calc(0.3 * var(--u));
+  margin-bottom: calc(1 * var(--u));
+  padding: calc(1.3 * var(--u)) calc(1.8 * var(--u));
+  border-radius: calc(1.1 * var(--u));
+  background: #f0f6e6;
 }
-.lap {
+.goal small {
+  color: #517331;
+  font-size: calc(1.2 * var(--u));
+}
+.goal b {
+  font-size: calc(1.8 * var(--u));
+}
+.s-member {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
+  grid-template-columns: calc(2.8 * var(--u)) auto minmax(0, 1fr) auto;
+  gap: calc(1 * var(--u));
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #0b0b0c;
-  font-size: 15px;
+  padding: calc(0.6 * var(--u)) 0;
+  border-bottom: 1px solid #eef1e9;
+  font-size: calc(1.5 * var(--u));
 }
-.lap small {
-  color: var(--dim);
-  font: 500 12px var(--font-geist-mono), monospace;
+.s-member small {
+  color: #8a927f;
+  font-size: calc(1.2 * var(--u));
 }
-.lap > span {
-  color: var(--dim);
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
+.av {
+  display: grid;
+  place-items: center;
+  width: calc(2.8 * var(--u));
+  height: calc(2.8 * var(--u));
+  border-radius: 50%;
+  background: #e3e8dd;
+  font-size: calc(1.3 * var(--u));
+  font-weight: 800;
 }
-.lap.today {
-  border-color: var(--heat);
+.s-agree {
+  padding: calc(0.4 * var(--u)) calc(1 * var(--u));
+  border-radius: 99px;
+  background: #eef1e9;
+  color: #8a927f;
+  font-size: calc(1.2 * var(--u));
+  font-weight: 700;
+  transition: background 0.3s, color 0.3s;
 }
-.lap.today small::after {
-  content: ' 오늘';
-  color: var(--heat);
+.s-agree.on {
+  background: #c6f26c;
+  color: #1f3320;
 }
-.lap .swap:not(.on) {
-  color: var(--bad);
+.pane-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: calc(1.2 * var(--u));
 }
-.lap .swap.on {
-  color: var(--good);
+.ready {
+  color: #8a927f;
+  font-size: calc(1.25 * var(--u));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.ready.on {
+  color: #517331;
+  opacity: 1;
+}
+.s-btn {
+  padding: calc(1 * var(--u)) calc(2 * var(--u));
+  border-radius: calc(0.9 * var(--u));
+  background: #d3d9cb;
+  color: #fff;
+  font-size: calc(1.5 * var(--u));
+  font-weight: 800;
+  transition: background 0.3s;
+}
+.pane-foot:has(.ready.on) .s-btn {
+  background: #294b26;
+}
+.pane-foot .s-btn.on {
+  background: #20251f;
+}
+.s-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 0.9fr 1.2fr;
+  gap: calc(1 * var(--u));
+  align-items: center;
+  padding: calc(1.2 * var(--u)) calc(1.1 * var(--u));
+  border-bottom: 1px solid #eef1e9;
+  border-radius: calc(0.7 * var(--u));
+  font-size: calc(1.5 * var(--u));
+  transition: background 0.4s;
+}
+.s-row.head {
+  padding-block: calc(0.7 * var(--u));
+  color: #8a927f;
+  font-size: calc(1.2 * var(--u));
+  font-weight: 700;
+}
+.s-row.s-target.on {
+  background: #f0f6e6;
+}
+.select {
+  position: relative;
+  justify-self: start;
+  padding: calc(0.4 * var(--u)) calc(0.9 * var(--u));
+  border: 1px solid #d3d9cb;
+  border-radius: calc(0.6 * var(--u));
+  background: #fff;
+}
+.select .swap:not(.on) {
+  color: #b45309;
+}
+.menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.4 * var(--u));
+  z-index: 2;
+  display: grid;
+  min-width: calc(11 * var(--u));
+  padding: calc(0.4 * var(--u));
+  border: 1px solid #d3d9cb;
+  border-radius: calc(0.7 * var(--u));
+  background: #fff;
+  box-shadow: 0 calc(1 * var(--u)) calc(3 * var(--u)) rgb(0 0 0 / 0.15);
+  opacity: 0;
+  transform: translateY(calc(-0.6 * var(--u)));
+  transition: opacity 0.2s, transform 0.2s;
+}
+.menu.on {
+  opacity: 1;
+  transform: none;
+}
+.menu span {
+  padding: calc(0.5 * var(--u)) calc(0.9 * var(--u));
+  border-radius: calc(0.5 * var(--u));
+}
+.menu .opt.on {
+  background: #e7ebe3;
+  font-weight: 700;
+}
+.toast,
+.tip {
+  margin: 0;
+  padding: calc(1.1 * var(--u)) calc(1.6 * var(--u));
+  border-radius: calc(0.9 * var(--u));
+  background: #20251f;
+  color: #fff;
+  font-size: calc(1.35 * var(--u));
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.toast {
+  position: absolute;
+  left: calc(3.2 * var(--u));
+  right: calc(3.2 * var(--u));
+  bottom: calc(2.6 * var(--u));
+  transform: translateY(calc(1.5 * var(--u)));
+}
+.toast.on,
+.tip.on {
+  opacity: 1;
+  transform: none;
+}
+.tip {
+  margin-top: calc(1.4 * var(--u));
+}
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: calc(0.7 * var(--u));
+}
+.s-day {
+  display: grid;
+  align-content: start;
+  gap: calc(0.5 * var(--u));
+  min-height: calc(14 * var(--u));
+  padding: calc(0.9 * var(--u));
+  border: 1px solid #e3e8dd;
+  border-radius: calc(0.9 * var(--u));
+  font-size: calc(1.2 * var(--u));
+  opacity: 0;
+  transform: translateY(calc(1.5 * var(--u)));
+  transition: opacity 0.35s, transform 0.35s, box-shadow 0.3s;
+}
+.s-day.on {
+  opacity: 1;
+  transform: none;
+}
+.s-day small {
+  color: #8a927f;
+  font-size: calc(1 * var(--u));
+  font-weight: 700;
+}
+.s-day b {
+  font-size: calc(1.35 * var(--u));
+  line-height: 1.25;
+}
+.s-day span {
+  color: #5a6451;
+}
+.s-day.s-today {
+  border-color: #294b26;
+  background: #f0f6e6;
+}
+.pane:has(.tip.on) [data-k='day5'] {
+  box-shadow: 0 0 0 calc(0.3 * var(--u)) #c6f26c;
+}
+.cursor {
+  position: absolute;
+  z-index: 5;
+  width: max(2.8cqw, 14px);
+  height: max(2.8cqw, 14px);
+  margin: -0.3cqw 0 0 -0.4cqw;
+  fill: #111;
+  stroke: #fff;
+  stroke-width: 1.6;
+  filter: drop-shadow(0 0.3cqw 0.5cqw rgb(0 0 0 / 0.35));
+  transition: transform 0.12s;
+  pointer-events: none;
+}
+.cursor.press {
+  transform: scale(0.8);
+}
+/* 좁은 화면(휴대폰)에서는 사이드바를 접고 글자를 키운다. */
+@container (max-width: 480px) {
+  .app {
+    --u: 1.9cqw;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-side {
+    display: none;
+  }
+  .cal {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .s-day {
+    min-height: 0;
+  }
 }
 
 /* 텔레메트리 */
@@ -618,12 +932,49 @@ body:has(.rl) {
   .hero-stage::after {
     background: linear-gradient(0deg, rgb(11 11 12 / 0.95) 35%, rgb(11 11 12 / 0.2));
   }
+  .hero-stage {
+    clip-path: none;
+  }
   .hero-copy {
     opacity: 1;
     transform: none;
   }
   .hero-end {
     display: none;
+  }
+  /* 설계 섹션은 휴대폰에서도 고정해 두고, 지금 항목만 보여 준다. */
+  .feat {
+    height: calc(100svh + 240svh);
+  }
+  .feat .stage {
+    position: sticky;
+    min-height: 100svh;
+    align-content: center;
+    gap: 16px;
+    padding: 64px 16px 88px;
+  }
+  .feat-list {
+    margin-top: 12px;
+  }
+  .feat-list li:not(.active) {
+    display: none;
+  }
+  .feat .stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* 모니터 화면 비율로는 휴대폰 폭에서 앱이 들어가지 않아 화면만 카드로 띄운다. */
+  .monitor {
+    width: auto;
+  }
+  .monitor img {
+    display: none;
+  }
+  .screen {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: min(380px, 50svh);
+    border-radius: 16px;
   }
   .flag {
     display: block;
@@ -641,11 +992,6 @@ body:has(.rl) {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
-  .lap {
-    grid-template-columns: 64px minmax(0, 1fr) auto;
-    padding: 10px 12px;
-    font-size: 14px;
-  }
   .hud {
     font-size: 12px;
     gap: 10px;
@@ -657,6 +1003,20 @@ body:has(.rl) {
   .hero,
   .scene {
     height: auto;
+  }
+  .hero-stage {
+    clip-path: none;
+  }
+  .hero-copy .line,
+  .hero-copy .lead,
+  .hero-copy .hero-actions {
+    animation: none;
+  }
+  .monitor {
+    transform: none;
+  }
+  .cursor {
+    display: none;
   }
   .stage {
     position: static;
