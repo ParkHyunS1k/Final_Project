@@ -190,6 +190,7 @@ export function ProjectWorkspace({
         if (workspaceViews.some((v) => v.id === params.get('view')))
           setView(params.get('view')!);
         setInvite(token);
+        setCreating(!token && params.get('create') === '1');
         setProjects(data.projects);
         setSelected(params.get('project') || data.projects[0]?.id || '');
         if (token)
@@ -219,7 +220,7 @@ export function ProjectWorkspace({
         completionCriteria: f.get('criteria'),
         agreed: f.get('agreed') === 'on',
       });
-      location.assign('/?project=' + encodeURIComponent(result.projectId));
+      location.assign('/workspace?project=' + encodeURIComponent(result.projectId));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -260,7 +261,7 @@ export function ProjectWorkspace({
                       history.replaceState(
                         null,
                         '',
-                        '/?project=' + encodeURIComponent(p.id),
+                        '/workspace?project=' + encodeURIComponent(p.id),
                       );
                     }}
                   >
@@ -429,7 +430,7 @@ export function ProjectWorkspace({
                         goalVersion: preview.details.goal_version,
                       });
                       location.replace(
-                        '/?project=' + encodeURIComponent(result.projectId),
+                        '/workspace?project=' + encodeURIComponent(result.projectId),
                       );
                     } catch (e) {
                       const changed = (e as { details?: InvitePreview })
@@ -449,7 +450,7 @@ export function ProjectWorkspace({
                 </button>
               </>
             )}
-            <a className="btn" href="/">
+            <a className="btn" href="/workspace">
               내 프로젝트로 돌아가기
             </a>
           </section>
@@ -500,7 +501,7 @@ export function ProjectDetails({
       });
       if (result.token)
         setLink(
-          location.origin + '/?invite=' + encodeURIComponent(result.token),
+          location.origin + '/workspace?invite=' + encodeURIComponent(result.token),
         );
       await refresh();
       setMessage(

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const dir = dirname(fileURLToPath(import.meta.url));
-const pageSource = readFileSync(join(dir, '../app/page.tsx'), 'utf8');
+const pageSource = readFileSync(join(dir, '../app/workspace/page.tsx'), 'utf8');
 const workspaceSource = readFileSync(
   join(dir, '../components/project-workspace.tsx'),
   'utf8',
