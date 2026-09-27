@@ -64,3 +64,18 @@ test('count up is bounded', () => {
   assert.equal(countUp(168, 3), 168);
   assert.equal(countUp(168, -1), 0);
 });
+
+import { rollAt } from '../lib/landing-race.mjs';
+
+test('rolling number climbs, holds, then rolls to the next segment', () => {
+  const segs = [
+    [0, 2, 0.35, 0.5],
+    [2, -1, 0.68, 0.8],
+  ];
+  assert.equal(rollAt(0, segs), 0);
+  assert.equal(rollAt(0.5, segs), 2);
+  assert.equal(rollAt(0.6, segs), 2);
+  assert.equal(rollAt(0.74, segs), 1);
+  assert.equal(rollAt(1, segs), -1);
+  assert.equal(rollAt(0.5, []), 0);
+});

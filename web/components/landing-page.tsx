@@ -3,20 +3,20 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   sceneProgress,
-  stepAt,
   frameAt,
   raceClock,
   featureAt,
   cursorAt,
   countUp,
+  rollAt,
 } from '@/lib/landing-race.mjs';
 import './landing.css';
 
 const START = '/workspace?create=1';
 // 첫 화면 영상은 스크롤의 앞 78% 동안 재생되고, 나머지 구간에서 둥근 카드로 줄어든다.
 const HERO_VIDEO_SHARE = 0.78;
-// 설계 섹션 첫 항목(출발)에서 커서가 "스프린트 시작"을 누르는 지점. 레이스 시계가 여기서 흐른다.
-const START_CLICK = 0.78;
+// 출발 신호 영상에서 불이 모두 꺼지는 지점(구간 진행률). 레이스 시계가 여기서 흐른다.
+const LIGHTS_OUT = 0.56;
 
 type Key = { t: number; k?: string; x?: number; y?: number; press?: boolean };
 // 모니터 속 화면별 커서 경로. k는 data-k 요소의 가운데, 없으면 x·y(화면 기준 %).
@@ -24,7 +24,7 @@ const CURSOR: Key[][] = [
   [
     { t: 0, x: 62, y: 96 },
     { t: 0.62, k: 'start' },
-    { t: START_CLICK, k: 'start', press: true },
+    { t: 0.78, k: 'start', press: true },
     { t: 1, k: 'start' },
   ],
   [
@@ -42,15 +42,19 @@ const CURSOR: Key[][] = [
   ],
 ];
 
+// "0,2,0.35,0.5|2,-1,0.68,0.8" → [[0,2,0.35,0.5],[2,-1,0.68,0.8]]
+const parseRoll = (s: string) =>
+  s.split('|').map((seg) => seg.split(',').map(Number));
+const signed = (v: number, unit: string) =>
+  (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + unit;
+
 export function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const root = rootRef.current!;
     const hero = root.querySelector<HTMLElement>('.hero')!;
-    const video = root.querySelector<HTMLVideoElement>('.hero video')!;
-    const finishVideo = root.querySelector<HTMLVideoElement>('.finish video')!;
-    const scenes = [...root.querySelectorAll<HTMLElement>('[data-steps]')];
+    const heroVideo = root.querySelector<HTMLVideoElement>('.hero video')!;
     const rules = root.querySelector<HTMLElement>('#rules')!;
     const setup = root.querySelector<HTMLElement>('#setup')!;
     const setupStage = setup.querySelector<HTMLElement>('.stage')!;
@@ -59,7 +63,10 @@ export function LandingPage() {
     const items = [...setup.querySelectorAll<HTMLElement>('.feat-list li')];
     const panes = [...setup.querySelectorAll<HTMLElement>('.pane')];
     const menu = [...setup.querySelectorAll<HTMLElement>('.app-side [data-pane]')];
+    // 고정 구간(data-pin)마다 진행률 --p를 주고, 안쪽 [data-on] 요소를 켜고 끈다.
+    const pins = [...root.querySelectorAll<HTMLElement>('[data-pin]')];
     const counters = [...root.querySelectorAll<HTMLElement>('[data-count]')];
+    const go = root.querySelector<HTMLElement>('#go')!;
     const finish = root.querySelector<HTMLElement>('#finish')!;
     const hud = root.querySelector<HTMLElement>('.hud')!;
     const hudDay = hud.querySelector<HTMLElement>('.hud-day')!;
@@ -67,9 +74,16 @@ export function LandingPage() {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const phone = matchMedia('(max-width: 767px)');
     const finePointer = matchMedia('(pointer: fine)');
+    const videos = [...root.querySelectorAll<HTMLVideoElement>('video[data-src]')];
+    // 휴대폰·동작 줄이기에서는 영상을 받지 않고 포스터만 보여 준다.
     if (!reduced.matches && !phone.matches) {
-      video.src = '/landing/race.mp4';
-      finishVideo.src = '/landing/finish.mp4';
+      heroVideo.src = '/landing/race.mp4';
+      for (const v of videos) v.src = v.dataset.src!;
+      // 배경 영상은 스크롤과 무관하게 조용히 반복 재생한다.
+      for (const v of root.querySelectorAll<HTMLVideoElement>('video[data-bg]')) {
+        v.src = v.dataset.bg!;
+        v.play().catch(() => {});
+      }
     }
     // 영상별 목표 시각. 탐색이 끝나면(seeked) 그사이 바뀐 목표로 다시 맞춘다.
     const targets = new Map<HTMLVideoElement, number>();
@@ -83,6 +97,21 @@ export function LandingPage() {
     }
     const onSeeked = (e: Event) => scrub(e.target as HTMLVideoElement);
     const clamp = (v: number) => Math.max(0, Math.min(1, v));
+    const stageOf = (sec: HTMLElement) => sec.firstElementChild as HTMLElement;
+    const progressOf = (sec: HTMLElement, vh: number) =>
+      reduced.matches
+        ? 1
+        : sceneProgress(
+            sec.getBoundingClientRect().top,
+            sec.offsetHeight,
+            stageOf(sec).offsetHeight,
+            vh,
+          );
+    const toggleOn = (el: HTMLElement, p: number) =>
+      el.classList.toggle(
+        'on',
+        p >= Number(el.dataset.on) && !(el.dataset.off && p >= Number(el.dataset.off)),
+      );
     // 화면(.screen) 안에서 요소 가운데의 위치(%). 3D 기울기와 무관한 배치 좌표를 쓴다.
     function spot(k: string) {
       let el = screen.querySelector<HTMLElement>(`[data-k="${k}"]`);
@@ -113,14 +142,11 @@ export function LandingPage() {
       menu.forEach((m) => m.classList.toggle('on', Number(m.dataset.pane) === item));
       panes.forEach((pane, i) => {
         pane.classList.toggle('active', i === item);
-        pane.querySelectorAll<HTMLElement>('[data-on]').forEach((el) => {
-          const on =
-            i < item ||
-            (i === item &&
-              (reduced.matches || t >= Number(el.dataset.on)) &&
-              !(el.dataset.off && t >= Number(el.dataset.off)));
-          el.classList.toggle('on', on);
-        });
+        pane
+          .querySelectorAll<HTMLElement>('[data-on]')
+          .forEach((el) =>
+            toggleOn(el, i < item || reduced.matches ? 1 : i === item ? t : -1),
+          );
       });
       const keys = CURSOR[item].map((key) => ({
         t: key.t,
@@ -131,6 +157,22 @@ export function LandingPage() {
       cursor.style.left = c.x + '%';
       cursor.style.top = c.y + '%';
       cursor.classList.toggle('press', c.press);
+    }
+    function syncPin(sec: HTMLElement, vh: number) {
+      const p = progressOf(sec, vh);
+      stageOf(sec).style.setProperty('--p', String(p));
+      sec.querySelectorAll<HTMLElement>('[data-on]').forEach((el) => toggleOn(el, p));
+      sec.querySelectorAll<HTMLElement>('[data-roll]').forEach((el) => {
+        el.textContent = signed(
+          rollAt(p, parseRoll(el.dataset.roll!)),
+          el.dataset.unit ?? '',
+        );
+      });
+      const v = sec.querySelector<HTMLVideoElement>('video[data-src]');
+      if (v) {
+        const [a, b] = (v.dataset.range ?? '0,1').split(',').map(Number);
+        scrub(v, clamp((p - a) / (b - a)));
+      }
     }
     function sync() {
       frame = 0;
@@ -147,36 +189,18 @@ export function LandingPage() {
         '--shrink',
         String(clamp((heroP - HERO_VIDEO_SHARE) / (1 - HERO_VIDEO_SHARE))),
       );
-      scrub(video, videoP);
+      scrub(heroVideo, videoP);
       syncSetup(vh);
-      for (const scene of scenes) {
-        const stage = scene.firstElementChild as HTMLElement;
-        const max = Number(scene.dataset.steps);
-        const progress = sceneProgress(
-          scene.getBoundingClientRect().top,
-          scene.offsetHeight,
-          stage.offsetHeight,
-          vh,
-        );
-        const step = reduced.matches ? max : stepAt(progress, max);
-        if (scene.id === 'finish') scrub(finishVideo, progress);
-        scene
-          .querySelectorAll<HTMLElement>('[data-at]')
-          .forEach((el) =>
-            el.classList.toggle('on', Number(el.dataset.at) <= step),
-          );
-      }
+      for (const sec of pins) syncPin(sec, vh);
       for (const el of counters) {
         const p = reduced.matches
           ? 1
           : clamp((vh * 0.9 - el.getBoundingClientRect().top) / (vh * 0.45));
         el.textContent = String(countUp(Number(el.dataset.count), p));
       }
-      // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 출발을 누른 뒤부터 흐른다.
+      // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 출발 신호가 꺼진 뒤부터 흐른다.
       const top = (el: HTMLElement) => el.getBoundingClientRect().top + scrollY;
-      const start =
-        top(setup) +
-        (setup.offsetHeight - setupStage.offsetHeight) * (START_CLICK / panes.length);
+      const start = top(go) + (go.offsetHeight - stageOf(go).offsetHeight) * LIGHTS_OUT;
       const end = top(finish) + finish.offsetHeight - vh;
       const lap = (scrollY - start) / (end - start);
       const clock = raceClock(lap);
@@ -195,7 +219,8 @@ export function LandingPage() {
       root.style.setProperty('--mx', String((e.clientX / innerWidth) * 2 - 1));
       root.style.setProperty('--my', String((e.clientY / innerHeight) * 2 - 1));
     }
-    for (const v of [video, finishVideo]) {
+    const scrubbed = [heroVideo, ...videos];
+    for (const v of scrubbed) {
       v.addEventListener('loadeddata', sync);
       v.addEventListener('seeked', onSeeked);
     }
@@ -205,7 +230,7 @@ export function LandingPage() {
     sync();
     return () => {
       cancelAnimationFrame(frame);
-      for (const v of [video, finishVideo]) {
+      for (const v of scrubbed) {
         v.removeEventListener('loadeddata', sync);
         v.removeEventListener('seeked', onSeeked);
       }
@@ -266,40 +291,50 @@ export function LandingPage() {
         </section>
 
         <section className="rules" id="rules">
-          <p className="kicker">REGULATION</p>
-          <h2>
-            출발하면,
-            <br />
-            멈출 수 없다.
-          </h2>
-          <ol className="rule-list">
-            <li>
-              <strong>
-                <span data-count="168">168</span>시간
-              </strong>
-              <span>
-                출발을 누른 시각부터 정확히 7일.
-                <br />
-                준비하는 동안은 시간이 흐르지 않는다.
-              </span>
-            </li>
-            <li>
-              <strong>목표 잠금</strong>
-              <span>
-                출발 후에는 목표·범위·결과물을
-                <br />
-                누구도, 어떤 경로로도 바꿀 수 없다.
-              </span>
-            </li>
-            <li>
-              <strong>연장 없음</strong>
-              <span>
-                기한이 지나면 자동으로 종료.
-                <br />
-                다음 스프린트 이월도 없다.
-              </span>
-            </li>
-          </ol>
+          <video
+            className="rules-bg"
+            data-bg="/landing/timelapse.mp4"
+            muted
+            loop
+            playsInline
+            aria-hidden="true"
+          />
+          <div className="rules-body">
+            <p className="kicker">REGULATION</p>
+            <h2>
+              출발하면,
+              <br />
+              멈출 수 없다.
+            </h2>
+            <ol className="rule-list">
+              <li>
+                <strong>
+                  <span data-count="168">168</span>시간
+                </strong>
+                <span>
+                  출발을 누른 시각부터 정확히 7일.
+                  <br />
+                  준비하는 동안은 시간이 흐르지 않는다.
+                </span>
+              </li>
+              <li>
+                <strong>목표 잠금</strong>
+                <span>
+                  출발 후에는 목표·범위·결과물을
+                  <br />
+                  누구도, 어떤 경로로도 바꿀 수 없다.
+                </span>
+              </li>
+              <li>
+                <strong>연장 없음</strong>
+                <span>
+                  기한이 지나면 자동으로 종료.
+                  <br />
+                  다음 스프린트 이월도 없다.
+                </span>
+              </li>
+            </ol>
+          </div>
         </section>
 
         <section className="feat" id="setup">
@@ -463,84 +498,143 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="scene" id="telemetry" data-steps="4">
-          <div className="stage">
-            <div className="copy">
-              <p className="kicker">TELEMETRY</p>
-              <h2>
-                밀리는 순간,
-                <br />
-                바로 뜬다.
-              </h2>
-              <p className="lead">
-                &ldquo;거의 다 했어요&rdquo; 대신 남은 시간을 남긴다. 일정은 즉시
-                다시 계산되고, 목표를 줄여서 맞추는 일은 없다.
+        <section className="pin cine" id="go" data-pin>
+          <div className="pin-stage">
+            <video
+              data-src="/landing/lights.mp4"
+              data-range="0,0.85"
+              poster="/landing/lights.jpg"
+              muted
+              playsInline
+              preload="auto"
+              aria-hidden="true"
+            />
+            <div className="cine-copy">
+              <p className="kicker">LIGHTS OUT</p>
+              <p className="cine-line">
+                <span data-on="0.12">불이 모두 꺼지면,</span>
+                <span data-on="0.56">168시간이 시작된다.</span>
               </p>
-            </div>
-            <div className="panel tele">
-              <div className="tele-head">
-                <span>로그인 구현 · 민서</span>
-                <span>DAY 03</span>
-              </div>
-              <div className="tele-metrics">
-                <div>
-                  <small>남은 공수</small>
-                  <strong className="swap" data-at="4">
-                    <span className="before">6h</span>
-                    <span className="after">3h</span>
-                  </strong>
-                </div>
-                <div>
-                  <small>마감까지 쓸 수 있는 시간</small>
-                  <strong>4h</strong>
-                </div>
-              </div>
-              <div className="tele-bar" data-at="1">
-                <span className="swap" data-at="4">
-                  <i className="before" />
-                  <i className="after" />
-                </span>
-              </div>
-              <ul className="tele-log">
-                <li data-at="1">체크인 · 남은 공수 6시간</li>
-                <li className="bad" data-at="2">
-                  마감보다 2시간 초과 · 배치 불가
-                </li>
-                <li data-at="3">담당 재배정 · 오류 화면 → 준호</li>
-                <li className="good" data-at="4">
-                  재계산 완료 · 마감 1시간 전 도착
-                </li>
-              </ul>
             </div>
           </div>
         </section>
 
-        <section className="scene" id="radio" data-steps="3">
-          <div className="stage">
-            <div className="copy">
+        <section className="pin cine" id="pit" data-pin>
+          <div className="pin-stage">
+            <video
+              data-src="/landing/pit.mp4"
+              data-range="0,0.8"
+              poster="/landing/pit.jpg"
+              muted
+              playsInline
+              preload="auto"
+              aria-hidden="true"
+            />
+            <div className="cine-copy center">
+              <p className="kicker">PIT STOP · 체크인</p>
+              <p className="cine-line big">
+                <span data-on="0.15">밀리는 순간,</span>
+                <span data-on="0.4">바로 뜬다.</span>
+              </p>
+              <p className="lead" data-on="0.6">
+                체크인 한 번이면 남은 공수로 일정이 다시 계산된다.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="pin tele" id="telemetry" data-pin>
+          <div className="pin-stage tele-stage">
+            <div className="tele-copy">
+              <p className="kicker">TELEMETRY</p>
+              <h2>
+                &ldquo;거의 다 했어요&rdquo;는
+                <br />
+                기록이 아니다.
+              </h2>
+              <p className="lead">
+                남은 시간을 남기면 일정이 즉시 다시 계산된다. 목표를 줄여서
+                맞추는 일은 없다.
+              </p>
+            </div>
+            <div className="tele-field">
+              <div className="tcard t1 hot" data-on="0.04">
+                <small>민서 · 로그인 구현</small>
+                <b>남은 공수 6h</b>
+                <span>마감까지 쓸 수 있는 시간 4h</span>
+              </div>
+              <div className="tcard t2" data-on="0.1">
+                <small>수빈 · 모임 검색 화면</small>
+                <b>남은 공수 3h</b>
+                <span>마감 안</span>
+              </div>
+              <div className="tcard t3" data-on="0.16">
+                <small>하린 · 참가 신청 API</small>
+                <b>남은 공수 4h</b>
+                <span>마감 안</span>
+              </div>
+              <div className="tcard t4" data-on="0.22">
+                <small>준호 · 통합 테스트</small>
+                <b className="swap" data-on="0.62">
+                  <span className="before">남은 공수 2h</span>
+                  <span className="after">+ 오류 화면 3h</span>
+                </b>
+                <span>여유 5h</span>
+              </div>
+              <div className="tele-big" data-on="0.35">
+                <small>로그인 구현 · 마감 대비</small>
+                <strong data-roll="0,2,0.35,0.5|2,-1,0.66,0.8" data-unit="h">
+                  0h
+                </strong>
+                <span className="verdict swap" data-on="0.8">
+                  <span className="before">마감보다 2시간 초과 · 배치 불가</span>
+                  <span className="after">재배정 후 마감 1시간 전 도착</span>
+                </span>
+              </div>
+              <p className="tele-chip" data-on="0.62">
+                담당 재배정 · 오류 화면 → 준호
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="pin radio" id="radio" data-pin>
+          <div className="pin-stage radio-stage">
+            <video
+              data-src="/landing/radio.mp4"
+              data-range="0,0.4"
+              poster="/landing/radio.jpg"
+              muted
+              playsInline
+              preload="auto"
+              aria-hidden="true"
+            />
+            <div className="cine-copy">
               <p className="kicker">
                 TEAM RADIO <span className="pilot">파일럿</span>
               </p>
-              <h2>
-                회의는 끝났다.
-                <br />할 일만 남긴다.
-              </h2>
-              <p className="lead">
-                단톡방 대화를 붙여넣으면 바뀔 업무를 골라 제안한다. 적용은
-                사람이 승인해야만 된다.
+              <p className="cine-line">
+                <span data-on="0.08">회의는 끝났다.</span>
+                <span data-on="0.24">할 일만 남긴다.</span>
               </p>
             </div>
-            <div className="panel radio">
-              <div className="chat">
-                <p data-at="1">
-                  <b>준호</b>참가 신청 API 누가 맡아요?
-                </p>
-                <p data-at="1">
-                  <b>하린</b>
-                  <mark>제가 맡을게요. 4시간이면 돼요.</mark>
-                </p>
-              </div>
-              <div className="proposal" data-at="2">
+            <div className="radio-field">
+              <p className="bubble b1" data-on="0.48">
+                <b>준호</b>참가 신청 API 누가 맡아요?
+              </p>
+              <p className="bubble b2 key" data-on="0.5">
+                <b>하린</b>제가 맡을게요. 4시간이면 돼요.
+              </p>
+              <p className="bubble b3" data-on="0.52">
+                <b>민서</b>API 나오면 화면에 붙일게요.
+              </p>
+              <p className="bubble b4" data-on="0.54">
+                <b>수빈</b>검색 필터는 내일 오전까지요.
+              </p>
+              <p className="bubble b5" data-on="0.56">
+                <b>준호</b>그럼 통합 테스트는 목요일!
+              </p>
+              <div className="proposal2" data-on="0.8">
                 <small>변경안 · 원문 근거 있음</small>
                 <b>참가 신청 API</b>
                 <div>
@@ -549,16 +643,21 @@ export function LandingPage() {
                 <div>
                   <span>남은 공수</span>미정 → 4시간
                 </div>
-                <p className="stamp swap" data-at="3">
+                <q>제가 맡을게요. 4시간이면 돼요.</q>
+                <p className="stamp swap" data-on="0.9">
                   <span className="before">승인 대기</span>
                   <span className="after">팀장 승인 · 반영됨</span>
                 </p>
               </div>
+              <p className="radio-note" data-on="0.8">
+                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안한다. 적용은 사람이
+                승인해야만 된다.
+              </p>
             </div>
           </div>
         </section>
 
-        <section className="scene" id="finish" data-steps="3">
+        <section className="scene" id="finish" data-pin>
           <div className="stage">
             <div className="copy">
               <p className="kicker">CHEQUERED FLAG</p>
@@ -573,38 +672,68 @@ export function LandingPage() {
             </div>
             <div className="panel finish">
               <video
+                data-src="/landing/finish.mp4"
+                poster="/landing/car.jpg"
                 muted
                 playsInline
                 preload="auto"
-                poster="/landing/car.jpg"
                 aria-hidden="true"
               />
-              <div className="flag" data-at="3" />
+              <div className="flag" data-on="0.75" />
               <ul>
-                <li data-at="1">모임 검색 · 참가 신청 작동</li>
-                <li data-at="2">저장소 · 실행 방법 · 3분 데모</li>
+                <li data-on="0.25">모임 검색 · 참가 신청 작동</li>
+                <li data-on="0.5">저장소 · 실행 방법 · 3분 데모</li>
               </ul>
-              <p className="result" data-at="3">
+              <p className="result" data-on="0.75">
                 완주 <small>31시간 남기고</small>
               </p>
             </div>
           </div>
         </section>
 
-
-        <section className="closing">
-          <h2>
-            다음 7일,
-            <br />
-            출발선에 서라.
-          </h2>
-          <div className="hero-actions">
-            <Link className="rl-btn" href={START} prefetch={false}>
-              7일 시작하기
-            </Link>
-            <Link className="rl-link" href="/workspace" prefetch={false}>
-              내 프로젝트
-            </Link>
+        <section className="pin mosaic" id="closing" data-pin>
+          <div className="pin-stage">
+            <div className="mosaic-grid">
+              {[
+                ['a', 'm1', 0.08],
+                ['b', 'm4', 0.14],
+                ['c', 'm3', 0.2],
+                ['d', 'm2', 0.12],
+                ['e', 'm5', 0.18],
+                ['f', 'm6', 0.1],
+                ['g', 'm7', 0.16],
+                ['i', 'm8', 0.22],
+              ].map(([area, img, on]) => (
+                <figure className={`tile ${area}`} data-on={on} key={area as string}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- 장식용 모자이크 */}
+                  <img src={`/landing/${img}.jpg`} alt="" loading="lazy" />
+                </figure>
+              ))}
+              <div className="tile h text" data-on="0.24">
+                <strong>168:00:00</strong>
+                <small>출발부터 결승까지</small>
+              </div>
+              <div className="tile j text" data-on="0.26">
+                <strong>연장 0회</strong>
+                <small>목표 잠금 · 이월 없음</small>
+              </div>
+              <div className="tile cta">
+                <p className="kicker">NEXT RACE</p>
+                <h2>
+                  다음 7일,
+                  <br />
+                  출발선에 서라.
+                </h2>
+                <div className="hero-actions">
+                  <Link className="rl-btn" href={START} prefetch={false}>
+                    7일 시작하기
+                  </Link>
+                  <Link className="rl-link" href="/workspace" prefetch={false}>
+                    내 프로젝트
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>

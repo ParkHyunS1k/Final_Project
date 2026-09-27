@@ -64,3 +64,15 @@ export function cursorAt(t, keys) {
 export function countUp(target, progress) {
   return Math.round(target * clamp(progress));
 }
+
+// 구간별로 굴러가는 숫자. segs = [[from, to, p0, p1], ...] (p0 오름차순).
+// 아직 첫 구간이 시작되지 않았으면 첫 from, 이후에는 지나온 마지막 구간의 값.
+export function rollAt(progress, segs) {
+  let value = segs.length ? segs[0][0] : 0;
+  for (const [from, to, p0, p1] of segs) {
+    if (progress < p0) break;
+    const k = p1 > p0 ? clamp((progress - p0) / (p1 - p0)) : 1;
+    value = Math.round(from + (to - from) * k);
+  }
+  return value;
+}
