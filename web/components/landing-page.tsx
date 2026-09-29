@@ -271,7 +271,7 @@ export function LandingPage() {
             <p className="hero-end" aria-hidden="true">
               계획이 끝나면
               <br />
-              <em>이제, 달리세요.</em>
+              <em>이제, 스프린트.</em>
             </p>
           </div>
         </section>
@@ -504,7 +504,7 @@ export function LandingPage() {
             <div className="cine-copy">
               <p className="kicker">출발</p>
               <p className="cine-line">
-                <span data-on="0.12">불이 모두 꺼지면,</span>
+                <span data-on="0.12">버튼을 클릭한 순간,</span>
                 <span data-on="0.56">168시간이 시작됩니다.</span>
               </p>
             </div>
@@ -525,8 +525,8 @@ export function LandingPage() {
             <div className="cine-copy center">
               <p className="kicker">체크인</p>
               <p className="cine-line big">
-                <span data-on="0.15">밀리는 순간,</span>
-                <span data-on="0.4">바로 뜹니다.</span>
+                <span data-on="0.15">일정이 밀리는 순간,</span>
+                <span data-on="0.4">바로 경고</span>
               </p>
               <p className="lead" data-on="0.6">
                 체크인 한 번이면 남은 공수로 일정이 다시 계산됩니다.
