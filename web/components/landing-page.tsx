@@ -95,11 +95,11 @@ export function LandingPage() {
       reduced.matches
         ? 1
         : sceneProgress(
-            sec.getBoundingClientRect().top,
-            sec.offsetHeight,
-            stageOf(sec).offsetHeight,
-            vh,
-          );
+          sec.getBoundingClientRect().top,
+          sec.offsetHeight,
+          stageOf(sec).offsetHeight,
+          vh,
+        );
     const toggleOn = (el: HTMLElement, p: number) =>
       el.classList.toggle(
         'on',
@@ -253,11 +253,11 @@ export function LandingPage() {
               <p className="kicker">7일 프로젝트 스프린트</p>
               <h1>
                 <span className="line">이번엔,</span>
-                <span className="line">끝까지 간다.</span>
+                <span className="line">끝까지.</span>
               </h1>
               <p className="lead">
-                기한은 7일. 목표는 잠그고, 연장은 없다.
-                <br />팀 전체를 한 번에 결승선까지.
+                기한은 7일. 목표는 고정, 연장은 없습니다.
+                <br />팀 전체를 한 번에 결승선까지
               </p>
               <div className="hero-actions">
                 <Link className="rl-btn" href={START} prefetch={false}>
@@ -269,51 +269,51 @@ export function LandingPage() {
               </div>
             </div>
             <p className="hero-end" aria-hidden="true">
-              계획은 끝났다.
+              계획이 끝나면
               <br />
-              <em>이제, 달린다.</em>
+              <em>이제, 달리세요.</em>
             </p>
           </div>
         </section>
 
         <section className="pin rules" id="rules" data-pin>
           <div className="pin-stage">
-          <div className="rules-body">
-            <p className="kicker">규칙</p>
-            <h2>
-              출발하면,
-              <br />
-              멈출 수 없다.
-            </h2>
-            <ol className="rule-list">
-              <li data-on="0.06">
-                <strong>
-                  <span data-roll="0,168,0.06,0.3">168</span>시간
-                </strong>
-                <span>
-                  출발을 누른 시각부터 정확히 7일.
-                  <br />
-                  준비하는 동안은 시간이 흐르지 않는다.
-                </span>
-              </li>
-              <li data-on="0.38">
-                <strong>목표 잠금</strong>
-                <span>
-                  출발 후에는 목표·범위·결과물을
-                  <br />
-                  누구도, 어떤 경로로도 바꿀 수 없다.
-                </span>
-              </li>
-              <li data-on="0.66">
-                <strong>연장 없음</strong>
-                <span>
-                  기한이 지나면 자동으로 종료.
-                  <br />
-                  다음 스프린트 이월도 없다.
-                </span>
-              </li>
-            </ol>
-          </div>
+            <div className="rules-body">
+              <p className="kicker">규칙</p>
+              <h2>
+                출발하면,
+                <br />
+                멈출 수 없습니다.
+              </h2>
+              <ol className="rule-list">
+                <li data-on="0.06">
+                  <strong>
+                    <span data-roll="0,168,0.06,0.3">168</span>시간
+                  </strong>
+                  <span>
+                    출발을 누른 시각부터 정확히 7일.
+                    <br />
+                    준비하는 동안은 시간이 흐르지 않습니다.
+                  </span>
+                </li>
+                <li data-on="0.38">
+                  <strong>목표 잠금</strong>
+                  <span>
+                    출발 후에는 목표·범위·결과물을
+                    <br />
+                    누구도, 어떤 경로로도 바꿀 수 없습니다.
+                  </span>
+                </li>
+                <li data-on="0.66">
+                  <strong>연장 없음</strong>
+                  <span>
+                    기한이 지나면 자동으로 종료.
+                    <br />
+                    다음 스프린트 이월도 없습니다.
+                  </span>
+                </li>
+              </ol>
+            </div>
           </div>
         </section>
 
@@ -322,27 +322,27 @@ export function LandingPage() {
             <div className="feat-copy">
               <p className="kicker">출발 전 설계</p>
               <h2>
-                출발 전에,
+                스프린트 전,
                 <br />
-                7일을 설계한다.
+                7일을 설계합니다.
               </h2>
               <ol className="feat-list">
                 <li>
                   <b>전원이 동의해야 출발</b>
                   <p>
                     목표와 결과물에 팀 전원이 동의하고 팀장이 시작을 누르는 순간,
-                    168시간이 흐른다.
+                    168시간이 흐릅니다.
                   </p>
                   <i className="bar" />
                 </li>
                 <li>
                   <b>빈칸 없는 배정</b>
-                  <p>업무마다 담당자와 마감. 미정으로 남은 칸은 바로 드러난다.</p>
+                  <p>업무마다 담당자와 마감. 미정으로 남은 칸은 바로 드러납니다.</p>
                   <i className="bar" />
                 </li>
                 <li>
                   <b>7일 마감 캘린더</b>
-                  <p>승인된 마감을 일차별로. 오늘 끝내야 할 일이 먼저 보인다.</p>
+                  <p>승인된 마감을 일차별로. 오늘 끝내야 할 일이 먼저 보입니다.</p>
                   <i className="bar" />
                 </li>
               </ol>
@@ -505,7 +505,7 @@ export function LandingPage() {
               <p className="kicker">출발</p>
               <p className="cine-line">
                 <span data-on="0.12">불이 모두 꺼지면,</span>
-                <span data-on="0.56">168시간이 시작된다.</span>
+                <span data-on="0.56">168시간이 시작됩니다.</span>
               </p>
             </div>
           </div>
@@ -526,10 +526,10 @@ export function LandingPage() {
               <p className="kicker">체크인</p>
               <p className="cine-line big">
                 <span data-on="0.15">밀리는 순간,</span>
-                <span data-on="0.4">바로 뜬다.</span>
+                <span data-on="0.4">바로 뜹니다.</span>
               </p>
               <p className="lead" data-on="0.6">
-                체크인 한 번이면 남은 공수로 일정이 다시 계산된다.
+                체크인 한 번이면 남은 공수로 일정이 다시 계산됩니다.
               </p>
             </div>
           </div>
@@ -542,11 +542,11 @@ export function LandingPage() {
               <h2>
                 &ldquo;거의 다 했어요&rdquo;는
                 <br />
-                기록이 아니다.
+                기록이 아닙니다.
               </h2>
               <p className="lead">
-                남은 시간을 남기면 일정이 즉시 다시 계산된다. 목표를 줄여서
-                맞추는 일은 없다.
+                남은 시간을 남기면 일정이 즉시 다시 계산됩니다. 목표를 줄여서
+                맞추는 일은 없습니다.
               </p>
             </div>
             <div className="tele-field">
@@ -597,8 +597,8 @@ export function LandingPage() {
                 회의 정리 <span className="pilot">파일럿</span>
               </p>
               <p className="cine-line">
-                <span data-on="0.02">회의는 끝났다.</span>
-                <span data-on="0.1">할 일만 남긴다.</span>
+                <span data-on="0.02">회의는 끝났습니다.</span>
+                <span data-on="0.1">할 일만 남깁니다.</span>
               </p>
             </div>
             <div className="radio-field">
@@ -633,8 +633,8 @@ export function LandingPage() {
                 </p>
               </div>
               <p className="radio-note" data-on="0.72">
-                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안한다. 적용은 사람이
-                승인해야만 된다.
+                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안합니다. 적용은 사람이
+                승인해야만 됩니다.
               </p>
             </div>
           </div>
@@ -705,7 +705,7 @@ export function LandingPage() {
                 <h2>
                   다음 7일,
                   <br />
-                  출발선에 서라.
+                  출발선에 서세요.
                 </h2>
                 <div className="hero-actions">
                   <Link className="rl-btn" href={START} prefetch={false}>
