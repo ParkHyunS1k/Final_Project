@@ -26,7 +26,7 @@ body:has(.rl) {
 .rl h1,
 .rl h2 {
   margin: 0;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.08;
 }
@@ -176,7 +176,7 @@ body:has(.rl) {
   bottom: 14svh;
   margin: 0;
   font-size: clamp(40px, 6vw, 88px);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.08;
   opacity: calc((var(--hero) - 0.72) * 5);
@@ -226,7 +226,7 @@ body:has(.rl) {
 }
 .rule-list strong {
   font-size: clamp(40px, 6vw, 84px);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.05em;
   line-height: 1;
 }
@@ -711,7 +711,7 @@ body:has(.rl) {
   margin: 0;
   padding: 16px 28px 28px;
   font-size: clamp(40px, 5vw, 64px);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.04em;
   color: var(--heat);
 }
@@ -801,7 +801,7 @@ body:has(.rl) {
 .cine-line {
   margin: 0;
   font-size: clamp(40px, 6vw, 96px);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.08;
 }
@@ -919,7 +919,7 @@ body:has(.rl) {
 }
 .tele-big strong {
   color: var(--bad);
-  font: 600 clamp(96px, 14vw, 220px) / 0.9 var(--font-geist-mono), monospace;
+  font: 500 clamp(96px, 14vw, 220px) / 0.9 var(--font-geist-mono), monospace;
   letter-spacing: -0.06em;
   font-variant-numeric: tabular-nums;
   transition: color 0.4s;
@@ -1142,7 +1142,7 @@ body:has(.rl) {
 }
 .tile.text strong {
   color: var(--heat);
-  font: 700 clamp(26px, 3vw, 48px) / 1 var(--font-geist-mono), monospace;
+  font: 600 clamp(26px, 3vw, 48px) / 1 var(--font-geist-mono), monospace;
   letter-spacing: -0.04em;
 }
 .tile.j strong {
