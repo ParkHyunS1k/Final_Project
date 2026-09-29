@@ -1210,12 +1210,6 @@ body:has(.rl) {
 .tile.cta::after {
   display: none;
 }
-.tile.cta .kicker {
-  margin-bottom: 14px;
-  color: var(--dim);
-  font-size: 14px;
-  font-weight: 500;
-}
 .tile.cta h2 {
   font-size: clamp(28px, 3.2vw, 50px);
   line-height: 1.15;

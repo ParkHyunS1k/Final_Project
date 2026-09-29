@@ -702,7 +702,6 @@ export function LandingPage() {
                 <strong>연장 0회</strong>
               </div>
               <div className="tile cta">
-                <p className="kicker">2–4인 팀 · 7일 스프린트</p>
                 <h2>
                   다음 7일,
                   <br />
@@ -711,9 +710,6 @@ export function LandingPage() {
                 <div className="hero-actions">
                   <Link className="rl-btn" href={START} prefetch={false}>
                     7일 시작하기
-                  </Link>
-                  <Link className="rl-link" href="/workspace" prefetch={false}>
-                    내 프로젝트
                   </Link>
                 </div>
               </div>
