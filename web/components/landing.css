@@ -100,6 +100,20 @@ body:has(.rl) {
   font-size: 20px;
   letter-spacing: -0.03em;
 }
+.rl-top-actions {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 24px);
+}
+.rl .careerflow-link {
+  font-size: 13px;
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .rl .careerflow-link {
+    font-size: 11px;
+  }
+}
 
 /* 1. 히어로: 스크롤하면 7이 레이스카로 바뀌어 튀어나간다. */
 .hero {
