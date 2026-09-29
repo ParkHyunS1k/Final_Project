@@ -384,7 +384,15 @@ function Dashboard({
             {needsLogin && (
               <a
                 className="btn primary"
-                href="/signin-with-chatgpt?return_to=/workspace"
+                // 로그인 후 원래 주소로 돌아온다(?create=1, ?invite= 유지).
+                href={
+                  '/signin-with-chatgpt?return_to=' +
+                  encodeURIComponent(
+                    typeof location !== 'undefined'
+                      ? location.pathname + location.search
+                      : '/workspace',
+                  )
+                }
                 target="_top"
               >
                 ChatGPT로 로그인

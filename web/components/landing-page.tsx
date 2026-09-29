@@ -693,26 +693,23 @@ export function LandingPage() {
                 </figure>
               ))}
               <div className="tile h text" data-on="0.24">
-                <strong>168:00:00</strong>
                 <small>출발부터 결승까지</small>
+                <strong>168:00:00</strong>
+                <i className="days" aria-hidden="true" />
               </div>
               <div className="tile j text" data-on="0.26">
-                <strong>연장 0회</strong>
                 <small>목표 잠금 · 이월 없음</small>
+                <strong>연장 0회</strong>
               </div>
               <div className="tile cta">
-                <p className="kicker">다음 7일</p>
                 <h2>
                   다음 7일,
                   <br />
-                  출발선에 서세요.
+                  <em>출발선에 서세요.</em>
                 </h2>
                 <div className="hero-actions">
                   <Link className="rl-btn" href={START} prefetch={false}>
                     7일 시작하기
-                  </Link>
-                  <Link className="rl-link" href="/workspace" prefetch={false}>
-                    내 프로젝트
                   </Link>
                 </div>
               </div>

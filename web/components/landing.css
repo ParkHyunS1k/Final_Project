@@ -1092,25 +1092,30 @@ body:has(.rl) {
 #closing .pin-stage {
   display: grid;
   place-items: center;
+  /* 위는 헤더, 아래는 레이스 시계 자리를 비운다. */
+  padding: 72px 0 92px;
+  box-sizing: border-box;
 }
 .mosaic-grid {
   --z: calc(1 + 1.3 * (1 - clamp(0, var(--p, 0) * 1.6, 1)));
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-rows: 1fr 1.3fr 1fr;
   grid-template-areas:
     'a b c d'
     'e cta cta f'
     'g h i j';
-  gap: 12px;
-  width: min(1400px, calc(100vw - 32px));
-  height: calc(100svh - 120px);
+  gap: 14px;
+  width: min(1360px, calc(100vw - 48px));
+  height: calc(100svh - 164px);
   transform: scale(var(--z));
 }
 .tile {
+  position: relative;
   margin: 0;
   overflow: hidden;
-  border-radius: 20px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
   background: var(--panel);
   transition: opacity 0.6s;
 }
@@ -1122,6 +1127,23 @@ body:has(.rl) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 사진마다 주황이 강해 톤을 살짝 눌러 한 장처럼 보이게 한다. */
+  filter: saturate(0.85) brightness(0.88);
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.4s;
+}
+.tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(transparent 55%, rgb(11 11 12 / 0.45));
+  pointer-events: none;
+}
+@media (hover: hover) {
+  figure.tile:hover img {
+    transform: scale(1.04);
+    filter: saturate(1) brightness(1);
+  }
 }
 .tile.a { grid-area: a; }
 .tile.b { grid-area: b; }
@@ -1133,38 +1155,72 @@ body:has(.rl) {
 .tile.h { grid-area: h; }
 .tile.i { grid-area: i; }
 .tile.j { grid-area: j; }
+/* 숫자 칸: 위에 짧은 설명, 아래에 큰 숫자. */
 .tile.text {
   display: grid;
-  align-content: end;
-  gap: 6px;
-  padding: 20px;
-  border: 1px solid var(--line);
+  grid-template-rows: auto 1fr auto;
+  align-items: end;
+  gap: 12px;
+  padding: clamp(18px, 1.8vw, 26px);
+  background: linear-gradient(160deg, #1b1b1e, #111113 70%);
 }
-.tile.text strong {
-  color: var(--heat);
-  font: 600 clamp(26px, 3vw, 48px) / 1 var(--font-geist-mono), monospace;
-  letter-spacing: -0.04em;
-}
-.tile.j strong {
-  font-family: inherit;
+.tile.text::after {
+  display: none;
 }
 .tile.text small {
   color: var(--dim);
+  font-size: 14px;
 }
+.tile.text strong {
+  color: var(--heat);
+  font: 600 clamp(28px, 2.8vw, 46px) / 1 var(--font-geist-mono), monospace;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.tile.j strong {
+  color: var(--text);
+  font-family: inherit;
+  letter-spacing: -0.03em;
+}
+/* 168 칸 아래 7일 막대: 레이스 시계와 같은 눈금. */
+.tile .days {
+  display: block;
+  height: 6px;
+  border-radius: 99px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--heat) 0 calc(100% / 7 - 4px),
+    transparent 0 calc(100% / 7)
+  );
+  opacity: 0.85;
+}
+/* 가운데 카드: 시선이 모이도록 뒤에 은은한 빛을 깐다. */
 .tile.cta {
   grid-area: cta;
   display: grid;
   place-content: center;
-  padding: 24px;
-  border: 1px solid var(--line);
-  background: #0b0b0c;
+  justify-items: center;
+  gap: 4px;
+  padding: clamp(18px, 2vw, 32px);
+  background:
+    radial-gradient(ellipse 70% 90% at 50% 110%, rgb(255 90 31 / 0.22), transparent 70%),
+    #0e0e10;
   text-align: center;
 }
+.tile.cta::after {
+  display: none;
+}
 .tile.cta h2 {
+  font-size: clamp(28px, 3.2vw, 50px);
+  line-height: 1.15;
+}
+.tile.cta h2 em {
   color: var(--heat);
+  font-style: normal;
 }
 .tile.cta .hero-actions {
   justify-content: center;
+  margin-top: 22px;
 }
 
 /* 레이스 시계: 스크롤이 곧 7일이다. */
@@ -1359,7 +1415,12 @@ body:has(.rl) {
     --x: -6vw;
     --y: 28svh;
   }
+  #closing .pin-stage {
+    padding: 64px 0 84px;
+  }
   .mosaic-grid {
+    width: calc(100vw - 32px);
+    height: calc(100svh - 148px);
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: 1fr 1.7fr 1fr 0.8fr;
     grid-template-areas:
@@ -1370,7 +1431,13 @@ body:has(.rl) {
     gap: 8px;
   }
   .tile.cta h2 {
-    font-size: 30px;
+    font-size: 28px;
+  }
+  .tile.text strong {
+    font-size: 24px;
+  }
+  .tile.text small {
+    font-size: 12px;
   }
   /* 휴대폰에는 모니터가 없으니 줌인 전환도 뺀다. */
   #dive {
