@@ -12,6 +12,7 @@ import {
 import './landing.css';
 
 const START = '/workspace?create=1';
+const CAREERFLOW_URL = process.env.NEXT_PUBLIC_CAREERFLOW_URL || 'http://127.0.0.1:8766/';
 // 첫 화면 영상은 스크롤의 앞 78% 동안 재생되고, 나머지 구간에서 둥근 카드로 줄어든다.
 const HERO_VIDEO_SHARE = 0.78;
 // 출발 신호 영상에서 불이 모두 꺼지는 지점(구간 진행률). 레이스 시계가 여기서 흐른다.
@@ -232,9 +233,14 @@ export function LandingPage() {
         <a className="rl-brand" href="#top">
           ProjectMate
         </a>
-        <Link className="rl-btn small" href={START} prefetch={false}>
-          7일 시작하기
-        </Link>
+        <div className="rl-top-actions">
+          <a className="rl-link careerflow-link" href={CAREERFLOW_URL} target="_blank" rel="noreferrer">
+            공고·이력서 ↗
+          </a>
+          <Link className="rl-btn small" href={START} prefetch={false}>
+            7일 시작하기
+          </Link>
+        </div>
       </header>
 
       <main>

@@ -36,6 +36,12 @@ npm run dev
 
 화면의 ChatGPT로 로그인 버튼 또는 `/signin-with-chatgpt?return_to=/`를 이용한다. Sites 개발 플러그인이 로컬 계정을 제공한다. 로컬 DB는 `.wrangler/state/`에 보관한다. 운영 DB는 Sites가 제공하는 D1이며 서로 독립이다.
 
+## CareerFlow 연결
+
+랜딩 페이지 오른쪽 위의 `공고·이력서` 링크는 저장소 루트의 독립 CareerFlow 앱을 새 탭으로 연다. 기본 주소는 `http://127.0.0.1:8766/`이다. 저장소 루트에서 별도 터미널을 열고 `python -m careerflow.web --port 8766`로 CareerFlow를 실행한다. 실행 환경과 기능은 저장소 루트의 [CAREERFLOW.md](../CAREERFLOW.md)를 따른다. 이 링크는 페이지 이동만 제공하며 이력서나 비교 결과를 ProjectMate로 보내지 않는다.
+
+다른 주소를 사용하거나 배포할 때는 `web/.env.local` 또는 빌드 환경에 공개 변수 `NEXT_PUBLIC_CAREERFLOW_URL`을 설정한다. 예: `NEXT_PUBLIC_CAREERFLOW_URL=https://careerflow.example.com/`. 설정 후 개발 서버를 다시 시작하거나 새로 빌드한다. 이 값은 브라우저에 공개되므로 비밀 정보를 넣지 않는다.
+
 ```sh
 npm test
 npx tsc --noEmit
