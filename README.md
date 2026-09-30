@@ -24,6 +24,10 @@
 
 웹 실행·마이그레이션·검증은 [web/README.md](web/README.md)를 따른다. `Final_Project` 저장소의 `phs` 브랜치에는 웹 소스, Python 엔진, 문서, 데이터셋과 모델 평가 결과를 함께 관리한다. 저장소를 한 번 복제하면 모든 소스를 받을 수 있다.
 
+## CareerFlow
+
+이 브랜치에는 채용공고 찾기, 여러 이력서 등록·저장, 공고 비교, 보관함, 준비 할 일을 제공하는 독립 로컬 앱이 [`careerflow/`](careerflow/)에 포함되어 있다. 실행 방법과 설정은 [CAREERFLOW.md](CAREERFLOW.md)를 참고한다. ProjectMate와 CareerFlow는 별도 앱으로 실행하며 이력서나 비교 결과를 ProjectMate로 전송하지 않는다.
+
 기존 Python 엔진 검증(macOS/Linux):
 
 ```sh

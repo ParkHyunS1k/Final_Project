@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CareerFlow · 나의 경험에서 다음 기회로</title>
+  <link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/">c<span>↗</span> <b>careerflow</b></a>
+    <div class="workspace">PERSONAL WORKSPACE</div>
+    <button class="nav active" data-view="discovery">⌕ <span>채용공고 찾기</span></button>
+    <button class="nav" data-view="resume-register">◈ <span>이력서 등록</span></button>
+    <button class="nav" data-view="analysis">◎ <span>공고 비교</span></button>
+    <button class="nav" data-view="jobs">▤ <span>공고 보관함</span></button>
+    <button class="nav" data-view="tasks">☷ <span>준비 할 일</span></button>
+    <div class="side-bottom"><div class="avatar">ME</div><div>나의 커리어 워크스페이스<small>Local · 내 컴퓨터에서 실행</small></div></div>
+  </aside>
+  <main>
+    <header><span>워크스페이스 <i>/</i> <b id="page-title">채용공고 찾기</b></span><span class="local"><em></em> 로컬 워크스페이스</span></header>
+    <div class="content">
+      <section id="discovery-page" class="page">
+        <div class="intro discovery-intro"><div><div class="eyebrow">FIND YOUR NEXT CHAPTER</div><h1>관심 분야의 공고를<br>모아 살펴보세요<span>.</span></h1><p>관심 분야를 고르고 마음에 드는 공고를 선택해 보세요.<br>저장한 이력서와 바로 비교할 수 있어요.</p></div><div class="discovery-controls"><label for="category">관심 분야</label><select id="category" aria-label="관심 분야"></select><button id="sync-jobs" class="primary" type="button" hidden>새 공고 찾기 <span>↻</span></button></div></div>
+        <div class="catalog-heading"><div><h2 id="catalog-title">관심 분야 공고</h2><p id="catalog-meta" role="status">저장된 공고를 불러오고 있어요.</p></div><button id="refresh-list" class="secondary" type="button">목록 새로고침</button></div>
+        <div id="discovery-status" class="inline-status" role="status" aria-live="polite"></div>
+        <div id="job-list" class="job-list"></div>
+      </section>
+
+      <section id="resume-register-page" class="page" hidden>
+        <div class="intro resume-register-intro"><div><div class="eyebrow">YOUR EXPERIENCE</div><h1>나의 이력서를<br>관리해요<span>.</span></h1><p>지원 분야에 맞는 이력서를 골라 공고와 비교할 수 있어요.</p></div></div>
+        <div class="resume-layout">
+          <form id="resume-form">
+            <section class="panel resume-register-panel">
+            <div class="panel-heading"><span class="icon">▤</span><div><h2 id="resume-editor-title">새 이력서 등록</h2><p>직무별 버전을 따로 저장할 수 있어요</p></div><button id="new-resume" class="secondary" type="button">새 이력서</button></div>
+            <div class="resume-name-field"><label for="resume-name">이력서 이름</label><input id="resume-name" required maxlength="80" placeholder="예: 데이터 분석 직무용"></div>
+            <label id="drop" class="drop" tabindex="0" role="button" aria-label="이력서 PDF 선택"><input id="pdf" type="file" accept="application/pdf,.pdf" hidden><span class="file-icon">↑</span><strong id="filename">이력서 PDF를 여기에 놓아주세요</strong><span>또는 클릭해서 파일 선택</span><small>PDF · 최대 5MB · 텍스트형 PDF 권장</small></label>
+            <div class="field-heading"><label for="resume">이력서 내용</label><span>직접 입력·수정 가능</span></div>
+            <textarea id="resume" required minlength="30" maxlength="40000" placeholder="PDF를 올리거나 이력서 내용을 붙여넣어 주세요."></textarea>
+            <div class="hint">저장한 이력서는 이 컴퓨터의 CareerFlow에 보관됩니다.</div>
+            <div class="resume-actions"><button id="sample" class="secondary" type="button">예시 이력서 불러오기</button><button id="reset" class="secondary" type="button">입력 지우기</button><button id="copy-resume" class="secondary" type="button" hidden>복제해 새 이력서로</button><button id="save-resume" class="primary" type="submit">이력서 등록</button></div>
+          </section>
+          </form>
+          <aside class="panel resume-library">
+            <div class="panel-heading"><span class="icon">▥</span><div><h2>저장한 이력서</h2><p>비교에 사용할 버전을 선택하세요</p></div><span id="resume-count" class="badge">0개</span></div>
+            <div id="resume-list" class="resume-list"></div>
+            <div class="resume-library-tip"><span class="eyebrow">VERSIONING TIP</span><strong>공통 이력서는 남겨두고, 직무별 버전을 복제해 보세요.</strong><p>지원 직무와 가까운 프로젝트를 앞에 두고, 관련 기술과 경험을 강조하면 여러 버전을 쉽게 관리할 수 있어요.</p></div>
+          </aside>
+        </div>
+        <div id="resume-status" class="form-status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section id="analysis-page" class="page" hidden>
+        <div class="intro"><div><div class="eyebrow">YOUR NEXT CHAPTER</div><h1>이 공고와 내 경험을<br>비교해요<span>.</span></h1><p>저장한 이력서와 선택한 공고에서 필요한 준비를 확인해요.</p></div><button id="change-job" class="secondary" type="button">다른 공고 찾기 ↗</button></div>
+        <div class="steps"><div class="current"><b>01</b> 공고 선택</div><span>────</span><div><b>02</b> 경험 비교</div><span>────</span><div><b>03</b> 다음 준비 확인</div></div>
+        <div id="selected-job" class="selected-job panel"><p>먼저 채용공고 찾기에서 공고를 선택해주세요.</p></div>
+        <section class="panel saved-resume-panel"><div class="panel-heading"><span class="icon">▤</span><div><h2>저장한 이력서</h2><p id="saved-resume-meta">이력서를 등록하면 여기에 표시돼요.</p></div><button id="edit-resume" class="secondary" type="button">이력서 등록·수정</button></div><textarea id="resume-preview" readonly placeholder="이력서 등록에서 내용을 저장해주세요."></textarea></section>
+        <form id="form">
+          <input id="company" type="hidden"><input id="position" type="hidden"><input id="url" type="hidden"><input id="deadline" type="hidden">
+          <section class="panel posting-panel"><div class="panel-heading"><span class="icon">↗</span><div><h2>선택한 채용공고</h2><p>원문을 확인하고 필요한 경우 직접 수정할 수 있어요</p></div><span class="badge">필수</span></div>
+            <div class="field-heading"><label for="posting">공고 내용</label><span class="recommended">비교 전 확인</span></div>
+            <textarea id="posting" required minlength="30" maxlength="40000" placeholder="먼저 채용공고 찾기에서 공고를 선택해주세요."></textarea>
+          </section>
+          <section class="analysis-bar"><div><label for="mode">비교 방식</label><select id="mode"><option value="demo">기본 비교</option></select><p id="modehint">공고와 이력서의 경험을 비교해요.</p></div><button id="analyze" class="primary" type="submit">내 경험과 공고 비교하기 <span>→</span></button></section>
+          <label id="consent-wrap" class="consent"><input type="checkbox" id="consent"> 이력서와 공고 내용을 AI 분석에 보내는 데 동의합니다. 개인정보를 확인한 뒤 진행해 주세요.</label>
+        </form>
+        <div id="status" role="status" aria-live="polite"></div>
+        <section id="result" class="panel result" hidden><div class="result-top"><div><div class="eyebrow">YOUR NEXT STEP</div><h2>경험과 기회 사이, 확인할 것들</h2></div><button id="download" class="secondary" type="button">결과 내려받기 ↓</button></div><p id="summary"></p><div id="matches"></div><details><summary>비교 근거 보기</summary><ol id="events"></ol></details></section>
+        <div class="principles"><div><span>◎</span><b>경험에서 찾는 근거</b><p>이력서에 적힌 내용으로 확인해요.</p></div><div><span>◇</span><b>내가 결정하는 다음 단계</b><p>원하는 할 일만 등록할 수 있어요.</p></div><div><span>↗</span><b>준비할 부분을 확인</b><p>점수 대신 필요한 경험을 살펴봐요.</p></div></div>
+        <footer>CAREERFLOW <span>작은 경험도, 다음 기회의 시작이니까.</span></footer>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
