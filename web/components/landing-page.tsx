@@ -73,7 +73,7 @@ export function LandingPage() {
     const videos = [...root.querySelectorAll<HTMLVideoElement>('video[data-src]')];
     // 휴대폰·동작 줄이기에서는 영상을 받지 않고 포스터만 보여 준다.
     if (!reduced.matches && !phone.matches) {
-      heroVideo.src = '/landing/race.mp4';
+      heroVideo.src = '/landing/desk.mp4';
       for (const v of videos) v.src = v.dataset.src!;
     }
     // 영상별 목표 시각. 탐색이 끝나면(seeked) 그사이 바뀐 목표로 다시 맞춘다.
@@ -242,16 +242,16 @@ export function LandingPage() {
               muted
               playsInline
               preload="auto"
-              poster="/landing/poster.jpg"
+              poster="/landing/desk.jpg"
               aria-hidden="true"
             />
             {/* eslint-disable-next-line @next/next/no-img-element -- 모바일 정지 화면, 최적화 경로 불필요 */}
-            <img className="hero-still" src="/landing/car.jpg" alt="" />
+            <img className="hero-still" src="/landing/desk.jpg" alt="" />
             <div className="hero-copy">
               <p className="kicker">취준생을 위한 7일 프로젝트 스프린트</p>
               <h1>
-                <span className="line">이번엔,</span>
-                <span className="line">끝까지.</span>
+                <span className="line">이력서와 프로젝트 관리를</span>
+                <span className="line">한 곳에.</span>
               </h1>
               <p className="lead">
                 공고가 원하는 경험, 7일 팀 프로젝트로 채웁니다.
@@ -367,6 +367,27 @@ export function LandingPage() {
               </div>
               <p className="mt-done" data-on="0.8">
                 4인 팀 매칭 완료 · 포지션 겹침 없음
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="pin cine" id="launch" data-pin>
+          <div className="pin-stage">
+            <video
+              data-src="/landing/race.mp4"
+              data-range="0,0.8"
+              poster="/landing/car.jpg"
+              muted
+              playsInline
+              preload="auto"
+              aria-hidden="true"
+            />
+            <div className="cine-copy">
+              <p className="kicker">스프린트</p>
+              <p className="cine-line">
+                <span data-on="0.45">팀이 모이면,</span>
+                <span data-on="0.7">이제, 스프린트.</span>
               </p>
             </div>
           </div>

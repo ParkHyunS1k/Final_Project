@@ -101,7 +101,7 @@ body:has(.rl) {
   letter-spacing: -0.03em;
 }
 
-/* 1. 히어로: 스크롤하면 7이 레이스카로 바뀌어 튀어나간다. */
+/* 1. 히어로: 밤 책상 영상이 스크롤을 따라 다가가고, 끝에서 둥근 카드로 줄어든다. */
 .hero {
   height: 380svh;
 }
@@ -151,7 +151,9 @@ body:has(.rl) {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgb(11 11 12 / 0.9) 0%, rgb(11 11 12 / 0.2) 60%, transparent);
+  /* 영상 끝은 주황 화면이 꽉 차므로, 진행할수록 눌러서 끝 문구가 읽히게 한다. */
+  background: linear-gradient(90deg, rgb(11 11 12 / 0.9) 0%, rgb(11 11 12 / 0.2) 60%, transparent)
+    rgb(11 11 12 / calc(var(--hero) * 0.6));
   pointer-events: none;
 }
 .hero-copy {
@@ -956,6 +958,9 @@ body:has(.rl) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+#launch {
+  height: calc(100svh + 200svh);
 }
 #checkin {
   height: calc(100svh + 180svh);
