@@ -292,18 +292,20 @@ export function LandingPage() {
           <div className="pin-stage duo-stage">
             <div className="duo-copy">
               <p className="kicker">진단</p>
+              {/* 첫 줄만 먼저 보이고, 더 내리면 둘째 줄 → 설명 → 비교표 순서로 나온다. */}
               <h2>
-                무엇이 부족한지,
-                <br />
-                공고가 알려줍니다.
+                이력서와 공고를 넣으면,
+                <span className="h2-next" data-on="0.14">
+                  무엇이 부족한지 알려줍니다.
+                </span>
               </h2>
-              <p className="lead">
+              <p className="lead" data-on="0.2">
                 관심 공고와 내 이력서를 나란히. 요구 역량마다 이력서 속 근거를
                 찾아 보여줍니다.
               </p>
             </div>
             <div className="cmp">
-              <div className="cmp-head" data-on="0.02">
+              <div className="cmp-head" data-on="0.26">
                 <small>브릿지랩 · 백엔드 개발자</small>
                 <b>하린의 이력서와 비교</b>
               </div>
@@ -316,7 +318,7 @@ export function LandingPage() {
               ].map(([skill, kind, quote], i) => (
                 <div
                   className={`cmp-row ${quote ? 'cmp-ok' : 'cmp-gap'}`}
-                  data-on={(0.1 + i * 0.1).toFixed(2)}
+                  data-on={(0.32 + i * 0.08).toFixed(2)}
                   key={skill}
                 >
                   <b>{skill}</b>
@@ -325,7 +327,7 @@ export function LandingPage() {
                   <q>{quote || '이력서에서 근거를 찾지 못했습니다'}</q>
                 </div>
               ))}
-              <p className="cmp-sum" data-on="0.68">
+              <p className="cmp-sum" data-on="0.78">
                 부족 역량 2개 · REST API, Docker <span>→ 다음 7일의 목표</span>
               </p>
             </div>
@@ -615,7 +617,7 @@ export function LandingPage() {
                 체크인
               </p>
               <p className="cine-line">
-                <span data-alarm="0.3">하루만 밀려도,</span>
+                <span data-alarm="0.3">마감이 임박하면,</span>
               </p>
             </div>
             <div className="alarm-right">

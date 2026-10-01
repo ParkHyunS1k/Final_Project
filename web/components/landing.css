@@ -271,8 +271,12 @@ body:has(.rl) {
 }
 
 /* 진단·매칭·증명: 왼쪽은 문구, 오른쪽 카드가 스크롤을 따라 한 줄씩 켜진다. */
+/* 첫 줄만 보이는 구간이 있도록 조금 길게 둔다. */
 #diagnose {
-  height: calc(100svh + 200svh);
+  height: calc(100svh + 260svh);
+}
+.h2-next {
+  display: block;
 }
 /* 내용은 앞 56%에서 다 나오고, 마지막 25%(약 80svh)는 페이드아웃에 쓴다. */
 #match {
