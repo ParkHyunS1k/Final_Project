@@ -16,8 +16,13 @@ npm run build
 ./node_modules/.bin/wrangler dev \
   --config dist/server/wrangler.json \
   --port 3001 \
-  --persist-to "$PWD/.wrangler/state"
+  --persist-to "$PWD/.wrangler/state" \
+  --var AUTH_DEV_HEADERS:1
 ```
+
+`--var AUTH_DEV_HEADERS:1`이 있어야 서버가 아래 `oai-authenticated-*` 헤더를 읽는다.
+이 값은 `vite dev`에서만 자동으로 켜지고 build 산출물(`dist/server/wrangler.json`)과
+운영에는 없다. 운영 로그인은 Supabase Auth(Google) 토큰이다.
 
 다른 터미널의 `web/`에서 시드를 실행한다.
 
@@ -80,7 +85,7 @@ members: 4
 ## 브라우저에서 보는 법
 
 1. 위 Wrangler 서버를 실행한 상태로 둔다.
-2. 브라우저의 request-header 편집 기능 또는 개발용 header extension에서 아래 네
+2. (`--var AUTH_DEV_HEADERS:1`로 실행했는지 확인한다.) 브라우저의 request-header 편집 기능 또는 개발용 header extension에서 아래 네
    헤더를 한 인물의 값으로 설정한다.
    - `oai-authenticated-user-id`
    - `oai-authenticated-user-email`
