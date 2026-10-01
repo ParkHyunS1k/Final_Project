@@ -90,7 +90,7 @@ await build({
           namespace: 'test',
         }));
         b.onLoad({ filter: /.*/, namespace: 'test' }, () => ({
-          contents: 'export const env={DB:globalThis.__TEST_DB};',
+          contents: 'export const env={DB:globalThis.__TEST_DB,AUTH_DEV_HEADERS:"1"};',
           loader: 'js',
         }));
       },

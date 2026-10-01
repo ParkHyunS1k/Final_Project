@@ -89,7 +89,7 @@ await build({
         }));
         b.onLoad({ filter: /.*/, namespace: 'test' }, () => ({
           contents:
-            'export const env=new Proxy({},{get:(_,k)=>k==="DB"?globalThis.__TEST_DB:globalThis.__TEST_ENV?.[k]});',
+            'export const env=new Proxy({},{get:(_,k)=>k==="DB"?globalThis.__TEST_DB:k==="AUTH_DEV_HEADERS"?"1":globalThis.__TEST_ENV?.[k]});',
           loader: 'js',
         }));
       },

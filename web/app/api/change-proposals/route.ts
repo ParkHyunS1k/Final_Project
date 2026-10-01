@@ -80,7 +80,7 @@ function failure(error: unknown) {
 }
 
 export async function GET(request: Request) {
-  const user = identity(request);
+  const user = await identity(request);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   try {
     const url = new URL(request.url);
@@ -134,7 +134,7 @@ async function listApplications(projectId: string) {
 }
 
 export async function POST(request: Request) {
-  const user = identity(request);
+  const user = await identity(request);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin)
