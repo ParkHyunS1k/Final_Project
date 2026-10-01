@@ -301,21 +301,17 @@ body:has(.rl) {
 .mt,
 .pf {
   display: grid;
-  gap: 10px;
   width: 100%;
   max-width: 560px;
   justify-self: end;
 }
+/* 상자 없이 표처럼: 머리는 굵은 선, 행은 얇은 선으로만 나눈다. */
 .cmp-head,
-.mt-me,
-.pf-out,
-.pf-cv {
+.mt-me {
   display: grid;
   gap: 6px;
-  padding: 18px 22px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--panel);
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.3);
 }
 .cmp-head small,
 .mt-me small,
@@ -326,7 +322,7 @@ body:has(.rl) {
 }
 .cmp-head b,
 .pf-out b {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -334,16 +330,15 @@ body:has(.rl) {
 .cmp-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 4px 10px;
-  align-items: center;
-  padding: 12px 18px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgb(21 21 23 / 0.7);
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
 }
 .cmp-row b {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
+  transition: color 0.35s;
 }
 .cmp-row small {
   color: var(--dim);
@@ -355,125 +350,142 @@ body:has(.rl) {
   font-size: 13px;
 }
 .cmp-tag {
-  padding: 4px 10px;
-  border-radius: 99px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
+}
+.cmp-tag::before {
+  content: '● ';
+  font-size: 9px;
+  vertical-align: 2px;
 }
 .cmp-ok .cmp-tag,
 .cmp-tag.swap.on {
-  background: rgb(61 220 132 / 0.14);
   color: var(--good);
 }
 .cmp-gap .cmp-tag:not(.on) {
-  background: rgb(255 59 48 / 0.14);
   color: var(--bad);
 }
 /* 요약이 뜨면 근거 없는 줄만 남겨 강조한다. */
 .cmp:has(.cmp-sum.on) .cmp-ok {
-  opacity: 0.4;
+  opacity: 0.35;
 }
-.cmp:has(.cmp-sum.on) .cmp-gap {
-  border-color: var(--heat);
+.cmp:has(.cmp-sum.on) .cmp-gap b {
+  color: var(--heat);
 }
+/* 요약: 상자 대신 큰 글자 한 줄. */
 .cmp-sum,
 .mt-done {
-  margin: 4px 0 0;
-  padding: 14px 18px;
-  border-radius: 14px;
-  background: var(--heat);
-  color: #fff;
+  margin: 22px 0 0;
+  font-size: clamp(18px, 1.6vw, 22px);
   font-weight: 600;
+  letter-spacing: -0.02em;
 }
-.cmp-sum span {
-  opacity: 0.8;
+.cmp-sum span,
+.mt-done span {
+  color: var(--heat);
 }
+/* 이력서에서 읽은 것: 태그 상자 대신 글자만 나란히. */
 .mt-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
-}
-.mt-chips span {
-  padding: 6px 12px;
-  border: 1px solid var(--line);
-  border-radius: 99px;
-  background: #1f1f22;
-  font-size: 14px;
+  gap: 6px 20px;
+  margin-top: 8px;
+  font-size: 20px;
   font-weight: 600;
 }
 .mt-chips .mt-want {
-  border-color: var(--heat);
+  flex-basis: 100%;
   color: var(--heat);
-  background: none;
+  font-size: 14px;
 }
+/* 팀: 출발선의 명단처럼 세로선으로 4칸을 나누고, 아래에서 차례로 올라온다. */
 .mt-team {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 28px;
 }
-/* 팀원 카드는 사방에서 날아와 빈 칸에 들어간다. */
 .mt-card {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 2px 12px;
-  align-items: center;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--panel);
-  transition: opacity 0.5s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 0.4s;
+  align-content: start;
+  gap: 4px;
+  padding: 2px 14px;
+  border-left: 1px solid var(--line);
+  transition: opacity 0.5s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .duo .mt-card[data-on]:not(.on) {
-  transform: translate(var(--dx), var(--dy)) scale(0.9);
+  transform: translateY(28px);
 }
-.m0 { --dx: -40px; --dy: -30px; }
-.m1 { --dx: 40px; --dy: -30px; }
-.m2 { --dx: -40px; --dy: 30px; }
-.m3 { --dx: 40px; --dy: 30px; }
 .mt-card.m2 {
-  border-color: var(--heat);
+  border-left-color: var(--heat);
 }
 .mt-av {
-  grid-row: span 3;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 10px;
   border-radius: 50%;
   background: #26262a;
   font-weight: 600;
 }
-.mt-card small {
+.mt-card.m2 .mt-av {
+  background: var(--heat);
+}
+.mt-card b {
+  font-size: 18px;
+  font-weight: 600;
+}
+.mt-card small,
+.mt-stack {
   color: var(--dim);
   font-size: 13px;
 }
-.mt-stack {
-  font-size: 13px;
+.mt-card.m2 .mt-stack {
   color: var(--heat);
 }
-/* 증명: 결과물 카드가 물러나고 이력서에 새 줄이 들어온다. */
+/* 증명: 결과물 설명이 물러나고 이력서에 새 줄이 들어온다. */
+.pf-out {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 20px;
+  transition: opacity 0.4s;
+}
+.pf-out span {
+  color: var(--dim);
+  font-size: 14px;
+}
 .pf:has(.pf-new.on) .pf-out {
   opacity: 0.35;
-  transform: scale(0.96);
+}
+/* 이력서는 실제 문서 한 장이라 이것만 종이처럼 둔다. */
+.pf-cv {
+  display: grid;
+  padding: 22px 24px;
+  border-radius: 14px;
+  background: #f4f2ee;
+  color: #1b1b1d;
+  box-shadow: 0 24px 48px rgb(0 0 0 / 0.45);
+}
+.pf-cv small {
+  margin-bottom: 6px;
+  color: #8a877f;
 }
 .pf-cv p {
   margin: 0;
-  padding: 8px 0;
-  border-top: 1px solid var(--line);
-  color: var(--dim);
+  padding: 9px 0;
+  border-top: 1px solid #dcd9d2;
+  color: #55524c;
 }
 .pf-cv .pf-new {
-  color: var(--text);
+  color: #1b1b1d;
   font-weight: 600;
 }
 .pf-cv .pf-new::before {
   content: '+ ';
-  color: var(--good);
+  color: #1f9d55;
 }
-.pf-row:has(.cmp-tag.on) {
-  border-color: var(--good);
+.pf-row {
+  margin-top: 16px;
 }
 
 /* 3. 장면: 고정된 무대 위에서 스크롤할 때마다 한 단계씩 켜진다. */
@@ -906,15 +918,18 @@ body:has(.rl) {
 }
 
 /* 결승 */
-.finish {
-  overflow: hidden;
+.panel.finish {
+  /* 결승은 상자 없이 영상과 글자만 둔다. */
   padding: 0;
+  border: 0;
+  background: none;
 }
 .finish video {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
+  border-radius: 16px;
 }
 .flag {
   display: none;
@@ -930,7 +945,7 @@ body:has(.rl) {
 .finish ul {
   list-style: none;
   margin: 0;
-  padding: 24px 28px 0;
+  padding: 24px 0 0;
   display: grid;
   gap: 10px;
   font-weight: 700;
@@ -941,7 +956,7 @@ body:has(.rl) {
 }
 .result {
   margin: 0;
-  padding: 16px 28px 28px;
+  padding: 16px 0 0;
   font-size: clamp(40px, 5vw, 64px);
   font-weight: 600;
   letter-spacing: -0.04em;
@@ -1089,12 +1104,11 @@ body:has(.rl) {
   display: grid;
   gap: 6px;
   width: clamp(180px, 17vw, 250px);
-  padding: 16px 18px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgb(21 21 23 / 0.92);
+  /* 상자 대신 왼쪽 선 하나로 묶은 메모처럼. 위험하면 선이 빨개진다. */
+  padding: 4px 0 4px 16px;
+  border-left: 2px solid rgb(255 255 255 / 0.18);
   transform: translateY(calc((1 - var(--p, 0)) * var(--drift, 60px))) scale(var(--s, 1));
-  transition: opacity 0.5s, border-color 0.4s, box-shadow 0.4s;
+  transition: opacity 0.5s, border-color 0.4s;
 }
 .tcard:not(.on) {
   opacity: 0;
@@ -1137,12 +1151,10 @@ body:has(.rl) {
   --drift: 70px;
 }
 .tele:has(.tele-big.on) .t1 {
-  border-color: var(--bad);
-  box-shadow: 0 0 40px rgb(255 59 48 / 0.35);
+  border-left-color: var(--bad);
 }
 .tele:has(.verdict.on) .t1 {
-  border-color: var(--good);
-  box-shadow: 0 0 40px rgb(61 220 132 / 0.25);
+  border-left-color: var(--good);
 }
 .tele-big {
   position: absolute;
@@ -1603,27 +1615,29 @@ body:has(.rl) {
   .cmp,
   .mt,
   .pf {
-    gap: 8px;
     justify-self: stretch;
   }
-  .cmp-head,
-  .mt-me,
-  .pf-out,
   .pf-cv {
-    padding: 12px 16px;
+    padding: 14px 16px;
   }
   .cmp-row {
-    padding: 9px 14px;
+    padding: 10px 0;
   }
   .cmp-row q {
     display: none;
   }
-  .mt-card {
-    padding: 10px 12px;
+  .mt-chips {
+    font-size: 17px;
+  }
+  .mt-team {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 18px;
+    margin-top: 20px;
   }
   .mt-av {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
+    margin-bottom: 6px;
   }
   .tele-stage {
     grid-template-columns: minmax(0, 1fr);
@@ -1636,7 +1650,7 @@ body:has(.rl) {
   }
   .tcard {
     width: 150px;
-    padding: 10px 12px;
+    padding: 2px 0 2px 10px;
   }
   .tcard b {
     font-size: 15px;

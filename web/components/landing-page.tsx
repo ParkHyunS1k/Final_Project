@@ -368,7 +368,7 @@ export function LandingPage() {
                 ))}
               </div>
               <p className="mt-done" data-on="0.8">
-                4인 팀 매칭 완료 · 포지션 겹침 없음
+                4인 팀 매칭 완료 <span>· 포지션 겹침 없음</span>
               </p>
             </div>
           </div>
