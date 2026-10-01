@@ -498,8 +498,10 @@ export function ProjectDetails({
       </p>
       {!state.sprint.tasks.length && (
         <p>
-          프로젝트 생성이 완료됐습니다. 실행 계획에서 업무와 담당자를 등록하고,
-          오른쪽 위 초대하기에서 팀원을 초대해주세요.
+          프로젝트 생성이 완료됐습니다. 실행 계획에서 업무와 담당자를
+          {state.me.role === 'owner'
+            ? ' 등록하고, 오른쪽 위 초대하기에서 팀원을 초대해주세요.'
+            : ' 확인해주세요.'}
         </p>
       )}
     </section>
