@@ -406,7 +406,7 @@ body:has(.rl) {
   color: var(--heat);
   font-size: 14px;
 }
-/* 팀: 출발선의 명단처럼 세로선으로 4칸을 나누고, 차례로 페이드인한다. */
+/* 팀: 출발선의 명단처럼 세로선으로 4칸을 나누고, 아래에서 차례로 올라온다. */
 .mt-team {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -418,6 +418,13 @@ body:has(.rl) {
   gap: 4px;
   padding: 2px 14px;
   border-left: 1px solid var(--line);
+}
+/* 팀원 칸만은 아래에서 차례로 올라온다(글자 페이드인보다 우선). */
+.rl .duo .mt-card[data-on] {
+  transition: opacity 0.5s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.duo .mt-card[data-on]:not(.on) {
+  transform: translateY(28px);
 }
 .mt-card.m2 {
   border-left-color: var(--heat);
