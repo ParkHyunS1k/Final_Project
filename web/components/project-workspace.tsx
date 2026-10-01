@@ -31,6 +31,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { apiFetch, signInWithGoogle, signOut } from '@/lib/supabase-browser';
+import { workspaceEntry } from '@/lib/workspace-entry';
 export const workspaceViews = [
   { id: 'plan', label: '프로젝트 업무', icon: ListTodo },
   { id: 'mine', label: '내 할 일', icon: UserRound },
@@ -191,10 +192,11 @@ export function ProjectWorkspace({
       .then(async (data) => {
         if (workspaceViews.some((v) => v.id === params.get('view')))
           setView(params.get('view')!);
-        setInvite(token);
-        setCreating(!token && params.get('create') === '1');
+        const entry = workspaceEntry(location.search, data.projects);
+        setInvite(entry.invite);
+        setCreating(entry.creating);
         setProjects(data.projects);
-        setSelected(params.get('project') || data.projects[0]?.id || '');
+        setSelected(entry.selected);
         if (token)
           setPreview(
             await api('/api/projects?invite=' + encodeURIComponent(token)),
