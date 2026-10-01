@@ -34,22 +34,28 @@ const baseLocalBindingConfig = {
     : [],
 };
 
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(async ({ command, mode }) => {
   // Vite loads only web/.env* here. A repository-root .env can be exposed with
   // an ignored web/.env symlink; only these selected values become Worker bindings.
   const localEnv = loadEnv(mode, process.cwd(), '');
   const liveModelVars: Record<string, string> = {};
-  for (const key of [
-    'PROJECTMATE_LIVE_MODEL',
-    'OPENAI_API_KEY',
-    'PROJECTMATE_MODEL',
-    'PROJECTMATE_REASONING_EFFORT',
-    'SUPABASE_URL',
-  ]) {
+  // Secrets and dev switches only for `vite dev`. `vite build` writes vars into
+  // dist/server/wrangler.json as plaintext; production uses `wrangler secret put`.
+  const keys =
+    command === 'serve'
+      ? [
+          'PROJECTMATE_LIVE_MODEL',
+          'OPENAI_API_KEY',
+          'PROJECTMATE_MODEL',
+          'PROJECTMATE_REASONING_EFFORT',
+          'SUPABASE_URL',
+        ]
+      : ['SUPABASE_URL'];
+  for (const key of keys) {
     if (localEnv[key]) liveModelVars[key] = localEnv[key];
   }
   // AUTH_DEV_HEADERS는 vite dev에서만. build 산출물(dist/server/wrangler.json)에 들어가면 배포 시 헤더 사칭이 열린다.
-  if (mode === 'development') liveModelVars.AUTH_DEV_HEADERS = '1';
+  if (command === 'serve') liveModelVars.AUTH_DEV_HEADERS = '1';
   const localBindingConfig = { ...baseLocalBindingConfig, vars: liveModelVars };
 
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
