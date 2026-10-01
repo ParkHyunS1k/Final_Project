@@ -62,12 +62,13 @@ globalThis.__TEST_ENV = { SUPABASE_URL: SUPABASE };
 const { privateKey, publicKey } = await generateKeyPair('ES256');
 const stranger = await generateKeyPair('ES256');
 const publicJwk = { ...(await exportJWK(publicKey)), kid: 'k1', alg: 'ES256', use: 'sig' };
-let jwksDown = false;
+let jwksDown = false; // false | 'network' | 'http500'
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => {
   const url = input instanceof Request ? input.url : String(input);
   if (url === JWKS_URL) {
-    if (jwksDown) throw new TypeError('network down');
+    if (jwksDown === 'network') throw new TypeError('network down');
+    if (jwksDown === 'http500') return new Response('oops', { status: 500 });
     return new Response(JSON.stringify({ keys: [publicJwk] }), {
       headers: { 'content-type': 'application/json' },
     });
@@ -159,12 +160,20 @@ async function createProject(t) {
 }
 
 // JWKS를 처음 받기 전에 실행해야 한다(jose가 받은 키를 캐시한다).
-test('JWKS를 못 받으면 500이 아니라 401', async () => {
-  jwksDown = true;
-  try {
-    assert.equal((await me(bearer(await token()))).status, 401);
-  } finally {
-    jwksDown = false;
+// 키 서버 장애를 401로 돌려주면 화면이 재로그인만 반복시킨다. 토큰 오류와 구분한다.
+test('JWKS를 못 받으면 401이 아니라 503과 안내 문구', async () => {
+  for (const mode of ['network', 'http500']) {
+    jwksDown = mode;
+    try {
+      const r = await me(bearer(await token()));
+      assert.equal(r.status, 503, mode);
+      const { error } = await r.json();
+      assert.match(error, /인증 서버/, mode);
+      // 화면은 오류 문구에 '로그인'이 있으면 로그인 버튼을 띄운다. 장애에서는 띄우지 않는다.
+      assert.doesNotMatch(error, /로그인/, mode);
+    } finally {
+      jwksDown = false;
+    }
   }
 });
 
@@ -275,6 +284,14 @@ test('화면 문구에 이전 ChatGPT 로그인 안내가 남지 않는다', () 
     'components/landing-page.tsx',
     'components/project-workspace.tsx',
     'app/workspace/page.tsx',
+    'README.md',
   ])
     assert.doesNotMatch(readFileSync(file, 'utf8'), /ChatGPT[^\n]{0,12}로그인|signin-with-chatgpt/, file);
+});
+
+test('개발 헤더 플래그는 vite 개발 서버(serve)에서만 켜고 빌드 모드와 무관하다', () => {
+  const config = readFileSync('vite.config.ts', 'utf8');
+  // `vite build --mode development`도 mode는 development라 산출물에 들어간다.
+  assert.match(config, /if \(command === 'serve'\) liveModelVars\.AUTH_DEV_HEADERS = '1';/);
+  assert.doesNotMatch(config, /mode === 'development'/);
 });

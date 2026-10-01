@@ -38,7 +38,7 @@ export class AccessError extends Error {
   }
 }
 import type { Identity } from './auth';
-export { identity, type Identity } from './auth';
+export { identity, AuthUnavailable, type Identity } from './auth';
 export async function adoptLegacy(user: Identity) {
   // Only the identity that owns a v2 row can import it. Never copy another user's data.
   // 이전 규칙 기록이므로 project_policy 행을 만들지 않는다. 열람·내보내기만 가능하다.

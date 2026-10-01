@@ -6,16 +6,26 @@ export type Identity = { id: string; email: string; name: string };
 type AuthEnv = { SUPABASE_URL?: string; AUTH_DEV_HEADERS?: string };
 let jwks: ReturnType<typeof createRemoteJWKSet> | undefined;
 
+/** 토큰이 아니라 로그인 서비스(설정·키 서버) 쪽 문제. 401 대신 503으로 돌려준다. */
+export class AuthUnavailable extends Error {
+  status = 503;
+  constructor() {
+    super('인증 서버에 연결하지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+}
+// 키 서버 응답 실패·시간 초과·잘못된 JWKS. 그 밖의 jose 오류는 토큰 문제로 본다.
+const SERVICE_ERRORS = new Set(['ERR_JOSE_GENERIC', 'ERR_JWKS_TIMEOUT', 'ERR_JWKS_INVALID']);
+
 function displayName(name: string, email: string) {
   return (name || email.split('@')[0] || '팀원').slice(0, 60);
 }
 
-/** Supabase가 발급한 access token만 받는다. 검증 실패·키 조회 실패는 모두 null. */
-async function fromToken(token: string): Promise<Identity | null> {
+/** Supabase가 발급한 access token만 받는다. 토큰 문제는 null, 로그인 서비스 장애는 AuthUnavailable. */
+async function fromToken(token: string): Promise<Identity | null | AuthUnavailable> {
   const base = ((env as unknown as AuthEnv).SUPABASE_URL ?? '').replace(/\/+$/, '');
   if (!base) {
     console.warn('auth: SUPABASE_URL is not set');
-    return null;
+    return new AuthUnavailable();
   }
   jwks ??= createRemoteJWKSet(new URL(base + '/auth/v1/.well-known/jwks.json'));
   try {
@@ -39,7 +49,12 @@ async function fromToken(token: string): Promise<Identity | null> {
     return { id: payload.sub, email, name: displayName(name, email) };
   } catch (e) {
     // 토큰 값은 남기지 않는다. jose 오류 코드로 원인(만료, 키 없음, JWKS 조회 실패)을 구분한다.
-    console.warn('auth: token rejected', (e as { code?: string }).code ?? (e as Error).name);
+    const code = (e as { code?: string }).code;
+    if (!code || SERVICE_ERRORS.has(code)) {
+      console.warn('auth: login service unavailable', code ?? (e as Error).name);
+      return new AuthUnavailable();
+    }
+    console.warn('auth: token rejected', code);
     return null;
   }
 }
@@ -65,7 +80,10 @@ function fromDevHeaders(request: Request): Identity | null {
   return { id, email, name: displayName(name, email) };
 }
 
-export async function identity(request: Request): Promise<Identity | null> {
+/** 라우트는 AuthUnavailable이면 503, null이면 401을 돌려준다. */
+export async function identity(
+  request: Request,
+): Promise<Identity | null | AuthUnavailable> {
   const auth = request.headers.get('authorization') ?? '';
   // Bearer가 있으면 그 결과만 쓴다. 실패해도 개발 헤더로 넘어가지 않는다.
   if (auth.startsWith('Bearer ')) return fromToken(auth.slice(7).trim());

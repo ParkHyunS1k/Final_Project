@@ -1,7 +1,7 @@
 // AI 변경안 생성·조회·승인·되돌리기. 모델 출력은 여기서 DB를 바꾸지 못하고,
 // 사용자가 선택·편집·승인한 항목만 기존 원자적 저장 경계를 지난다.
 import { env } from 'cloudflare:workers';
-import { identity, member, actorOf, projectState, AccessError } from '@/lib/projects';
+import { identity, AuthUnavailable, member, actorOf, projectState, AccessError } from '@/lib/projects';
 import {
   database,
   readPolicy,
@@ -81,6 +81,8 @@ function failure(error: unknown) {
 
 export async function GET(request: Request) {
   const user = await identity(request);
+  if (user instanceof AuthUnavailable)
+    return reply({ error: user.message }, user.status);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   try {
     const url = new URL(request.url);
@@ -135,6 +137,8 @@ async function listApplications(projectId: string) {
 
 export async function POST(request: Request) {
   const user = await identity(request);
+  if (user instanceof AuthUnavailable)
+    return reply({ error: user.message }, user.status);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin)

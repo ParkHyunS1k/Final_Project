@@ -34,7 +34,7 @@ npm run db:migrate
 npm run dev
 ```
 
-화면의 ChatGPT로 로그인 버튼 또는 `/signin-with-chatgpt?return_to=/`를 이용한다. Sites 개발 플러그인이 로컬 계정을 제공한다. 로컬 DB는 `.wrangler/state/`에 보관한다. 운영 DB는 Sites가 제공하는 D1이며 서로 독립이다.
+로그인은 Supabase Auth(Google)다. `.env.example`을 참고해 `web/.env.local`에 `SUPABASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 넣고, Supabase의 Redirect URLs에 `http://localhost:*/**`를 등록한 뒤 화면의 Google로 로그인 버튼을 이용한다. 토큰 없이 `oai-authenticated-*` 개발 헤더로 요청하는 방식은 `vite dev`에서만 허용된다(`docs/dev-team-seed-notes.md`). 로컬 DB는 `.wrangler/state/`에 보관한다. 운영 DB는 Sites가 제공하는 D1이며 서로 독립이다.
 
 ```sh
 npm test
