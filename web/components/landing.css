@@ -1590,6 +1590,51 @@ body:has(.rl) {
   color: var(--good);
 }
 
+/* 이력서 카드: 어두운 카드들 사이에서 흰 종이처럼 보이게 한다. */
+.hc.hc-cv {
+  left: 3%;
+  top: 48%;
+  width: 170px;
+  gap: 7px;
+  border-color: transparent;
+  background: #f4f2ee;
+  color: #1b1b1d;
+  --r: -7deg;
+  --d: 20;
+  animation-delay: -5s;
+}
+.hc-cv small {
+  color: #8a877f;
+}
+.hc-cv b {
+  font-size: 20px;
+}
+.hc-cv i {
+  height: 6px;
+  border-radius: 99px;
+  background: #dcd9d2;
+}
+.hc-cv i:nth-of-type(2) {
+  width: 80%;
+}
+.hc-cv i:nth-of-type(3) {
+  width: 60%;
+}
+.hc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.hc-chips span {
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: #1b1b1d;
+  color: #f4f2ee;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 /* 휴대폰: 영상 대신 정지 화면, 장면은 화면에 들어올 때 켜진다. */
 @media (max-width: 767px) {
   .hero {
@@ -1609,7 +1654,15 @@ body:has(.rl) {
   }
   .hc-task {
     left: 0;
-    top: 40%;
+    top: 48%;
+  }
+  .hc.hc-cv {
+    left: 0;
+    top: 0;
+    width: 150px;
+  }
+  .hc-cv i {
+    display: none;
   }
   .hc-team {
     width: 190px;

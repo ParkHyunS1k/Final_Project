@@ -264,6 +264,18 @@ export function LandingPage() {
                 <i />
                 <b>112:14:05</b>
               </div>
+              <div className="hc hc-cv">
+                <small>이력서 · 백엔드</small>
+                <b>하린</b>
+                <i />
+                <i />
+                <i />
+                <div className="hc-chips">
+                  <span>Java</span>
+                  <span>Spring</span>
+                  <span>SQL</span>
+                </div>
+              </div>
               <div className="hc hc-done">
                 <b>완주</b>
                 <small>31시간 남기고</small>
