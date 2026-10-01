@@ -1002,6 +1002,18 @@ body:has(.rl) {
 #launch {
   height: calc(100svh + 340svh);
 }
+/* 팀 매칭 → 레이싱카는 스크롤로 밀려 올라가지 않고 페이드아웃·페이드인으로 넘어간다.
+   레이싱카 구간을 팀 매칭 끝 100svh에 겹쳐 두면, 매칭이 사라지는 순간 바로 레이싱카 고정이 시작된다. */
+#match .pin-stage {
+  opacity: clamp(0, (1 - var(--p, 0)) / 0.1, 1);
+}
+#launch {
+  position: relative;
+  margin-top: -100svh;
+}
+#launch .pin-stage {
+  opacity: clamp(0, var(--p, 0) / 0.08, 1);
+}
 #checkin {
   height: calc(100svh + 180svh);
 }
@@ -1754,6 +1766,13 @@ body:has(.rl) {
   }
   .pin-stage {
     position: relative;
+  }
+  #launch {
+    margin-top: 0;
+  }
+  #match .pin-stage,
+  #launch .pin-stage {
+    opacity: 1;
   }
   #dive {
     display: none;
