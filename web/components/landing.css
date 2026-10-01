@@ -1590,6 +1590,27 @@ body:has(.rl) {
   color: var(--good);
 }
 
+/* 체크인 경고: 마감을 넘긴 공수를 빨간 숫자로. */
+.hc-alert {
+  right: 0;
+  top: 40%;
+  width: 170px;
+  gap: 4px;
+  border-color: rgb(255 59 48 / 0.5);
+  --r: 6deg;
+  --d: 12;
+  animation-delay: -1.5s;
+}
+.hc-alert strong {
+  color: var(--bad);
+  font: 500 40px / 1 var(--font-geist-mono), monospace;
+  letter-spacing: -0.04em;
+}
+.hc-alert span {
+  color: var(--dim);
+  font-size: 12px;
+}
+
 /* 이력서 카드: 어두운 카드들 사이에서 흰 종이처럼 보이게 한다. */
 .hc.hc-cv {
   left: 3%;
@@ -1646,7 +1667,8 @@ body:has(.rl) {
     height: 36svh;
   }
   .hc-cmp,
-  .hc-done {
+  .hc-done,
+  .hc-alert {
     display: none;
   }
   .hc {

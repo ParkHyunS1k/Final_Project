@@ -259,6 +259,11 @@ export function LandingPage() {
                 <b>참가 신청 API</b>
                 <span>하린 · 진행 중 · 18:00 마감</span>
               </div>
+              <div className="hc hc-alert">
+                <small>체크인 · 일정 경고</small>
+                <strong>+2h</strong>
+                <span>로그인 구현 · 마감 초과</span>
+              </div>
               <div className="hc hc-clock">
                 <span>DAY 03 / 07</span>
                 <i />
