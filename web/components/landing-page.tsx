@@ -245,7 +245,7 @@ export function LandingPage() {
           ProjectMate
         </a>
         <Link className="rl-btn small" href={START} prefetch={false}>
-          7일 시작하기
+          스프린트 시작하기
         </Link>
       </header>
 
@@ -273,7 +273,7 @@ export function LandingPage() {
               </p>
               <div className="hero-actions">
                 <Link className="rl-btn" href={START} prefetch={false}>
-                  7일 시작하기
+                  스프린트 시작하기
                 </Link>
                 <a className="rl-link" href="#diagnose">
                   스크롤해서 출발 ↓
