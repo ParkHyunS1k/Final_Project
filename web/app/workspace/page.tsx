@@ -1208,6 +1208,7 @@ function Dashboard({
               refresh={load}
               link={inviteLink}
               setLink={setInviteLink}
+              writable={writable}
             />
           ) : null}
           {busy && <p className="tiny muted">서버에 저장하는 중입니다…</p>}

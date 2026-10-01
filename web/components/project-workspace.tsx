@@ -512,14 +512,17 @@ export function TeamInvites({
   refresh,
   link,
   setLink,
+  writable,
 }: {
   state: ProjectMeta & {
     asOf: string;
-    sprint: { revision: number; finished: boolean };
+    sprint: { revision: number };
   };
   refresh: () => Promise<unknown>;
   link: string;
   setLink: (link: string) => void;
+  // 완주·기한 종료 후에는 기록만 보여준다. 서버도 같은 정책으로 거절한다.
+  writable: boolean;
 }) {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -573,7 +576,7 @@ export function TeamInvites({
         </label>
         <button
           className="btn primary"
-          disabled={busy || state.sprint.finished}
+          disabled={busy || !writable}
         >
           초대 링크 만들기
         </button>
@@ -624,7 +627,7 @@ export function TeamInvites({
             {i.status === 'pending' && (
               <button
                 className="btn"
-                disabled={busy}
+                disabled={busy || !writable}
                 onClick={() => {
                   setLink('');
                   void runAction('revoke', { inviteId: i.id });
