@@ -499,14 +499,14 @@ export function ProjectDetails({
       {!state.sprint.tasks.length && (
         <p>
           프로젝트 생성이 완료됐습니다. 실행 계획에서 업무와 담당자를 등록하고,
-          팀 · 공수에서 팀원을 초대해주세요.
+          오른쪽 위 초대하기에서 팀원을 초대해주세요.
         </p>
       )}
     </section>
   );
 }
 
-// 팀장 전용 초대 관리. 팀원 목록은 팀 · 공수의 팀 상태가 보여주므로 여기서는 초대만 다룬다.
+// 팀장 전용 초대 관리. 헤더의 초대하기 대화상자에서 연다. 팀원 목록은 팀 · 공수의 팀 상태가 보여준다.
 export function TeamInvites({
   state,
   refresh,
@@ -551,10 +551,6 @@ export function TeamInvites({
   if (state.me.role !== 'owner') return null;
   return (
     <>
-      <div className="section-heading">
-        <h2>팀원 초대</h2>
-        <span className="pill">팀원 {state.members.length}/4</span>
-      </div>
       <form
         className="project-form"
         onSubmit={(e) => {

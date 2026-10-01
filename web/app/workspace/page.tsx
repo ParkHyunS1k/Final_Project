@@ -111,7 +111,7 @@ type State = ProjectMeta & {
     created_at: string;
   }[];
 };
-type Modal = 'checkin' | 'stepBack' | 'evidence' | null;
+type Modal = 'checkin' | 'stepBack' | 'evidence' | 'invite' | null;
 export default function Home() {
   return (
     <ProjectWorkspace>
@@ -436,6 +436,11 @@ function Dashboard({
                 >
                   <RefreshCw size={17} />
                 </button>
+                {isOwner && writable && (
+                  <button className="btn" onClick={() => setDialog('invite')}>
+                    초대하기
+                  </button>
+                )}
                 <button className="btn" disabled={busy} onClick={exportProject}>
                   내보내기
                 </button>
@@ -869,7 +874,6 @@ function Dashboard({
                     참여 중단 보고
                   </button>
                 )}
-                <TeamInvites state={state!} refresh={load} />
               </section>
             )}
             {tab === 'ai' && (
@@ -1049,14 +1053,18 @@ function Dashboard({
               ? '지금 남은 일을 알려주세요.'
               : dialog === 'stepBack'
                 ? '참여 중단을 팀에 알립니다.'
-                : '결과물 근거 기록'}
+                : dialog === 'invite'
+                  ? `팀원 초대 · ${state?.members.length ?? 0}/4명`
+                  : '결과물 근거 기록'}
           </DialogTitle>
           <DialogDescription>
             {dialog === 'checkin'
               ? '막힌 점과 남은 공수를 저장하면 예상 종료를 다시 계산합니다. 보고가 없어도 완주 판정은 결과물 기준입니다.'
               : dialog === 'stepBack'
                 ? '보고만으로 담당이나 기한이 바뀌지 않습니다. 남은 팀 기준의 변경은 팀장이 검토합니다.'
-                : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
+                : dialog === 'invite'
+                  ? '팀원의 Google 계정 이메일로 초대 링크를 만듭니다. 이메일은 발송하지 않으니 링크를 직접 전달해주세요.'
+                  : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
           </DialogDescription>
           {dialog === 'checkin' ? (
             <form
@@ -1192,6 +1200,8 @@ function Dashboard({
                 근거 저장
               </button>
             </form>
+          ) : dialog === 'invite' && state ? (
+            <TeamInvites state={state} refresh={load} />
           ) : null}
           {busy && <p className="tiny muted">서버에 저장하는 중입니다…</p>}
           {error && (
