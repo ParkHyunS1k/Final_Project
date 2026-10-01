@@ -604,11 +604,7 @@ export function LandingPage() {
             <div className="alarm-left">
               <p className="kicker">체크인</p>
               <p className="cine-line">
-                <span data-on="0.12">
-                  일정이{' '}
-                  <br />
-                  밀리는 순간,
-                </span>
+                <span data-on="0.12">하루만 밀려도,</span>
               </p>
             </div>
             <div className="monitor">
@@ -650,6 +646,29 @@ export function LandingPage() {
                           </div>
                         ))}
                       </div>
+                      <div className="s-load">
+                        <small>담당자별 남은 공수</small>
+                        {[
+                          ['민서', '로그인 구현', true],
+                          ['수빈', '모임 검색 화면', false],
+                          ['하린', '참가 신청 API', false],
+                          ['준호', '통합 테스트', false],
+                        ].map(([name, task, hot]) => (
+                          <div className={`s-load-row ${hot ? 's-hot' : ''}`} key={name as string}>
+                            <span className="av">{(name as string)[0]}</span>
+                            <b>{name}</b>
+                            <span>{task}</span>
+                            {hot ? (
+                              <em className="swap" data-on="0.35">
+                                <span className="before">필요 6h · 남은 4h</span>
+                                <span className="after">마감 2h 초과</span>
+                              </em>
+                            ) : (
+                              <em>여유</em>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -658,14 +677,10 @@ export function LandingPage() {
             </div>
             <div className="alarm-right">
               <p className="cine-line">
-                <span data-on="0.4">
-                  즉시{' '}
-                  <br />
-                  업무 재배정
-                </span>
+                <span data-on="0.4">바로 빨간불.</span>
               </p>
               <p className="lead" data-on="0.6">
-                체크인 한 번이면 남은 공수로 일정이 다시 계산됩니다.
+                체크인에 남은 공수를 적으면, 마감을 넘길 업무가 즉시 드러납니다.
               </p>
             </div>
           </div>
