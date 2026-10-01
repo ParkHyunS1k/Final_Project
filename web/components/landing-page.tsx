@@ -291,7 +291,9 @@ export function LandingPage() {
         <section className="pin duo" id="diagnose" data-pin>
           <div className="pin-stage duo-stage">
             <div className="duo-copy">
-              <p className="kicker">진단</p>
+              <p className="kicker">
+                진단 <span className="soon">준비 중인 기능</span>
+              </p>
               {/* 첫 줄만 먼저 보이고, 더 내리면 둘째 줄 → 설명 → 비교표 순서로 나온다. */}
               <h2>
                 이력서와 공고를 넣으면,
@@ -337,7 +339,9 @@ export function LandingPage() {
         <section className="pin duo" id="match" data-pin>
           <div className="pin-stage duo-stage">
             <div className="duo-copy">
-              <p className="kicker">팀 매칭</p>
+              <p className="kicker">
+                팀 매칭 <span className="soon">준비 중인 기능</span>
+              </p>
               <h2>
                 빈자리는,
                 <br />
@@ -773,7 +777,9 @@ export function LandingPage() {
         <section className="pin duo" id="proof" data-pin>
           <div className="pin-stage duo-stage">
             <div className="duo-copy">
-              <p className="kicker">증명</p>
+              <p className="kicker">
+                증명 <span className="soon">준비 중인 기능</span>
+              </p>
               <h2>
                 완주한 결과물이,
                 <br />
