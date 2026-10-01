@@ -34,17 +34,23 @@ const baseLocalBindingConfig = {
     : [],
 };
 
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(async ({ command, mode }) => {
   // Vite loads only web/.env* here. A repository-root .env can be exposed with
   // an ignored web/.env symlink; only these selected values become Worker bindings.
   const localEnv = loadEnv(mode, process.cwd(), '');
   const liveModelVars: Record<string, string> = {};
-  for (const key of [
-    'PROJECTMATE_LIVE_MODEL',
-    'OPENAI_API_KEY',
-    'PROJECTMATE_MODEL',
-    'PROJECTMATE_REASONING_EFFORT',
-  ]) {
+  // Secrets only for `vite dev`. `vite build` writes vars into
+  // dist/server/wrangler.json as plaintext; production uses `wrangler secret put`.
+  const keys =
+    command === 'serve'
+      ? [
+          'PROJECTMATE_LIVE_MODEL',
+          'OPENAI_API_KEY',
+          'PROJECTMATE_MODEL',
+          'PROJECTMATE_REASONING_EFFORT',
+        ]
+      : [];
+  for (const key of keys) {
     if (localEnv[key]) liveModelVars[key] = localEnv[key];
   }
   const localBindingConfig = { ...baseLocalBindingConfig, vars: liveModelVars };
