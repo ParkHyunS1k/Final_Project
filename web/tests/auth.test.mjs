@@ -81,6 +81,7 @@ async function token(
   return new SignJWT({
     email: 'a@test.local',
     user_metadata: { full_name: '에이' },
+    app_metadata: { provider: 'google', providers: ['google'] },
     ...claims,
   })
     .setProtectedHeader({ alg: 'ES256', kid: 'k1' })
@@ -187,6 +188,9 @@ test('검증에 실패한 토큰은 모두 401', async () => {
     wrongAudience: await token({}, { aud: 'anon' }),
     strangerKey: await token({}, { key: stranger.privateKey }),
     noEmail: await token({ email: undefined }),
+    // 이메일·비밀번호 가입은 이메일 소유가 검증되지 않아 초대 사칭에 쓰일 수 있다.
+    emailProvider: await token({ app_metadata: { provider: 'email', providers: ['email'] } }),
+    noProvider: await token({ app_metadata: undefined }),
     garbage: 'not-a-jwt',
   };
   for (const [name, t] of Object.entries(bad))
@@ -233,4 +237,44 @@ test('대문자가 섞인 Google 이메일도 초대와 일치한다', async () 
     goalVersion: state.policy.goalVersion,
   });
   assert.equal(accepted.status, 200, await accepted.clone().text());
+});
+
+test('로그인 복귀 주소는 이전 OAuth 결과 파라미터를 버리고 초대·생성 정보는 남긴다', async () => {
+  const out = join(dir, 'browser.mjs');
+  await build({
+    stdin: {
+      contents: "export { returnUrl } from './lib/supabase-browser';",
+      resolveDir: process.cwd(),
+      loader: 'ts',
+    },
+    outfile: out,
+    bundle: true,
+    platform: 'node',
+    format: 'esm',
+    // 환경값이 없으면 브라우저 클라이언트를 만들지 않는다.
+    define: {
+      'import.meta.env.VITE_SUPABASE_URL': 'undefined',
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': 'undefined',
+    },
+  });
+  const { returnUrl } = await import(pathToFileURL(out).href);
+  assert.equal(
+    returnUrl(
+      'https://app.test/workspace?invite=tok&error=access_denied&error_code=x&error_description=y&code=old#frag',
+    ),
+    'https://app.test/workspace?invite=tok',
+  );
+  assert.equal(
+    returnUrl('https://app.test/workspace?create=1'),
+    'https://app.test/workspace?create=1',
+  );
+});
+
+test('화면 문구에 이전 ChatGPT 로그인 안내가 남지 않는다', () => {
+  for (const file of [
+    'components/landing-page.tsx',
+    'components/project-workspace.tsx',
+    'app/workspace/page.tsx',
+  ])
+    assert.doesNotMatch(readFileSync(file, 'utf8'), /ChatGPT[^\n]{0,12}로그인|signin-with-chatgpt/, file);
 });

@@ -655,7 +655,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 1. Supabase 프로젝트 생성.
 2. Google Cloud Console → API 및 서비스 → 사용자 인증 정보 → OAuth 클라이언트 ID(웹 애플리케이션). 승인된 리디렉션 URI: `https://<ref>.supabase.co/auth/v1/callback`.
-3. Supabase → Authentication → Sign In / Providers → Google: 클라이언트 ID·비밀값 입력 후 활성화.
+3. Supabase → Authentication → Sign In / Providers → Google: 클라이언트 ID·비밀값 입력 후 활성화. **Email 제공자는 끈다**(서버도 `app_metadata.provider !== 'google'` 토큰을 거절하지만, 가입 경로 자체를 닫는다).
+   - Supabase → Project Settings → JWT Signing Keys가 비대칭 키(ECC/RSA)인지 확인하고, `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`에 키가 1개 이상 있는지 본다. 레거시 HS256만 있으면 서버 검증이 모두 401이 된다(서버 로그 `auth: token rejected`).
 4. Supabase → Authentication → URL Configuration → Redirect URLs: `http://localhost:*/**` 추가(운영 도메인은 배포 때).
 5. `web/.env.local`에 `.env.example`의 세 값 입력(`SUPABASE_URL`과 `VITE_SUPABASE_URL`은 같은 값).
 
@@ -669,6 +670,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 4. B: 초대 링크 열기 → Google 로그인 → **`?invite=`가 유지되어** 초대 확인 화면 → 수락.
 5. B: 같은 프로젝트가 보인다. A 화면 새로고침 시 팀원 B가 보인다.
 6. A: 사이드바 "로그아웃" → `/`로 이동, `/workspace` 재진입 시 로그인 버튼.
+7. A: "Google로 로그인" → Google 동의 화면에서 취소 → 돌아온 화면에서 다시 "Google로 로그인" → 정상 로그인된다.
+8. VITE 값을 넣고 `npm run build` 후 빌드 서버로 `/workspace`를 열어 SSR 오류가 없는지 확인한다.
 
 각 단계 스크린샷을 남긴다. 하나라도 실패하면 Task 3을 멈추고 실패 단계·화면·콘솔/서버 로그를 보고한다.
 

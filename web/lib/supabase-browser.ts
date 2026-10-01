@@ -16,12 +16,23 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
   return fetch(path, { ...init, headers });
 }
 
-/** 지금 주소(?create=1, ?invite= 포함)로 돌아온다. */
+/**
+ * 지금 주소(?create=1, ?invite= 포함)로 돌아온다. 로그인을 취소하면 Supabase가 붙인
+ * error 파라미터가 주소에 남는데, 그대로 다시 실으면 다음 로그인의 code 교환이 실패한다.
+ */
+export function returnUrl(href: string) {
+  const u = new URL(href);
+  for (const k of ['code', 'error', 'error_code', 'error_description'])
+    u.searchParams.delete(k);
+  u.hash = '';
+  return u.toString();
+}
+
 export async function signInWithGoogle() {
   if (!supabase) throw new Error('VITE_SUPABASE_URL·VITE_SUPABASE_ANON_KEY가 필요합니다.');
   await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: location.origin + location.pathname + location.search },
+    options: { redirectTo: returnUrl(location.href) },
   });
 }
 

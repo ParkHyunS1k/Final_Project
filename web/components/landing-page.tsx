@@ -829,7 +829,7 @@ export function LandingPage() {
                 스프린트 시작하기 <span aria-hidden="true">→</span>
               </Link>
               <p className="final-note" data-on="0.3">
-                ChatGPT 계정으로 바로 로그인 · 2–4인 팀 · 연장 없는 7일
+                Google 계정으로 바로 로그인 · 2–4인 팀 · 연장 없는 7일
               </p>
             </div>
           </div>
