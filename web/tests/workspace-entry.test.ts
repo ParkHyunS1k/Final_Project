@@ -14,8 +14,17 @@ void test('진행 중인 스프린트가 있으면 create=1이어도 만들기 �
   });
 });
 
-void test('진행 중인 스프린트가 없으면 create=1은 만들기 화면을 연다', () => {
-  assert.equal(workspaceEntry('?create=1', [done, draft]).creating, true);
+void test('준비 중인 프로젝트만 있으면 create=1이어도 그 프로젝트를 연다', () => {
+  assert.deepEqual(workspaceEntry('?create=1', [done, draft]), {
+    invite: '',
+    creating: false,
+    selected: 'p_draft',
+  });
+});
+
+void test('완주·기한 종료 프로젝트만 있으면 create=1은 만들기 화면을 연다', () => {
+  const expired = { id: 'p_expired', lifecycle: 'expired' };
+  assert.equal(workspaceEntry('?create=1', [done, expired]).creating, true);
   assert.equal(workspaceEntry('?create=1', []).creating, true);
 });
 
@@ -26,7 +35,7 @@ void test('주소의 project와 invite가 진행 중 스프린트보다 우선�
   assert.equal(invited.creating, false);
 });
 
-void test('진행 중인 스프린트가 없으면 최근 프로젝트를 고른다', () => {
-  assert.equal(workspaceEntry('', [done, draft]).selected, 'p_done');
+void test('열린 프로젝트가 없으면 최근 프로젝트를 고른다', () => {
+  assert.equal(workspaceEntry('', [done]).selected, 'p_done');
   assert.equal(workspaceEntry('', []).selected, '');
 });
