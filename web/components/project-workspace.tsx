@@ -510,15 +510,18 @@ export function ProjectDetails({
 export function TeamInvites({
   state,
   refresh,
+  link,
+  setLink,
 }: {
   state: ProjectMeta & {
     asOf: string;
     sprint: { revision: number; finished: boolean };
   };
   refresh: () => Promise<unknown>;
+  link: string;
+  setLink: (link: string) => void;
 }) {
   const [email, setEmail] = useState('');
-  const [link, setLink] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   async function runAction(action: string, extra: Record<string, unknown>) {

@@ -153,6 +153,8 @@ function Dashboard({
   const [editingRevision, setEditingRevision] = useState(0);
   const [state, setState] = useState<State | null>(null);
   const [dialog, setDialog] = useState<Modal>(null);
+  // 초대 토큰은 한 번만 받으므로 대화상자를 닫아도 링크를 잃지 않게 여기에 둔다.
+  const [inviteLink, setInviteLink] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -436,9 +438,9 @@ function Dashboard({
                 >
                   <RefreshCw size={17} />
                 </button>
-                {isOwner && writable && (
+                {isOwner && (
                   <button className="btn" onClick={() => setDialog('invite')}>
-                    초대하기
+                    {writable ? '초대하기' : '초대 기록'}
                   </button>
                 )}
                 <button className="btn" disabled={busy} onClick={exportProject}>
@@ -1201,7 +1203,12 @@ function Dashboard({
               </button>
             </form>
           ) : dialog === 'invite' && state ? (
-            <TeamInvites state={state} refresh={load} />
+            <TeamInvites
+              state={state}
+              refresh={load}
+              link={inviteLink}
+              setLink={setInviteLink}
+            />
           ) : null}
           {busy && <p className="tiny muted">서버에 저장하는 중입니다…</p>}
           {error && (
