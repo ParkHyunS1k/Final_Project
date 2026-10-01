@@ -8,6 +8,7 @@ import {
   featureAt,
   cursorAt,
   rollAt,
+  SPRINT_SECONDS,
 } from '@/lib/landing-race.mjs';
 import './landing.css';
 
@@ -64,6 +65,8 @@ export function LandingPage() {
     const hud = root.querySelector<HTMLElement>('.hud')!;
     const hudDay = hud.querySelector<HTMLElement>('.hud-day')!;
     const hudClock = hud.querySelector<HTMLElement>('.hud-clock')!;
+    const heroHours = hero.querySelector<HTMLElement>('.hero-clock b')!;
+    const heroRest = hero.querySelector<HTMLElement>('.hero-clock span')!;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const phone = matchMedia('(max-width: 767px)');
     const finePointer = matchMedia('(pointer: fine)');
@@ -197,12 +200,22 @@ export function LandingPage() {
       v.addEventListener('loadeddata', sync);
       v.addEventListener('seeked', onSeeked);
     }
+    // 첫 화면 시계: 페이지를 연 순간부터 168시간이 실제로 줄어든다.
+    const openedAt = Date.now();
+    function tick() {
+      const left = Math.max(0, SPRINT_SECONDS - Math.floor((Date.now() - openedAt) / 1000));
+      const pad = (v: number) => String(v).padStart(2, '0');
+      heroHours.textContent = String(Math.floor(left / 3600));
+      heroRest.textContent = `${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
+    }
+    const ticker = reduced.matches ? 0 : window.setInterval(tick, 1000);
     addEventListener('scroll', onScroll, { passive: true });
     addEventListener('resize', onScroll);
     addEventListener('pointermove', onPointer, { passive: true });
     sync();
     return () => {
       cancelAnimationFrame(frame);
+      clearInterval(ticker);
       for (const v of videos) {
         v.removeEventListener('loadeddata', sync);
         v.removeEventListener('seeked', onSeeked);
@@ -227,64 +240,14 @@ export function LandingPage() {
       <main>
         <section className="hero" id="top">
           <div className="hero-stage">
-            {/* 배경: 아래 구간에 나올 화면 조각들을 미리 흩뿌린다. 마우스를 따라 깊이별로 움직인다. */}
-            <div className="hero-cards" aria-hidden="true">
-              <div className="hc hc-cmp">
-                <small>브릿지랩 · 백엔드 개발자</small>
-                <b>하린의 이력서와 비교</b>
-                <div className="cmp-row cmp-ok">
-                  <b>Java</b>
-                  <small>필수</small>
-                  <span className="cmp-tag">근거 있음</span>
-                </div>
-                <div className="cmp-row cmp-gap">
-                  <b>REST API</b>
-                  <small>필수</small>
-                  <span className="cmp-tag">근거 없음</span>
-                </div>
-              </div>
-              <div className="hc hc-team">
-                <small>팀 매칭</small>
-                <div className="hc-avs">
-                  {['민', '수', '하', '준'].map((a) => (
-                    <span className="mt-av" key={a}>
-                      {a}
-                    </span>
-                  ))}
-                </div>
-                <b>4인 팀 매칭 완료</b>
-              </div>
-              <div className="hc hc-task">
-                <small>프로젝트 업무 · DAY 05</small>
-                <b>참가 신청 API</b>
-                <span>하린 · 진행 중 · 18:00 마감</span>
-              </div>
-              <div className="hc hc-alert">
-                <small>체크인 · 일정 경고</small>
-                <strong>+2h</strong>
-                <span>로그인 구현 · 마감 초과</span>
-              </div>
-              <div className="hc hc-clock">
-                <span>DAY 03 / 07</span>
-                <i />
-                <b>112:14:05</b>
-              </div>
-              <div className="hc hc-cv">
-                <small>이력서 · 백엔드</small>
-                <b>하린</b>
-                <i />
-                <i />
-                <i />
-                <div className="hc-chips">
-                  <span>Java</span>
-                  <span>Spring</span>
-                  <span>SQL</span>
-                </div>
-              </div>
-              <div className="hc hc-done">
-                <b>완주</b>
-                <small>31시간 남기고</small>
-              </div>
+            {/* 배경: 168시간 시계가 실제로 1초씩 줄고, 아래로 7일 트랙이 지나간다. */}
+            <p className="hero-clock" aria-hidden="true">
+              <b>168</b>:<span>00:00</span>
+            </p>
+            <div className="hero-lanes" aria-hidden="true">
+              {[1, 2, 3, 4, 5, 6, 7].map((d) => (
+                <span key={d}>DAY {String(d).padStart(2, '0')}</span>
+              ))}
             </div>
             <div className="hero-copy">
               <p className="kicker">취준생을 위한 7일 프로젝트 스프린트</p>

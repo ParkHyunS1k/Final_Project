@@ -135,137 +135,49 @@ body:has(.rl) {
     filter: blur(10px);
   }
 }
-.hero-stage {
-  background: radial-gradient(ellipse 45% 55% at 72% 48%, rgb(255 90 31 / 0.14), transparent 70%);
-}
-/* 화면 조각 카드: 기울기(--r)와 깊이(--d)가 제각각이고, 깊을수록 마우스를 더 따라온다. */
-.hero-cards {
+/* 시계: 화면 폭을 거의 채우는 고정폭 숫자를 아주 흐리게 깐다. 시간 칸만 주황. */
+.hero-clock {
   position: absolute;
-  inset: 13svh 4vw 10svh 50%;
-}
-.hc {
-  position: absolute;
-  display: grid;
-  gap: 8px;
-  padding: 18px 20px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgb(21 21 23 / 0.94);
-  box-shadow: 0 30px 60px rgb(0 0 0 / 0.5);
-  transform: translate(calc(var(--mx, 0) * var(--d) * 1px), calc(var(--my, 0) * var(--d) * 1px))
-    rotate(var(--r));
-  animation: hc-float 6s ease-in-out infinite alternate;
-}
-@keyframes hc-float {
-  to {
-    translate: 0 -12px;
-  }
-}
-.hc > small {
-  color: var(--dim);
-  font-size: 13px;
-}
-.hc > b {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.hc .cmp-row {
-  padding: 8px 12px;
-}
-.hc .cmp-row b {
-  font-size: 15px;
-}
-.hc-cmp {
-  left: 0;
-  top: 4%;
-  width: 290px;
-  --r: -4deg;
-  --d: 10;
-}
-.hc-team {
-  right: 0;
-  top: 0;
-  width: 220px;
-  --r: 5deg;
-  --d: 18;
-  animation-delay: -2s;
-}
-.hc-avs {
-  display: flex;
-}
-.hc-avs .mt-av {
-  width: 40px;
-  height: 40px;
-  border: 2px solid var(--panel);
-}
-.hc-avs .mt-av + .mt-av {
-  margin-left: -8px;
-}
-.hc-avs .mt-av:nth-child(3) {
-  background: var(--heat);
-}
-.hc-task {
-  left: 34%;
-  top: 46%;
-  width: 250px;
-  border-color: var(--heat);
-  --r: 2deg;
-  --d: 26;
-  animation-delay: -4s;
-}
-.hc-task > span {
-  color: var(--dim);
-  font-size: 13px;
-}
-.hc-clock {
-  right: 2%;
-  bottom: 14%;
-  grid-template-columns: auto 90px auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  --r: -3deg;
-  --d: 14;
-  animation-delay: -1s;
-}
-.hc-clock span {
-  color: var(--dim);
-}
-.hc-clock i {
-  height: 6px;
-  border-radius: 99px;
-  background:
-    linear-gradient(var(--heat), var(--heat)) 0 0 / 40% 100% no-repeat,
-    repeating-linear-gradient(90deg, #333 0 calc(100% / 7 - 2px), transparent 0 calc(100% / 7));
-}
-.hc-clock b {
-  color: var(--heat);
+  left: clamp(16px, 6vw, 96px);
+  top: 13svh;
+  margin: 0;
+  color: rgb(255 255 255 / 0.07);
+  font: 500 17vw / 0.85 var(--font-geist-mono), monospace;
+  letter-spacing: -0.05em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
 }
-.hc-done {
-  left: 8%;
-  bottom: 0;
-  grid-template-columns: auto auto;
-  align-items: baseline;
-  gap: 10px;
-  border-color: rgb(61 220 132 / 0.5);
-  --r: -6deg;
-  --d: 8;
-  animation-delay: -3s;
+.hero-clock b {
+  font-weight: inherit;
+  color: rgb(255 90 31 / 0.4);
 }
-.hc-done b {
-  color: var(--good);
-  font-size: 26px;
+/* 7일 트랙: 화면을 세로 7칸으로 나누는 얇은 선. 첫날 칸만 살짝 밝다. */
+.hero-lanes {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  pointer-events: none;
+}
+.hero-lanes span {
+  padding: 84px 0 0 10px;
+  border-left: 1px solid rgb(255 255 255 / 0.05);
+  color: rgb(255 255 255 / 0.22);
+  font: 500 11px var(--font-geist-mono), monospace;
+  letter-spacing: 0.08em;
+}
+.hero-lanes span:first-child {
+  border-left-color: rgb(255 90 31 / 0.5);
+  background: linear-gradient(rgb(255 90 31 / 0.06), transparent 60%);
+  color: var(--heat);
 }
 .hero-stage::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgb(11 11 12 / 0.9) 0%, rgb(11 11 12 / 0.2) 60%, transparent);
+  /* 아래쪽 문구 뒤만 눌러 시계·트랙 위에서도 읽히게 한다. */
+  background: linear-gradient(0deg, rgb(11 11 12 / 0.9) 0%, transparent 55%);
   pointer-events: none;
 }
 .hero-copy {
@@ -1602,107 +1514,19 @@ body:has(.rl) {
   color: var(--good);
 }
 
-/* 체크인 경고: 마감을 넘긴 공수를 빨간 숫자로. */
-.hc-alert {
-  right: 0;
-  top: 40%;
-  width: 170px;
-  gap: 4px;
-  border-color: rgb(255 59 48 / 0.5);
-  --r: 6deg;
-  --d: 12;
-  animation-delay: -1.5s;
-}
-.hc-alert strong {
-  color: var(--bad);
-  font: 500 40px / 1 var(--font-geist-mono), monospace;
-  letter-spacing: -0.04em;
-}
-.hc-alert span {
-  color: var(--dim);
-  font-size: 12px;
-}
-
-/* 이력서 카드: 어두운 카드들 사이에서 흰 종이처럼 보이게 한다. */
-.hc.hc-cv {
-  left: 3%;
-  top: 48%;
-  width: 170px;
-  gap: 7px;
-  border-color: transparent;
-  background: #f4f2ee;
-  color: #1b1b1d;
-  --r: -7deg;
-  --d: 20;
-  animation-delay: -5s;
-}
-.hc-cv small {
-  color: #8a877f;
-}
-.hc-cv b {
-  font-size: 20px;
-}
-.hc-cv i {
-  height: 6px;
-  border-radius: 99px;
-  background: #dcd9d2;
-}
-.hc-cv i:nth-of-type(2) {
-  width: 80%;
-}
-.hc-cv i:nth-of-type(3) {
-  width: 60%;
-}
-.hc-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
-}
-.hc-chips span {
-  padding: 3px 8px;
-  border-radius: 99px;
-  background: #1b1b1d;
-  color: #f4f2ee;
-  font-size: 11px;
-  font-weight: 700;
-}
-
 /* 휴대폰: 영상 대신 정지 화면, 장면은 화면에 들어올 때 켜진다. */
 @media (max-width: 767px) {
   .hero {
     height: auto;
   }
-  /* 카드 콜라주는 문구 위쪽 공간에 작게 모은다. 큰 비교 카드는 뺀다. */
-  .hero-cards {
-    inset: 10svh 16px auto 16px;
-    height: 36svh;
+  .hero-clock {
+    top: 14svh;
+    font-size: 18vw;
   }
-  .hc-cmp,
-  .hc-done,
-  .hc-alert {
-    display: none;
-  }
-  .hc {
-    padding: 12px 14px;
-  }
-  .hc-task {
-    left: 0;
-    top: 48%;
-  }
-  .hc.hc-cv {
-    left: 0;
-    top: 0;
-    width: 150px;
-  }
-  .hc-cv i {
-    display: none;
-  }
-  .hc-team {
-    width: 190px;
-  }
-  .hc-clock {
-    bottom: -6%;
+  .hero-lanes span {
+    padding: 72px 0 0 4px;
+    font-size: 8px;
+    letter-spacing: 0;
   }
   .hero-stage::after {
     background: linear-gradient(0deg, rgb(11 11 12 / 0.95) 35%, rgb(11 11 12 / 0.2));
@@ -1933,9 +1757,6 @@ body:has(.rl) {
   }
   .monitor {
     transform: none;
-  }
-  .hc {
-    animation: none;
   }
   .cursor {
     display: none;
