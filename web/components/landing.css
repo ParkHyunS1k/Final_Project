@@ -1095,6 +1095,16 @@ body:has(.rl) {
   height: 100%;
   object-fit: cover;
 }
+/* 16:9보다 좁은 창에서는 높이에 맞추면 좌우가 크게 잘려 확대돼 보인다.
+   가로폭에 맞추고(최대 75% 높이까지는 채움) 위아래는 배경으로 흐린다. 휴대폰은 그대로 채운다. */
+@media (min-width: 768px) and (max-aspect-ratio: 16 / 9) {
+  .cine video {
+    inset: 50% 0 auto;
+    height: max(56.25vw, 75svh);
+    transform: translateY(-50%);
+    mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent);
+  }
+}
 .cine .pin-stage::after {
   content: '';
   position: absolute;
