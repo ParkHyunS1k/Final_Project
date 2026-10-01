@@ -41,13 +41,13 @@
 
 - `supabase`: `createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, { auth: { flowType: 'pkce' } })`. 토큰이 URL에 남지 않는다.
 - `apiFetch(path, init)`: `await supabase.auth.getSession()` 후 세션이 있으면 `Authorization` 헤더를 붙여 `fetch`한다. `getSession()`은 초기화(리다이렉트로 받은 `?code=` 교환 포함)를 기다리므로, Google에서 돌아온 직후 첫 요청이 401로 깜빡이지 않는다.
-- `signInWithGoogle(returnTo)`: `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + returnTo } })`. `?create=1`, `?invite=` 같은 주소 정보가 유지된다.
+- `signInWithGoogle()`: `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname + location.search } })`. `?create=1`, `?invite=` 같은 주소 정보가 유지된다.
 - `signOut()`: `supabase.auth.signOut()` 후 `/`로 이동.
 
 변경 지점:
 
 - API 호출 `fetch` 6곳(`app/workspace/page.tsx` 4곳, `components/project-workspace.tsx` 1곳, `components/change-review.tsx` 1곳)을 `apiFetch`로 바꾼다. 응답 처리는 그대로 둔다. `project-workspace.tsx`의 `api()`와 `change-review.tsx`의 `call()`은 공용 헬퍼라 그 안의 `fetch` 한 줄만 바꾸면 된다.
-- "ChatGPT로 로그인" 버튼 2곳(`app/workspace/page.tsx`, `components/project-workspace.tsx`)을 "Google로 로그인" 버튼으로 바꾸고, `signInWithGoogle(location.pathname + location.search)`를 호출한다. 401일 때 버튼이 뜨는 기존 흐름은 유지한다.
+- "ChatGPT로 로그인" 버튼 2곳(`app/workspace/page.tsx`, `components/project-workspace.tsx`)을 "Google로 로그인" 버튼으로 바꾸고, `signInWithGoogle()`을 호출한다. 401일 때 버튼이 뜨는 기존 흐름은 유지한다.
 - 작업 공간 상단에 로그아웃 버튼 하나.
 - 초대 안내 문구 "팀원의 ChatGPT 로그인 이메일" → "팀원의 Google 계정 이메일".
 
