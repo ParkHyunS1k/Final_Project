@@ -117,6 +117,10 @@ body:has(.rl) {
   );
 }
 /* 헤드라인은 줄마다 흐림에서 떠오른다. */
+/* 제목이 오른쪽 책상·노트북을 가리지 않도록 화면 왼쪽 절반 안에 둔다. */
+.hero-copy h1 {
+  font-size: clamp(40px, 4vw, 60px);
+}
 .hero-copy .line {
   display: block;
   animation: rl-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
