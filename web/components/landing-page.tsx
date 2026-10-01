@@ -14,6 +14,9 @@ import './landing.css';
 
 const START = '/workspace?create=1';
 
+// 설계 구간의 앞 58%는 화면 세 개, 나머지는 모니터가 가운데로 와서 빨갛게 경고하는 체크인 장면.
+const SETUP_PANES_SHARE = 0.58;
+
 type Key = { t: number; k?: string; x?: number; y?: number; press?: boolean };
 // 모니터 속 화면별 커서 경로. k는 data-k 요소의 가운데, 없으면 x·y(화면 기준 %).
 const CURSOR: Key[][] = [
@@ -60,7 +63,8 @@ export function LandingPage() {
     const menu = [...setup.querySelectorAll<HTMLElement>('.app-side [data-pane]')];
     // 고정 구간(data-pin)마다 진행률 --p를 주고, 안쪽 [data-on] 요소를 켜고 끈다.
     const pins = [...root.querySelectorAll<HTMLElement>('[data-pin]')];
-    const checkin = root.querySelector<HTMLElement>('#checkin')!;
+    const monitor = setup.querySelector<HTMLElement>('.monitor')!;
+    const alarmEls = [...setup.querySelectorAll<HTMLElement>('[data-alarm]')];
     const finish = root.querySelector<HTMLElement>('#finish')!;
     const hud = root.querySelector<HTMLElement>('.hud')!;
     const hudDay = hud.querySelector<HTMLElement>('.hud-day')!;
@@ -121,10 +125,17 @@ export function LandingPage() {
     function syncSetup(vh: number) {
       const rect = setup.getBoundingClientRect();
       setupStage.style.setProperty('--enter', String(clamp(1 - rect.top / vh)));
-      const { item, t } = featureAt(
-        sceneProgress(rect.top, setup.offsetHeight, setupStage.offsetHeight, vh),
-        panes.length,
+      const raw = sceneProgress(rect.top, setup.offsetHeight, setupStage.offsetHeight, vh);
+      const { item, t } = featureAt(Math.min(1, raw / SETUP_PANES_SHARE), panes.length);
+      // 체크인 단계: 모니터가 가운데로 오는 거리(--dx)와 진행률(--a). 동작 줄이기에서는 건너뛴다.
+      const a = reduced.matches ? 0 : clamp((raw - SETUP_PANES_SHARE) / (1 - SETUP_PANES_SHARE));
+      setupStage.style.setProperty('--a', String(a));
+      setupStage.style.setProperty(
+        '--dx',
+        setupStage.clientWidth / 2 - (monitor.offsetLeft + monitor.offsetWidth / 2) + 'px',
       );
+      for (const el of alarmEls) el.classList.toggle('on', a > 0 && a >= Number(el.dataset.alarm));
+      cursor.classList.toggle('gone', a > 0);
       items.forEach((li, i) => {
         li.classList.toggle('active', i === item);
         li.style.setProperty('--t', i < item ? '1' : i === item ? String(t) : '0');
@@ -175,9 +186,10 @@ export function LandingPage() {
       root.style.setProperty('--hero', String(clamp(heroP)));
       syncSetup(vh);
       for (const sec of pins) syncPin(sec, vh);
-      // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 모니터 속으로 들어간 뒤(체크인)부터 흐른다.
+      // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 설계가 끝나 체크인 장면이 시작되면 흐른다.
       const top = (el: HTMLElement) => el.getBoundingClientRect().top + scrollY;
-      const start = top(checkin);
+      const start =
+        top(setup) + (setup.offsetHeight - setupStage.offsetHeight) * SETUP_PANES_SHARE;
       const end = top(finish) + finish.offsetHeight - vh;
       const lap = (scrollY - start) / (end - start);
       const clock = raceClock(lap);
@@ -438,7 +450,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="feat" id="setup">
+        <section className="feat alarm" id="setup">
           <div className="stage">
             <div className="feat-copy">
               <p className="kicker">출발 전 설계</p>
@@ -588,64 +600,6 @@ export function LandingPage() {
                       <p className="tip" data-on="0.5">
                         DAY 05 · 참가 신청 API · 하린 · 승인된 마감 18:00
                       </p>
-                    </div>
-                  </div>
-                </div>
-                <svg className="cursor" viewBox="0 0 24 24">
-                  <path d="M4 2l16 9-7 2-3 7z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="pin alarm" id="checkin" data-pin>
-          <div className="pin-stage alarm-stage">
-            <div className="alarm-left">
-              <p className="kicker">체크인</p>
-              <p className="cine-line">
-                <span data-on="0.12">하루만 밀려도,</span>
-              </p>
-            </div>
-            <div className="monitor">
-              {/* eslint-disable-next-line @next/next/no-img-element -- 장식용 모니터 */}
-              <img src="/landing/monitor.jpg" alt="" />
-              {/* 지금 앱 홈(스프린트 현황)이 마감 임박으로 빨갛게 바뀐다. 새 화면 디자인 전까지 임시. */}
-              <div className="screen" aria-hidden="true">
-                <div className="app">
-                  <aside className="app-side">
-                    <strong>ProjectMate</strong>
-                    <span className="on">스프린트 현황</span>
-                    <span>프로젝트 업무</span>
-                    <span>내 할 일</span>
-                    <span>변경안 검토</span>
-                    <span>완주 확인</span>
-                  </aside>
-                  <div className="app-main">
-                    <div className="pane active">
-                      <small className="s-eyebrow">러닝크루 MVP · 최종 마감 D-4</small>
-                      <h3>스프린트 현황</h3>
-                      <div className="cal">
-                        {[
-                          ['목표 합의', '전원 ✓'],
-                          ['화면 설계', '수빈 ✓'],
-                          ['로그인', '민서 18:00'],
-                          ['모임 검색', '수빈 18:00'],
-                          ['참가 신청', '하린 18:00'],
-                          ['통합 테스트', '준호 16:00'],
-                          ['결과물 확인', '최종 마감'],
-                        ].map(([task, who], i) => (
-                          <div
-                            className={`s-day ${i === 2 ? 's-today' : ''}`}
-                            data-on="0"
-                            key={task}
-                          >
-                            <small>DAY {String(i + 1).padStart(2, '0')}</small>
-                            <b>{task}</b>
-                            <span>{who}</span>
-                          </div>
-                        ))}
-                      </div>
                       <div className="s-load">
                         <small>담당자별 남은 공수</small>
                         {[
@@ -659,7 +613,7 @@ export function LandingPage() {
                             <b>{name}</b>
                             <span>{task}</span>
                             {hot ? (
-                              <em className="swap" data-on="0.35">
+                              <em className="swap" data-alarm="0.45">
                                 <span className="before">필요 6h · 남은 4h</span>
                                 <span className="after">마감 2h 초과</span>
                               </em>
@@ -672,14 +626,26 @@ export function LandingPage() {
                     </div>
                   </div>
                 </div>
-                <i className="alarm-tint" data-on="0.35" />
+                <svg className="cursor" viewBox="0 0 24 24">
+                  <path d="M4 2l16 9-7 2-3 7z" />
+                </svg>
+                <i className="alarm-tint" data-alarm="0.45" />
               </div>
+            </div>
+            {/* 체크인: 모니터가 가운데로 오면 문구가 왼쪽 위·오른쪽 아래에 엇갈려 뜬다. */}
+            <div className="alarm-left">
+              <p className="kicker" data-alarm="0.3">
+                체크인
+              </p>
+              <p className="cine-line">
+                <span data-alarm="0.3">하루만 밀려도,</span>
+              </p>
             </div>
             <div className="alarm-right">
               <p className="cine-line">
-                <span data-on="0.4">바로 빨간불.</span>
+                <span data-alarm="0.5">바로 빨간불.</span>
               </p>
-              <p className="lead" data-on="0.6">
+              <p className="lead" data-alarm="0.65">
                 체크인에 남은 공수를 적으면, 마감을 넘길 업무가 즉시 드러납니다.
               </p>
             </div>

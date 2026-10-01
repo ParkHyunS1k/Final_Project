@@ -550,8 +550,13 @@ body:has(.rl) {
 }
 
 /* 설계: 모니터를 고정하고 왼쪽 목록을 따라 화면 속 앱이 바뀐다. */
+/* 앞 300svh는 화면 세 개, 뒤 220svh는 모니터가 가운데로 와서 경고하는 체크인 단계. */
 .feat {
-  height: calc(100svh + 300svh);
+  height: calc(100svh + 520svh);
+}
+/* 체크인 단계(--a)가 시작되면 왼쪽 설명은 빠르게 사라진다. */
+.feat-copy {
+  opacity: calc(1 - var(--a, 0) * 4);
 }
 .feat .stage {
   grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
@@ -611,7 +616,9 @@ body:has(.rl) {
   /* 화면 속 글씨가 읽히도록 오른쪽 여백까지 넘쳐 크게 둔다. */
   width: 116%;
   transform-origin: 50% 85%;
-  transform: perspective(1800px)
+  /* 체크인 단계 앞 40% 동안 화면 가운데(--dx)로 미끄러져 온다. */
+  transform: translateX(calc(min(1, var(--a, 0) * 2.5) * var(--dx, 0px)))
+    perspective(1800px)
     rotateX(calc((1 - var(--enter, 1)) * 28deg - var(--my, 0) * 2deg))
     rotateY(calc(var(--mx, 0) * 3deg))
     translateY(calc((1 - var(--enter, 1)) * 80px))
@@ -1023,9 +1030,6 @@ body:has(.rl) {
 #launch .pin-stage {
   opacity: clamp(0, var(--p, 0) / 0.2, 1);
 }
-#checkin {
-  height: calc(100svh + 180svh);
-}
 #telemetry {
   height: calc(100svh + 220svh);
 }
@@ -1105,15 +1109,7 @@ body:has(.rl) {
   transform: translateY(0.25em);
 }
 
-/* 체크인: 큰 모니터가 주인공. 문구는 왼쪽 위·오른쪽 아래로 엇갈려 시선이 대각선으로 흐른다.
-   스크롤하면 화면이 두세 번 깜빡인 뒤 빨간 채로 멈춘다. */
-.alarm-stage {
-  display: grid;
-  place-items: center;
-}
-.alarm .monitor {
-  width: min(64vw, 1120px);
-}
+/* 체크인 문구: 모니터가 가운데로 오면 왼쪽 위·오른쪽 아래에 엇갈려 뜬다. */
 .alarm-left,
 .alarm-right {
   position: absolute;
@@ -1121,11 +1117,11 @@ body:has(.rl) {
 }
 .alarm-left {
   left: clamp(16px, 6vw, 96px);
-  top: 14svh;
+  top: 13svh;
 }
 .alarm-right {
   right: clamp(16px, 6vw, 96px);
-  bottom: 15svh;
+  bottom: 14svh;
   max-width: 24em;
   text-align: right;
 }
@@ -1135,13 +1131,25 @@ body:has(.rl) {
 .alarm-right .cine-line span {
   color: var(--bad);
 }
-.alarm .lead {
+.alarm .kicker {
+  transition: opacity 0.4s;
+}
+.alarm .kicker[data-alarm]:not(.on) {
+  opacity: 0;
+}
+.alarm-right .lead {
   margin-left: auto;
   font-size: 16px;
   transition: opacity 0.6s;
 }
-.alarm .lead:not(.on) {
+.alarm-right .lead:not(.on) {
   opacity: 0;
+}
+.cursor.gone {
+  opacity: 0;
+}
+.alarm:has(.alarm-tint.on) .tip {
+  display: none;
 }
 .alarm-tint {
   position: absolute;
@@ -1682,7 +1690,7 @@ body:has(.rl) {
   }
   /* 설계 섹션은 휴대폰에서도 고정해 두고, 지금 항목만 보여 준다. */
   .feat {
-    height: calc(100svh + 240svh);
+    height: calc(100svh + 420svh);
   }
   .feat .stage {
     position: sticky;
@@ -1766,26 +1774,23 @@ body:has(.rl) {
     height: 34px;
     margin-bottom: 6px;
   }
-  .alarm-stage {
-    grid-template-columns: minmax(0, 1fr);
-    align-content: center;
-    place-items: stretch;
-    gap: 16px;
-    padding: 64px 16px 88px;
+  /* 휴대폰: 경고 문구 두 줄을 설명이 있던 화면 카드 위쪽에 차례로 쌓는다. */
+  .alarm-left {
+    top: 64px;
+    left: 16px;
   }
-  .alarm-left,
   .alarm-right {
-    position: static;
+    top: 140px;
+    right: auto;
+    bottom: auto;
+    left: 16px;
     text-align: left;
   }
-  .alarm .monitor {
-    width: 100%;
-  }
-  .alarm .lead {
-    margin-left: 0;
-  }
   .alarm .cine-line {
-    font-size: 30px;
+    font-size: 28px;
+  }
+  .alarm-right .lead {
+    display: none;
   }
   .tele-stage {
     grid-template-columns: minmax(0, 1fr);
