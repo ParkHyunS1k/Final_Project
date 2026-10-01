@@ -101,20 +101,16 @@ body:has(.rl) {
   letter-spacing: -0.03em;
 }
 
-/* 1. 히어로: 밤 책상 사진이 스크롤을 따라 노트북으로 다가가고, 끝에서 둥근 카드로 줄어든다. */
+/* 1. 히어로: 밤 책상 사진 위 문구가 물러나고 끝 문구가 뜬 뒤, 무대 전체가 어둠으로 사라진다. */
 .hero {
-  height: 380svh;
+  height: 260svh;
 }
 .hero-stage {
   position: sticky;
   top: 0;
   height: 100svh;
   overflow: hidden;
-  /* 다가가기가 끝나면 화면을 채우던 무대가 둥근 카드로 줄어들며 다음 섹션으로 넘어간다. */
-  clip-path: inset(
-    calc(var(--shrink, 0) * 9%) calc(var(--shrink, 0) * 6%)
-      round calc(var(--shrink, 0) * 40px)
-  );
+  opacity: clamp(0, (1 - var(--hero)) / 0.3, 1);
 }
 /* 제목이 오른쪽 책상·노트북을 가리지 않도록 화면 왼쪽 절반 안에 둔다. */
 .hero-copy h1 {
@@ -139,8 +135,6 @@ body:has(.rl) {
     filter: blur(10px);
   }
 }
-/* 카메라 대신 사진을 노트북 화면(85% 31%) 기준으로 키우며 가운데로 끌어온다.
-   영상(720p)보다 선명하도록 원본 해상도 사진을 쓴다. */
 .hero-img {
   position: absolute;
   inset: 0;
@@ -148,31 +142,12 @@ body:has(.rl) {
   height: 100%;
   object-fit: cover;
   object-position: 70% 50%;
-  transform-origin: 85% 31%;
-  transform: translate(calc(var(--hero) * -23vw), calc(var(--hero) * 12svh))
-    scale(calc(1 + var(--hero) * 1.4));
-  will-change: transform;
-}
-/* 다가갈수록 노트북 화면 빛이 번진다. 빛의 중심은 노트북을 따라 움직인다. */
-.hero-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at calc(85% - var(--hero) * 23%) calc(31% + var(--hero) * 12%),
-    rgb(255 120 40 / 0.85),
-    transparent 50%
-  );
-  mix-blend-mode: screen;
-  opacity: calc(var(--hero) * 0.85);
-  pointer-events: none;
 }
 .hero-stage::after {
   content: '';
   position: absolute;
   inset: 0;
-  /* 끝에는 주황 화면이 꽉 차므로, 진행할수록 눌러서 끝 문구가 읽히게 한다. */
-  background: linear-gradient(90deg, rgb(11 11 12 / 0.9) 0%, rgb(11 11 12 / 0.2) 60%, transparent)
-    rgb(11 11 12 / clamp(0, (var(--hero) - 0.6) * 1.5, 0.55));
+  background: linear-gradient(90deg, rgb(11 11 12 / 0.9) 0%, rgb(11 11 12 / 0.2) 60%, transparent);
   pointer-events: none;
 }
 .hero-copy {
@@ -200,7 +175,7 @@ body:has(.rl) {
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.08;
-  opacity: calc((var(--hero) - 0.72) * 5);
+  opacity: calc((var(--hero) - 0.35) * 6);
 }
 .hero-end em {
   font-style: normal;
@@ -1502,12 +1477,8 @@ body:has(.rl) {
   .hero {
     height: auto;
   }
-  .hero-glow {
-    display: none;
-  }
   /* 가로 사진을 세로 화면 위쪽에 책상 전체가 보이도록 놓는다. */
   .hero-img {
-    transform: none;
     inset: 10svh auto auto -15%;
     width: 130%;
     height: auto;
@@ -1517,7 +1488,7 @@ body:has(.rl) {
     background: linear-gradient(0deg, rgb(11 11 12 / 0.95) 35%, rgb(11 11 12 / 0.2));
   }
   .hero-stage {
-    clip-path: none;
+    opacity: 1;
   }
   .hero-copy {
     opacity: 1;
@@ -1733,15 +1704,14 @@ body:has(.rl) {
     --z: 1;
   }
   .hero-stage {
-    clip-path: none;
+    opacity: 1;
   }
   .hero-copy .line,
   .hero-copy .lead,
   .hero-copy .hero-actions {
     animation: none;
   }
-  .monitor,
-  .hero-img {
+  .monitor {
     transform: none;
   }
   .cursor {

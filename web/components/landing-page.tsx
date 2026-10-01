@@ -12,8 +12,6 @@ import {
 import './landing.css';
 
 const START = '/workspace?create=1';
-// 첫 화면은 스크롤의 앞 78% 동안 노트북으로 다가가고, 나머지 구간에서 둥근 카드로 줄어든다.
-const HERO_PUSH_SHARE = 0.78;
 
 type Key = { t: number; k?: string; x?: number; y?: number; press?: boolean };
 // 모니터 속 화면별 커서 경로. k는 data-k 요소의 가운데, 없으면 x·y(화면 기준 %).
@@ -171,11 +169,7 @@ export function LandingPage() {
         vh,
         vh,
       );
-      root.style.setProperty('--hero', String(Math.min(1, heroP / HERO_PUSH_SHARE)));
-      root.style.setProperty(
-        '--shrink',
-        String(clamp((heroP - HERO_PUSH_SHARE) / (1 - HERO_PUSH_SHARE))),
-      );
+      root.style.setProperty('--hero', String(clamp(heroP)));
       syncSetup(vh);
       for (const sec of pins) syncPin(sec, vh);
       // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 모니터 속으로 들어간 뒤(체크인)부터 흐른다.
@@ -235,7 +229,6 @@ export function LandingPage() {
           <div className="hero-stage">
             {/* eslint-disable-next-line @next/next/no-img-element -- 스크롤로 확대하는 배경, 최적화 경로 불필요 */}
             <img className="hero-img" src="/landing/desk.jpg" alt="" />
-            <i className="hero-glow" aria-hidden="true" />
             <div className="hero-copy">
               <p className="kicker">취준생을 위한 7일 프로젝트 스프린트</p>
               <h1>
