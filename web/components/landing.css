@@ -489,6 +489,25 @@ body:has(.rl) {
   margin-top: 16px;
 }
 
+/* 넓은 화면에서는 진단·매칭·증명을 좌우로만 넓혀 양옆 여백을 줄인다(글자·세로 간격은 그대로). */
+@media (min-width: 1024px) {
+  .duo-stage {
+    max-width: 1560px;
+    gap: clamp(56px, 8vw, 160px);
+  }
+  .cmp,
+  .mt,
+  .pf {
+    max-width: 760px;
+  }
+  .mt-chips {
+    gap: 6px 32px;
+  }
+  .mt-card {
+    padding: 2px 20px;
+  }
+}
+
 /* 3. 장면: 고정된 무대 위에서 스크롤할 때마다 한 단계씩 켜진다. */
 .scene {
   height: calc(100svh + 120svh);
