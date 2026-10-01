@@ -1148,9 +1148,6 @@ body:has(.rl) {
 .cursor.gone {
   opacity: 0;
 }
-.alarm:has(.alarm-tint.on) .tip {
-  display: none;
-}
 .alarm-tint {
   position: absolute;
   inset: 0;
@@ -1171,41 +1168,6 @@ body:has(.rl) {
   to {
     opacity: 1;
   }
-}
-/* 화면 아래쪽: 실제 앱처럼 담당자별 남은 공수. 경고가 켜지면 초과한 줄이 빨개진다. */
-.s-load {
-  display: grid;
-  margin-top: calc(1.6 * var(--u));
-}
-.s-load > small {
-  margin-bottom: calc(0.6 * var(--u));
-  color: #8a927f;
-  font-size: calc(1.2 * var(--u));
-  font-weight: 700;
-}
-.s-load-row {
-  display: grid;
-  grid-template-columns: calc(2.8 * var(--u)) calc(6 * var(--u)) minmax(0, 1fr) auto;
-  gap: calc(1 * var(--u));
-  align-items: center;
-  padding: calc(0.7 * var(--u)) 0;
-  border-top: 1px solid #eef1e9;
-  font-size: calc(1.4 * var(--u));
-}
-.s-load-row > span:not(.av) {
-  color: #5a6451;
-}
-.s-load-row em {
-  color: #517331;
-  font-style: normal;
-  font-weight: 700;
-}
-.alarm:has(.alarm-tint.on) .s-hot {
-  background: #fdecea;
-}
-.alarm:has(.alarm-tint.on) .s-hot em,
-.alarm:has(.alarm-tint.on) .s-hot b {
-  color: #d92d20;
 }
 /* 경고가 켜지면 오늘 칸도 빨개지고, 모니터 주변으로 붉은 빛이 번진다. */
 .alarm:has(.alarm-tint.on) .s-today {

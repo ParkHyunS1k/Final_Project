@@ -600,29 +600,6 @@ export function LandingPage() {
                       <p className="tip" data-on="0.5">
                         DAY 05 · 참가 신청 API · 하린 · 승인된 마감 18:00
                       </p>
-                      <div className="s-load">
-                        <small>담당자별 남은 공수</small>
-                        {[
-                          ['민서', '로그인 구현', true],
-                          ['수빈', '모임 검색 화면', false],
-                          ['하린', '참가 신청 API', false],
-                          ['준호', '통합 테스트', false],
-                        ].map(([name, task, hot]) => (
-                          <div className={`s-load-row ${hot ? 's-hot' : ''}`} key={name as string}>
-                            <span className="av">{(name as string)[0]}</span>
-                            <b>{name}</b>
-                            <span>{task}</span>
-                            {hot ? (
-                              <em className="swap" data-alarm="0.45">
-                                <span className="before">필요 6h · 남은 4h</span>
-                                <span className="after">마감 2h 초과</span>
-                              </em>
-                            ) : (
-                              <em>여유</em>
-                            )}
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   </div>
                 </div>
