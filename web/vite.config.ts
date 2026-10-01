@@ -44,9 +44,12 @@ export default defineConfig(async ({ mode }) => {
     'OPENAI_API_KEY',
     'PROJECTMATE_MODEL',
     'PROJECTMATE_REASONING_EFFORT',
+    'SUPABASE_URL',
   ]) {
     if (localEnv[key]) liveModelVars[key] = localEnv[key];
   }
+  // AUTH_DEV_HEADERS는 vite dev에서만. build 산출물(dist/server/wrangler.json)에 들어가면 배포 시 헤더 사칭이 열린다.
+  if (mode === 'development') liveModelVars.AUTH_DEV_HEADERS = '1';
   const localBindingConfig = { ...baseLocalBindingConfig, vars: liveModelVars };
 
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool

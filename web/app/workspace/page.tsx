@@ -41,6 +41,7 @@ import {
   type Task,
 } from '@/lib/sprint';
 import { meetingSuggestions } from '@/lib/meeting-suggestions';
+import { apiFetch, signInWithGoogle } from '@/lib/supabase-browser';
 
 export type Lifecycle =
   | 'legacy'
@@ -165,7 +166,7 @@ function Dashboard({
   );
   const load = useCallback(
     async (signal?: AbortSignal) => {
-      const res = await fetch(
+      const res = await apiFetch(
         '/api/sprint?project=' + encodeURIComponent(projectId),
         { cache: 'no-store', signal },
       );
@@ -179,7 +180,7 @@ function Dashboard({
   );
   useEffect(() => {
     const c = new AbortController();
-    fetch('/api/sprint?project=' + encodeURIComponent(projectId), {
+    apiFetch('/api/sprint?project=' + encodeURIComponent(projectId), {
       cache: 'no-store',
       signal: c.signal,
     })
@@ -258,7 +259,7 @@ function Dashboard({
     setError('');
     setNotice('');
     try {
-      const res = await fetch('/api/sprint', {
+      const res = await apiFetch('/api/sprint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -309,7 +310,7 @@ function Dashboard({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         '/api/sprint?project=' + encodeURIComponent(projectId) + '&format=export',
         { cache: 'no-store' },
       );
@@ -382,21 +383,12 @@ function Dashboard({
           <section className="agent-card">
             <h1>스프린트 작업 공간</h1>
             {needsLogin && (
-              <a
+              <button
                 className="btn primary"
-                // 로그인 후 원래 주소로 돌아온다(?create=1, ?invite= 유지).
-                href={
-                  '/signin-with-chatgpt?return_to=' +
-                  encodeURIComponent(
-                    typeof location !== 'undefined'
-                      ? location.pathname + location.search
-                      : '/workspace',
-                  )
-                }
-                target="_top"
+                onClick={() => void signInWithGoogle()}
               >
-                ChatGPT로 로그인
-              </a>
+                Google로 로그인
+              </button>
             )}
             <p>{error || '저장한 프로젝트를 불러오는 중입니다.'}</p>
             {!error && !needsLogin && (

@@ -10,6 +10,7 @@ import { SourceList, SourcePaste, type SourceSummary } from './source-paste';
 import type { ProjectMeta } from './project-workspace';
 import { seoulTime, type Task } from '@/lib/sprint';
 import { text } from '@/lib/utils';
+import { apiFetch } from '@/lib/supabase-browser';
 import type {
   ReplayChange,
   ReplayListItem,
@@ -83,7 +84,7 @@ function personName(person: unknown, members: ProjectMeta['members']) {
 }
 
 async function call(path: string, body?: Record<string, unknown>) {
-  const res = await fetch(path, {
+  const res = await apiFetch(path, {
     cache: 'no-store',
     ...(body
       ? {

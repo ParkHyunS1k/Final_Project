@@ -28,7 +28,9 @@ import {
   Flag,
   Folder,
   Sparkles,
+  LogOut,
 } from 'lucide-react';
+import { apiFetch, signInWithGoogle, signOut } from '@/lib/supabase-browser';
 export const workspaceViews = [
   { id: 'plan', label: '프로젝트 업무', icon: ListTodo },
   { id: 'mine', label: '내 할 일', icon: UserRound },
@@ -130,7 +132,7 @@ export type InvitePreview = {
   deliverables: string[];
 };
 async function api(path: string, body?: Record<string, unknown>) {
-  const res = await fetch(path, {
+  const res = await apiFetch(path, {
     cache: 'no-store',
     ...(body
       ? {
@@ -286,6 +288,10 @@ export function ProjectWorkspace({
           )}
         </SidebarContent>
         <SidebarFooter>
+          <WorkspaceButton onClick={() => void signOut()}>
+            <LogOut size={16} />
+            로그아웃
+          </WorkspaceButton>
           <p className="sidebar-note">
             작게 시작하고, 함께 완성하기.
             <br />
@@ -306,20 +312,12 @@ export function ProjectWorkspace({
           <div className="project-panel" role="alert">
             <p>{error}</p>
             {error.includes('로그인') && (
-              <a
+              <button
                 className="btn primary"
-                href={
-                  '/signin-with-chatgpt?return_to=' +
-                  encodeURIComponent(
-                    typeof location !== 'undefined'
-                      ? location.pathname + location.search
-                      : '/',
-                  )
-                }
-                target="_top"
+                onClick={() => void signInWithGoogle()}
               >
-                ChatGPT로 로그인
-              </a>
+                Google로 로그인
+              </button>
             )}
           </div>
         )}
@@ -563,7 +561,7 @@ export function ProjectDetails({
               }}
             >
               <label>
-                팀원의 ChatGPT 로그인 이메일
+                팀원의 Google 계정 이메일
                 <input
                   type="email"
                   required
