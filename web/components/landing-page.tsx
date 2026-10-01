@@ -415,7 +415,7 @@ export function LandingPage() {
           <div className="pin-stage">
             <video
               data-src="/landing/race.mp4"
-              data-range="0,0.8"
+              data-range="0,0.85"
               poster="/landing/car.jpg"
               muted
               playsInline
@@ -423,7 +423,9 @@ export function LandingPage() {
               aria-hidden="true"
             />
             <div className="cine-copy">
-              <p className="kicker">스프린트</p>
+              <p className="kicker" data-on="0.45">
+                스프린트
+              </p>
               <p className="cine-line">
                 <span data-on="0.45">팀이 모이면,</span>
                 <span data-on="0.7">이제, 스프린트.</span>

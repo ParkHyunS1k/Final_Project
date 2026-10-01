@@ -1071,8 +1071,9 @@ body:has(.rl) {
   height: 100%;
   object-fit: cover;
 }
+/* 레이싱카 영상(5초)이 스크롤 약 290svh에 걸쳐 재생되도록 길게 둔다. */
 #launch {
-  height: calc(100svh + 200svh);
+  height: calc(100svh + 340svh);
 }
 #checkin {
   height: calc(100svh + 180svh);
@@ -1149,6 +1150,7 @@ body:has(.rl) {
   transition: opacity 0.6s, filter 0.6s, transform 0.6s;
 }
 .cine-line span:not(.on),
+.cine-copy .kicker[data-on]:not(.on),
 .cine-copy .lead:not(.on) {
   opacity: 0;
   filter: blur(14px);
