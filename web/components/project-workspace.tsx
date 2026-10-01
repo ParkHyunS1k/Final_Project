@@ -477,11 +477,43 @@ export function ProjectWorkspace({
 }
 export function ProjectDetails({
   state,
+}: {
+  state: ProjectMeta & {
+    sprint: { tasks: unknown[] };
+  };
+}) {
+  return (
+    <section className="project-panel project-agreement">
+      <span className="eyebrow">
+        {state.details.legacy ? '기존 샘플 프로젝트' : '팀이 합의한 목표'}
+      </span>
+      <h2>{state.details.goal}</h2>
+      <ul>
+        {JSON.parse(state.details.deliverables).map((v: string) => (
+          <li key={v}>{v}</li>
+        ))}
+      </ul>
+      <p>
+        <b>완료 기준</b> {state.details.completion_criteria}
+      </p>
+      {!state.sprint.tasks.length && (
+        <p>
+          프로젝트 생성이 완료됐습니다. 실행 계획에서 업무와 담당자를 등록하고,
+          팀 · 공수에서 팀원을 초대해주세요.
+        </p>
+      )}
+    </section>
+  );
+}
+
+// 팀장 전용 초대 관리. 팀원 목록은 팀 · 공수의 팀 상태가 보여주므로 여기서는 초대만 다룬다.
+export function TeamInvites({
+  state,
   refresh,
 }: {
   state: ProjectMeta & {
     asOf: string;
-    sprint: { revision: number; finished: boolean; tasks: unknown[] };
+    sprint: { revision: number; finished: boolean };
   };
   refresh: () => Promise<unknown>;
 }) {
@@ -516,131 +548,96 @@ export function ProjectDetails({
       setBusy(false);
     }
   }
+  if (state.me.role !== 'owner') return null;
   return (
-    <section className="project-panel project-agreement">
-      <span className="eyebrow">
-        {state.details.legacy ? '기존 샘플 프로젝트' : '팀이 합의한 목표'}
-      </span>
-      <h2>{state.details.goal}</h2>
+    <>
+      <div className="section-heading">
+        <h2>팀원 초대</h2>
+        <span className="pill">팀원 {state.members.length}/4</span>
+      </div>
+      <form
+        className="project-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void runAction('invite', { email });
+        }}
+      >
+        <label>
+          팀원의 Google 계정 이메일
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            maxLength={254}
+          />
+        </label>
+        <button
+          className="btn primary"
+          disabled={busy || state.sprint.finished}
+        >
+          초대 링크 만들기
+        </button>
+      </form>
+      <p className="hint">
+        초대 링크는 지정된 이메일로만 수락할 수 있으며 7일 뒤 만료됩니다.
+        현재 비공개 파일럿은 사이트 접근 권한도 별도로 필요합니다.
+      </p>
+      {link && (
+        <label className="project-form">
+          새 초대 링크
+          <input
+            aria-label="새 초대 링크"
+            readOnly
+            value={link}
+            onFocus={(e) => e.target.select()}
+          />
+          <button
+            className="btn"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(link);
+                setMessage('링크를 복사했습니다.');
+              } catch {
+                setMessage('링크를 선택해서 복사해주세요.');
+              }
+            }}
+          >
+            링크 복사
+          </button>
+        </label>
+      )}
       <ul>
-        {JSON.parse(state.details.deliverables).map((v: string) => (
-          <li key={v}>{v}</li>
+        {state.invites.map((i) => (
+          <li key={i.id}>
+            {i.email} ·{' '}
+            {i.status === 'pending'
+              ? Date.parse(i.expires_at) > Date.parse(state.asOf)
+                ? '대기'
+                : '만료'
+              : i.status === 'accepted'
+                ? '수락 완료'
+                : '취소'}{' '}
+            · 만료{' '}
+            {new Date(i.expires_at).toLocaleString('ko-KR', {
+              timeZone: 'Asia/Seoul',
+            })}{' '}
+            {i.status === 'pending' && (
+              <button
+                className="btn"
+                disabled={busy}
+                onClick={() => {
+                  setLink('');
+                  void runAction('revoke', { inviteId: i.id });
+                }}
+              >
+                취소
+              </button>
+            )}
+          </li>
         ))}
       </ul>
-      <p>
-        <b>완료 기준</b> {state.details.completion_criteria}
-      </p>
-      {!state.sprint.tasks.length && (
-        <p>
-          프로젝트 생성이 완료됐습니다. 실행 계획에서 업무와 담당자를 등록하고,
-          팀 · 가용시간에서 날짜별 작업 시간을 입력해주세요.
-        </p>
-      )}
-      <details>
-        <summary>
-          팀원 {state.members.length}/4 ·{' '}
-          {state.me.role === 'owner' ? '초대 관리' : '참여 현황'}
-        </summary>
-        <ul>
-          {state.members.map((m) => (
-            <li key={m.person}>
-              {m.display_name} · {m.role === 'owner' ? '팀장' : '팀원'} ·{' '}
-              {m.agreed_at ? '목표 확인 완료' : '참여 조건 확인 전'}
-            </li>
-          ))}
-        </ul>
-        <p>
-          팀장은 초대와 최종 승인을 관리합니다. 팀원은 본인의 업무와 가용시간을
-          변경할 수 있습니다.
-        </p>
-        {state.me.role === 'owner' && (
-          <>
-            <form
-              className="project-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void runAction('invite', { email });
-              }}
-            >
-              <label>
-                팀원의 Google 계정 이메일
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  maxLength={254}
-                />
-              </label>
-              <button
-                className="btn primary"
-                disabled={busy || state.sprint.finished}
-              >
-                초대 링크 만들기
-              </button>
-            </form>
-            <p>
-              초대 링크는 지정된 이메일로만 수락할 수 있으며 7일 뒤 만료됩니다.
-              현재 비공개 파일럿은 사이트 접근 권한도 별도로 필요합니다.
-            </p>
-            {link && (
-              <label className="project-form">
-                새 초대 링크
-                <input
-                  aria-label="새 초대 링크"
-                  readOnly
-                  value={link}
-                  onFocus={(e) => e.target.select()}
-                />
-                <button
-                  className="btn"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(link);
-                      setMessage('링크를 복사했습니다.');
-                    } catch {
-                      setMessage('링크를 선택해서 복사해주세요.');
-                    }
-                  }}
-                >
-                  링크 복사
-                </button>
-              </label>
-            )}
-            <ul>
-              {state.invites.map((i) => (
-                <li key={i.id}>
-                  {i.email} ·{' '}
-                  {i.status === 'pending'
-                    ? Date.parse(i.expires_at) > Date.parse(state.asOf)
-                      ? '대기'
-                      : '만료'
-                    : i.status === 'accepted'
-                      ? '수락 완료'
-                      : '취소'}{' '}
-                  · 만료{' '}
-                  {new Date(i.expires_at).toLocaleString('ko-KR', {
-                    timeZone: 'Asia/Seoul',
-                  })}{' '}
-                  {i.status === 'pending' && (
-                    <button
-                      className="btn"
-                      disabled={busy}
-                      onClick={() => {
-                        setLink('');
-                        void runAction('revoke', { inviteId: i.id });
-                      }}
-                    >
-                      취소
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-        {message && <output>{message}</output>}
-      </details>
-    </section>
+      {message && <output>{message}</output>}
+    </>
   );
 }

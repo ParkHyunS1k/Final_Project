@@ -8,6 +8,7 @@ import { DeadlineCalendar } from '@/components/deadline-calendar';
 import {
   ProjectWorkspace,
   ProjectDetails,
+  TeamInvites,
   type ProjectMeta,
   workspaceViews,
 } from '@/components/project-workspace';
@@ -533,7 +534,7 @@ function Dashboard({
                 )}
               </section>
             )}
-            {tab === 'docs' && <ProjectDetails state={state!} refresh={load} />}
+            {tab === 'docs' && <ProjectDetails state={state!} />}
             {tab === 'today' && (
               <section className="work-section">
                 <DeadlineCalendar
@@ -868,6 +869,7 @@ function Dashboard({
                     참여 중단 보고
                   </button>
                 )}
+                <TeamInvites state={state!} refresh={load} />
               </section>
             )}
             {tab === 'ai' && (
