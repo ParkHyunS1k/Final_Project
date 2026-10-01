@@ -443,9 +443,9 @@ export function LandingPage() {
             <div className="feat-copy">
               <p className="kicker">출발 전 설계</p>
               <h2>
-                스프린트 전,
+                계획서를 올리면,
                 <br />
-                7일을 설계합니다.
+                AI가 업무를 배정합니다.
               </h2>
               <ol className="feat-list">
                 <li>
@@ -599,34 +599,70 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="pin dive" id="dive" data-pin aria-hidden="true">
-          <div className="pin-stage">
-            <video
-              data-src="/landing/dive.mp4"
-              poster="/landing/dive.jpg"
-              muted
-              playsInline
-              preload="auto"
-            />
-          </div>
-        </section>
-
-        <section className="pin cine" id="checkin" data-pin>
-          <div className="pin-stage">
-            <video
-              data-src="/landing/checkin.mp4"
-              data-range="0,0.8"
-              poster="/landing/checkin.jpg"
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-            />
-            <div className="cine-copy center">
+        <section className="pin alarm" id="checkin" data-pin>
+          <div className="pin-stage alarm-stage">
+            <div className="alarm-left">
               <p className="kicker">체크인</p>
-              <p className="cine-line big">
-                <span data-on="0.15">일정이 밀리는 순간,</span>
-                <span data-on="0.4">바로 경고</span>
+              <p className="cine-line">
+                <span data-on="0.12">
+                  일정이{' '}
+                  <br />
+                  밀리는 순간,
+                </span>
+              </p>
+            </div>
+            <div className="monitor">
+              {/* eslint-disable-next-line @next/next/no-img-element -- 장식용 모니터 */}
+              <img src="/landing/monitor.jpg" alt="" />
+              {/* 지금 앱 홈(스프린트 현황)이 마감 임박으로 빨갛게 바뀐다. 새 화면 디자인 전까지 임시. */}
+              <div className="screen" aria-hidden="true">
+                <div className="app">
+                  <aside className="app-side">
+                    <strong>ProjectMate</strong>
+                    <span className="on">스프린트 현황</span>
+                    <span>프로젝트 업무</span>
+                    <span>내 할 일</span>
+                    <span>변경안 검토</span>
+                    <span>완주 확인</span>
+                  </aside>
+                  <div className="app-main">
+                    <div className="pane active">
+                      <small className="s-eyebrow">러닝크루 MVP · 최종 마감 D-4</small>
+                      <h3>스프린트 현황</h3>
+                      <div className="cal">
+                        {[
+                          ['목표 합의', '전원 ✓'],
+                          ['화면 설계', '수빈 ✓'],
+                          ['로그인', '민서 18:00'],
+                          ['모임 검색', '수빈 18:00'],
+                          ['참가 신청', '하린 18:00'],
+                          ['통합 테스트', '준호 16:00'],
+                          ['결과물 확인', '최종 마감'],
+                        ].map(([task, who], i) => (
+                          <div
+                            className={`s-day ${i === 2 ? 's-today' : ''}`}
+                            data-on="0"
+                            key={task}
+                          >
+                            <small>DAY {String(i + 1).padStart(2, '0')}</small>
+                            <b>{task}</b>
+                            <span>{who}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <i className="alarm-tint" data-on="0.35" />
+              </div>
+            </div>
+            <div className="alarm-right">
+              <p className="cine-line">
+                <span data-on="0.4">
+                  즉시{' '}
+                  <br />
+                  업무 재배정
+                </span>
               </p>
               <p className="lead" data-on="0.6">
                 체크인 한 번이면 남은 공수로 일정이 다시 계산됩니다.

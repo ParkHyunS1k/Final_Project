@@ -1007,17 +1007,6 @@ body:has(.rl) {
   height: 100svh;
   overflow: hidden;
 }
-/* 모니터 화면 속으로 카메라가 들어가며 암전되고, 그대로 체크인 장면으로 이어진다. */
-#dive {
-  height: calc(100svh + 100svh);
-}
-.dive video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 /* 레이싱카 영상(5초)이 스크롤 약 290svh에 걸쳐 재생되도록 길게 둔다. */
 #launch {
   height: calc(100svh + 340svh);
@@ -1114,6 +1103,66 @@ body:has(.rl) {
   opacity: 0;
   filter: blur(14px);
   transform: translateY(0.25em);
+}
+
+/* 체크인: 가운데 모니터, 양옆 문구. 스크롤하면 화면이 빨갛게 깜빡이며 경고한다. */
+.alarm-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr) minmax(0, 1fr);
+  gap: clamp(16px, 2vw, 32px);
+  align-items: center;
+  padding: 72px clamp(16px, 4vw, 64px);
+  box-sizing: border-box;
+}
+.alarm .monitor {
+  width: 100%;
+}
+.alarm-left {
+  text-align: right;
+}
+.alarm .cine-line {
+  font-size: clamp(30px, 3.4vw, 56px);
+}
+.alarm-right .cine-line span {
+  color: var(--bad);
+}
+.alarm .lead {
+  font-size: 16px;
+  transition: opacity 0.6s;
+}
+.alarm .lead:not(.on) {
+  opacity: 0;
+}
+.alarm-tint {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgb(255 59 48 / 0.18), rgb(255 59 48 / 0.6));
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transition: opacity 0.6s;
+  pointer-events: none;
+}
+.alarm-tint.on {
+  animation: alarm-pulse 1.1s ease-in-out infinite alternate;
+}
+@keyframes alarm-pulse {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* 경고가 켜지면 오늘 칸도 빨개지고, 모니터 주변으로 붉은 빛이 번진다. */
+.alarm:has(.alarm-tint.on) .s-today {
+  border-color: #d92d20;
+  background: #fdecea;
+}
+.alarm .monitor img {
+  transition: filter 0.6s;
+}
+.alarm:has(.alarm-tint.on) .monitor img {
+  filter: drop-shadow(0 0 70px rgb(255 59 48 / 0.45));
 }
 
 /* 텔레메트리: 팀원 체크인 카드가 떠 있고, 가운데 숫자가 굴러간다. */
@@ -1671,6 +1720,21 @@ body:has(.rl) {
     height: 34px;
     margin-bottom: 6px;
   }
+  .alarm-stage {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 16px;
+    padding: 64px 16px 88px;
+  }
+  .alarm-left {
+    text-align: left;
+  }
+  .alarm .cine-line {
+    font-size: 30px;
+  }
+  .alarm .cine-line br {
+    display: none;
+  }
   .tele-stage {
     grid-template-columns: minmax(0, 1fr);
     align-content: center;
@@ -1761,10 +1825,6 @@ body:has(.rl) {
   .tile.text small {
     font-size: 12px;
   }
-  /* 휴대폰에는 모니터가 없으니 줌인 전환도 뺀다. */
-  #dive {
-    display: none;
-  }
   .tile.c,
   .tile.d,
   .tile.g,
@@ -1794,9 +1854,6 @@ body:has(.rl) {
   #launch .pin-stage {
     opacity: 1;
   }
-  #dive {
-    display: none;
-  }
   .mosaic-grid {
     --z: 1;
   }
@@ -1810,6 +1867,10 @@ body:has(.rl) {
   }
   .monitor {
     transform: none;
+  }
+  .alarm-tint.on {
+    animation: none;
+    opacity: 1;
   }
   .cursor {
     display: none;
