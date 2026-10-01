@@ -274,8 +274,9 @@ body:has(.rl) {
 #diagnose {
   height: calc(100svh + 200svh);
 }
+/* 내용은 앞 56%에서 다 나오고, 마지막 25%(약 80svh)는 페이드아웃에 쓴다. */
 #match {
-  height: calc(100svh + 220svh);
+  height: calc(100svh + 320svh);
 }
 #proof {
   height: calc(100svh + 160svh);
@@ -1005,14 +1006,14 @@ body:has(.rl) {
 /* 팀 매칭 → 레이싱카는 스크롤로 밀려 올라가지 않고 페이드아웃·페이드인으로 넘어간다.
    레이싱카 구간을 팀 매칭 끝 100svh에 겹쳐 두면, 매칭이 사라지는 순간 바로 레이싱카 고정이 시작된다. */
 #match .pin-stage {
-  opacity: clamp(0, (1 - var(--p, 0)) / 0.1, 1);
+  opacity: clamp(0, (1 - var(--p, 0)) / 0.25, 1);
 }
 #launch {
   position: relative;
   margin-top: -100svh;
 }
 #launch .pin-stage {
-  opacity: clamp(0, var(--p, 0) / 0.08, 1);
+  opacity: clamp(0, var(--p, 0) / 0.2, 1);
 }
 #checkin {
   height: calc(100svh + 180svh);

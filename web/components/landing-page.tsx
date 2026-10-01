@@ -335,25 +335,25 @@ export function LandingPage() {
               </p>
             </div>
             <div className="mt">
-              <div className="mt-me" data-on="0.02">
+              <div className="mt-me" data-on="0.01">
                 <small>하린의 이력서에서 읽은 것</small>
                 <div className="mt-chips">
                   {['포지션 · 백엔드', 'Java', 'Spring', 'SQL'].map((c, i) => (
-                    <span data-on={(0.08 + i * 0.06).toFixed(2)} key={c}>
+                    <span data-on={(0.06 + i * 0.04).toFixed(2)} key={c}>
                       {c}
                     </span>
                   ))}
-                  <span className="mt-want" data-on="0.34">
+                  <span className="mt-want" data-on="0.24">
                     채울 역량 · REST API, Docker
                   </span>
                 </div>
               </div>
               <div className="mt-team">
                 {[
-                  ['민', '민서', '기획 · PM', '서비스 기획 · Figma', 0.5],
-                  ['수', '수빈', '프론트엔드', 'React · TypeScript', 0.58],
-                  ['하', '하린', '백엔드', 'Java · Spring', 0.44],
-                  ['준', '준호', '인프라 · QA', 'Docker · 테스트 자동화', 0.66],
+                  ['민', '민서', '기획 · PM', '서비스 기획 · Figma', 0.35],
+                  ['수', '수빈', '프론트엔드', 'React · TypeScript', 0.41],
+                  ['하', '하린', '백엔드', 'Java · Spring', 0.31],
+                  ['준', '준호', '인프라 · QA', 'Docker · 테스트 자동화', 0.46],
                 ].map(([av, name, pos, stack, on], i) => (
                   <div
                     className={`mt-card m${i}`}
@@ -367,7 +367,7 @@ export function LandingPage() {
                   </div>
                 ))}
               </div>
-              <p className="mt-done" data-on="0.8">
+              <p className="mt-done" data-on="0.56">
                 4인 팀 매칭 완료 <span>· 포지션 겹침 없음</span>
               </p>
             </div>
