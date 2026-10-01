@@ -12,8 +12,8 @@ import {
 import './landing.css';
 
 const START = '/workspace?create=1';
-// 첫 화면 영상은 스크롤의 앞 78% 동안 재생되고, 나머지 구간에서 둥근 카드로 줄어든다.
-const HERO_VIDEO_SHARE = 0.78;
+// 첫 화면은 스크롤의 앞 78% 동안 노트북으로 다가가고, 나머지 구간에서 둥근 카드로 줄어든다.
+const HERO_PUSH_SHARE = 0.78;
 
 type Key = { t: number; k?: string; x?: number; y?: number; press?: boolean };
 // 모니터 속 화면별 커서 경로. k는 data-k 요소의 가운데, 없으면 x·y(화면 기준 %).
@@ -51,7 +51,6 @@ export function LandingPage() {
   useEffect(() => {
     const root = rootRef.current!;
     const hero = root.querySelector<HTMLElement>('.hero')!;
-    const heroVideo = root.querySelector<HTMLVideoElement>('.hero video')!;
     const rules = root.querySelector<HTMLElement>('#rules')!;
     const setup = root.querySelector<HTMLElement>('#setup')!;
     const setupStage = setup.querySelector<HTMLElement>('.stage')!;
@@ -73,7 +72,6 @@ export function LandingPage() {
     const videos = [...root.querySelectorAll<HTMLVideoElement>('video[data-src]')];
     // 휴대폰·동작 줄이기에서는 영상을 받지 않고 포스터만 보여 준다.
     if (!reduced.matches && !phone.matches) {
-      heroVideo.src = '/landing/desk.mp4';
       for (const v of videos) v.src = v.dataset.src!;
     }
     // 영상별 목표 시각. 탐색이 끝나면(seeked) 그사이 바뀐 목표로 다시 맞춘다.
@@ -173,13 +171,11 @@ export function LandingPage() {
         vh,
         vh,
       );
-      const videoP = Math.min(1, heroP / HERO_VIDEO_SHARE);
-      root.style.setProperty('--hero', String(videoP));
+      root.style.setProperty('--hero', String(Math.min(1, heroP / HERO_PUSH_SHARE)));
       root.style.setProperty(
         '--shrink',
-        String(clamp((heroP - HERO_VIDEO_SHARE) / (1 - HERO_VIDEO_SHARE))),
+        String(clamp((heroP - HERO_PUSH_SHARE) / (1 - HERO_PUSH_SHARE))),
       );
-      scrub(heroVideo, videoP);
       syncSetup(vh);
       for (const sec of pins) syncPin(sec, vh);
       // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 모니터 속으로 들어간 뒤(체크인)부터 흐른다.
@@ -203,8 +199,7 @@ export function LandingPage() {
       root.style.setProperty('--mx', String((e.clientX / innerWidth) * 2 - 1));
       root.style.setProperty('--my', String((e.clientY / innerHeight) * 2 - 1));
     }
-    const scrubbed = [heroVideo, ...videos];
-    for (const v of scrubbed) {
+    for (const v of videos) {
       v.addEventListener('loadeddata', sync);
       v.addEventListener('seeked', onSeeked);
     }
@@ -214,7 +209,7 @@ export function LandingPage() {
     sync();
     return () => {
       cancelAnimationFrame(frame);
-      for (const v of scrubbed) {
+      for (const v of videos) {
         v.removeEventListener('loadeddata', sync);
         v.removeEventListener('seeked', onSeeked);
       }
@@ -238,15 +233,9 @@ export function LandingPage() {
       <main>
         <section className="hero" id="top">
           <div className="hero-stage">
-            <video
-              muted
-              playsInline
-              preload="auto"
-              poster="/landing/desk.jpg"
-              aria-hidden="true"
-            />
-            {/* eslint-disable-next-line @next/next/no-img-element -- 모바일 정지 화면, 최적화 경로 불필요 */}
-            <img className="hero-still" src="/landing/desk.jpg" alt="" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- 스크롤로 확대하는 배경, 최적화 경로 불필요 */}
+            <img className="hero-img" src="/landing/desk.jpg" alt="" />
+            <i className="hero-glow" aria-hidden="true" />
             <div className="hero-copy">
               <p className="kicker">취준생을 위한 7일 프로젝트 스프린트</p>
               <h1>
