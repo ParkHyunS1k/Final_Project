@@ -1037,7 +1037,7 @@ body:has(.rl) {
   height: calc(100svh + 200svh);
 }
 #closing {
-  height: calc(100svh + 150svh);
+  height: calc(100svh + 60svh);
 }
 
 /* 시네마틱: 영상이 화면을 채우고 큰 글자가 흐림에서 떠오른다. */
@@ -1441,139 +1441,69 @@ body:has(.rl) {
   opacity: 0;
 }
 
-/* 마무리: 가까이 당겨 둔 모자이크가 스크롤하면 한 장으로 물러나며 모인다. */
-#closing .pin-stage {
+/* 마무리: 화면 하나에 제목·부제·버튼 하나. 뒤에는 첫 화면의 168:00:00이 흐리게 돌아온다. */
+.final .pin-stage {
   display: grid;
   place-items: center;
-  /* 위는 헤더, 아래는 레이스 시계 자리를 비운다. */
-  padding: 72px 0 92px;
-  box-sizing: border-box;
+  background: radial-gradient(ellipse 60% 45% at 50% 100%, rgb(255 90 31 / 0.2), transparent 70%);
 }
-.mosaic-grid {
-  --z: calc(1 + 1.3 * (1 - clamp(0, var(--p, 0) * 1.6, 1)));
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: 1fr 1.3fr 1fr;
-  grid-template-areas:
-    'a b c d'
-    'e cta cta f'
-    'g h i j';
-  gap: 14px;
-  width: min(1360px, calc(100vw - 48px));
-  height: calc(100svh - 164px);
-  transform: scale(var(--z));
-}
-.tile {
+.final-inner {
   position: relative;
-  margin: 0;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--panel);
-  transition: opacity 0.6s;
-}
-.tile:not(.on):not(.cta) {
-  opacity: 0;
-}
-.tile img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* 사진마다 주황이 강해 톤을 살짝 눌러 한 장처럼 보이게 한다. */
-  filter: saturate(0.85) brightness(0.88);
-  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.4s;
-}
-.tile::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(transparent 55%, rgb(11 11 12 / 0.45));
-  pointer-events: none;
-}
-@media (hover: hover) {
-  figure.tile:hover img {
-    transform: scale(1.04);
-    filter: saturate(1) brightness(1);
-  }
-}
-.tile.a { grid-area: a; }
-.tile.b { grid-area: b; }
-.tile.c { grid-area: c; }
-.tile.d { grid-area: d; }
-.tile.e { grid-area: e; }
-.tile.f { grid-area: f; }
-.tile.g { grid-area: g; }
-.tile.h { grid-area: h; }
-.tile.i { grid-area: i; }
-.tile.j { grid-area: j; }
-/* 숫자 칸: 위에 짧은 설명, 아래에 큰 숫자. */
-.tile.text {
+  isolation: isolate;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  align-items: end;
-  gap: 12px;
-  padding: clamp(18px, 1.8vw, 26px);
-  background: linear-gradient(160deg, #1b1b1e, #111113 70%);
-}
-.tile.text::after {
-  display: none;
-}
-.tile.text small {
-  color: var(--dim);
-  font-size: 14px;
-}
-.tile.text strong {
-  color: var(--heat);
-  font: 600 clamp(28px, 2.8vw, 46px) / 1 var(--font-geist-mono), monospace;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-}
-.tile.j strong {
-  color: var(--text);
-  font-family: inherit;
-  letter-spacing: -0.03em;
-}
-/* 168 칸 아래 7일 막대: 레이스 시계와 같은 눈금. */
-.tile .days {
-  display: block;
-  height: 6px;
-  border-radius: 99px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--heat) 0 calc(100% / 7 - 4px),
-    transparent 0 calc(100% / 7)
-  );
-  opacity: 0.85;
-}
-/* 가운데 카드: 시선이 모이도록 뒤에 은은한 빛을 깐다. */
-.tile.cta {
-  grid-area: cta;
-  display: grid;
-  place-content: center;
   justify-items: center;
-  gap: 4px;
-  padding: clamp(18px, 2vw, 32px);
-  background:
-    radial-gradient(ellipse 70% 90% at 50% 110%, rgb(255 90 31 / 0.22), transparent 70%),
-    #0e0e10;
+  padding: 0 16px;
   text-align: center;
 }
-.tile.cta::after {
-  display: none;
+.final-clock {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 46%;
+  margin: 0;
+  color: rgb(255 255 255 / 0.05);
+  font: 500 19vw / 1 var(--font-geist-mono), monospace;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
-.tile.cta h2 {
-  font-size: clamp(28px, 3.2vw, 50px);
-  line-height: 1.15;
+.final h2 {
+  font-size: clamp(44px, 6.4vw, 104px);
+  line-height: 1.05;
 }
-.tile.cta h2 em {
+.final h2 em {
   color: var(--heat);
   font-style: normal;
 }
-.tile.cta .hero-actions {
-  justify-content: center;
-  margin-top: 22px;
+.final .lead {
+  margin: 24px auto 0;
+}
+.rl-btn.big {
+  gap: 10px;
+  min-height: 64px;
+  margin-top: 40px;
+  padding: 0 36px;
+  font-size: 19px;
+  box-shadow: 0 16px 48px rgb(255 90 31 / 0.35);
+}
+.rl-btn.big span {
+  transition: transform 0.2s;
+}
+.rl-btn.big:hover span {
+  transform: translateX(4px);
+}
+.final-note {
+  margin: 18px 0 0;
+  color: var(--dim);
+  font-size: 13px;
+}
+.final [data-on] {
+  transition: opacity 0.7s, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.final [data-on]:not(.on) {
+  opacity: 0;
+  transform: translateY(24px);
 }
 
 /* 레이스 시계: 스크롤이 곧 7일이다. */
@@ -1820,35 +1750,8 @@ body:has(.rl) {
     --x: -6vw;
     --y: 28svh;
   }
-  #closing .pin-stage {
-    padding: 64px 0 84px;
-  }
-  .mosaic-grid {
-    width: calc(100vw - 32px);
-    height: calc(100svh - 148px);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 1fr 1.7fr 1fr 0.8fr;
-    grid-template-areas:
-      'a b'
-      'cta cta'
-      'e f'
-      'h j';
-    gap: 8px;
-  }
-  .tile.cta h2 {
-    font-size: 28px;
-  }
-  .tile.text strong {
-    font-size: 24px;
-  }
-  .tile.text small {
-    font-size: 12px;
-  }
-  .tile.c,
-  .tile.d,
-  .tile.g,
-  .tile.i {
-    display: none;
+  .final-clock {
+    font-size: 16vw;
   }
   .hud {
     font-size: 12px;
@@ -1872,9 +1775,6 @@ body:has(.rl) {
   #match .pin-stage,
   #launch .pin-stage {
     opacity: 1;
-  }
-  .mosaic-grid {
-    --z: 1;
   }
   .hero-stage {
     opacity: 1;

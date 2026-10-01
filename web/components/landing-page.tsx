@@ -808,45 +808,27 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="pin mosaic" id="closing" data-pin>
+        {/* 마지막: 버튼 하나. 첫 화면의 168:00:00을 다시 깔아 처음과 끝을 맞춘다. */}
+        <section className="pin final" id="closing" data-pin>
           <div className="pin-stage">
-            <div className="mosaic-grid">
-              {[
-                ['a', 'm1', 0.08],
-                ['b', 'm4', 0.14],
-                ['c', 'm3', 0.2],
-                ['d', 'm2', 0.12],
-                ['e', 'm5', 0.18],
-                ['f', 'm6', 0.1],
-                ['g', 'm7', 0.16],
-                ['i', 'm8', 0.22],
-              ].map(([area, img, on]) => (
-                <figure className={`tile ${area}`} data-on={on} key={area as string}>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- 장식용 모자이크 */}
-                  <img src={`/landing/${img}.jpg`} alt="" loading="lazy" />
-                </figure>
-              ))}
-              <div className="tile h text" data-on="0.24">
-                <small>출발부터 결승까지</small>
-                <strong>168:00:00</strong>
-                <i className="days" aria-hidden="true" />
-              </div>
-              <div className="tile j text" data-on="0.26">
-                <small>목표 잠금 · 이월 없음</small>
-                <strong>연장 0회</strong>
-              </div>
-              <div className="tile cta">
-                <h2>
-                  다음 7일,
-                  <br />
-                  <em>출발선에 서세요.</em>
-                </h2>
-                <div className="hero-actions">
-                  <Link className="rl-btn" href={START} prefetch={false}>
-                    7일 시작하기
-                  </Link>
-                </div>
-              </div>
+            <div className="final-inner">
+              <p className="final-clock" aria-hidden="true">
+                168:00:00
+              </p>
+              <h2 data-on="0.05">
+                지금 바로
+                <br />
+                <em>실행하세요.</em>
+              </h2>
+              <p className="lead" data-on="0.15">
+                팀을 만들고 목표를 정하면, 7일 스프린트가 시작됩니다.
+              </p>
+              <Link className="rl-btn big" href={START} prefetch={false} data-on="0.25">
+                스프린트 시작하기 <span aria-hidden="true">→</span>
+              </Link>
+              <p className="final-note" data-on="0.3">
+                ChatGPT 계정으로 바로 로그인 · 2–4인 팀 · 연장 없는 7일
+              </p>
             </div>
           </div>
         </section>
