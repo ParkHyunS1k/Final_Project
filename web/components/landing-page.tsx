@@ -12,11 +12,8 @@ import {
 import './landing.css';
 
 const START = '/workspace?create=1';
-const CAREERFLOW_URL = process.env.NEXT_PUBLIC_CAREERFLOW_URL || 'http://127.0.0.1:8766/';
 // 첫 화면 영상은 스크롤의 앞 78% 동안 재생되고, 나머지 구간에서 둥근 카드로 줄어든다.
 const HERO_VIDEO_SHARE = 0.78;
-// 출발 신호 영상에서 불이 모두 꺼지는 지점(구간 진행률). 레이스 시계가 여기서 흐른다.
-const LIGHTS_OUT = 0.56;
 
 type Key = { t: number; k?: string; x?: number; y?: number; press?: boolean };
 // 모니터 속 화면별 커서 경로. k는 data-k 요소의 가운데, 없으면 x·y(화면 기준 %).
@@ -65,7 +62,7 @@ export function LandingPage() {
     const menu = [...setup.querySelectorAll<HTMLElement>('.app-side [data-pane]')];
     // 고정 구간(data-pin)마다 진행률 --p를 주고, 안쪽 [data-on] 요소를 켜고 끈다.
     const pins = [...root.querySelectorAll<HTMLElement>('[data-pin]')];
-    const go = root.querySelector<HTMLElement>('#go')!;
+    const checkin = root.querySelector<HTMLElement>('#checkin')!;
     const finish = root.querySelector<HTMLElement>('#finish')!;
     const hud = root.querySelector<HTMLElement>('.hud')!;
     const hudDay = hud.querySelector<HTMLElement>('.hud-day')!;
@@ -185,9 +182,9 @@ export function LandingPage() {
       scrub(heroVideo, videoP);
       syncSetup(vh);
       for (const sec of pins) syncPin(sec, vh);
-      // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 출발 신호가 꺼진 뒤부터 흐른다.
+      // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 모니터 속으로 들어간 뒤(체크인)부터 흐른다.
       const top = (el: HTMLElement) => el.getBoundingClientRect().top + scrollY;
-      const start = top(go) + (go.offsetHeight - stageOf(go).offsetHeight) * LIGHTS_OUT;
+      const start = top(checkin);
       const end = top(finish) + finish.offsetHeight - vh;
       const lap = (scrollY - start) / (end - start);
       const clock = raceClock(lap);
@@ -233,14 +230,9 @@ export function LandingPage() {
         <a className="rl-brand" href="#top">
           ProjectMate
         </a>
-        <div className="rl-top-actions">
-          <a className="rl-link careerflow-link" href={CAREERFLOW_URL} target="_blank" rel="noreferrer">
-            공고·이력서 ↗
-          </a>
-          <Link className="rl-btn small" href={START} prefetch={false}>
-            7일 시작하기
-          </Link>
-        </div>
+        <Link className="rl-btn small" href={START} prefetch={false}>
+          7일 시작하기
+        </Link>
       </header>
 
       <main>
@@ -256,29 +248,127 @@ export function LandingPage() {
             {/* eslint-disable-next-line @next/next/no-img-element -- 모바일 정지 화면, 최적화 경로 불필요 */}
             <img className="hero-still" src="/landing/car.jpg" alt="" />
             <div className="hero-copy">
-              <p className="kicker">7일 프로젝트 스프린트</p>
+              <p className="kicker">취준생을 위한 7일 프로젝트 스프린트</p>
               <h1>
                 <span className="line">이번엔,</span>
                 <span className="line">끝까지.</span>
               </h1>
               <p className="lead">
-                기한은 7일. 목표는 고정, 연장은 없습니다.
-                <br />팀 전체를 한 번에 결승선까지
+                공고가 원하는 경험, 7일 팀 프로젝트로 채웁니다.
+                <br />기한은 7일. 목표는 고정, 연장은 없습니다.
               </p>
               <div className="hero-actions">
                 <Link className="rl-btn" href={START} prefetch={false}>
                   7일 시작하기
                 </Link>
-                <a className="rl-link" href="#rules">
+                <a className="rl-link" href="#diagnose">
                   스크롤해서 출발 ↓
                 </a>
               </div>
             </div>
             <p className="hero-end" aria-hidden="true">
-              계획이 끝나면
+              출발 전에,
               <br />
-              <em>이제, 스프린트.</em>
+              <em>무엇이 부족한지부터.</em>
             </p>
+          </div>
+        </section>
+
+        <section className="pin duo" id="diagnose" data-pin>
+          <div className="pin-stage duo-stage">
+            <div className="duo-copy">
+              <p className="kicker">진단</p>
+              <h2>
+                무엇이 부족한지,
+                <br />
+                공고가 알려줍니다.
+              </h2>
+              <p className="lead">
+                관심 공고와 내 이력서를 나란히. 요구 역량마다 이력서 속 근거를
+                찾아 보여줍니다.
+              </p>
+            </div>
+            <div className="cmp">
+              <div className="cmp-head" data-on="0.02">
+                <small>브릿지랩 · 백엔드 개발자</small>
+                <b>하린의 이력서와 비교</b>
+              </div>
+              {[
+                ['Java', '필수', '자료구조 과제를 Java로 구현'],
+                ['Spring', '필수', 'Spring 게시판 개인 프로젝트'],
+                ['SQL', '필수', '데이터베이스 수업 팀 과제'],
+                ['REST API', '필수', ''],
+                ['Docker', '우대', ''],
+              ].map(([skill, kind, quote], i) => (
+                <div
+                  className={`cmp-row ${quote ? 'cmp-ok' : 'cmp-gap'}`}
+                  data-on={(0.1 + i * 0.1).toFixed(2)}
+                  key={skill}
+                >
+                  <b>{skill}</b>
+                  <small>{kind}</small>
+                  <span className="cmp-tag">{quote ? '근거 있음' : '근거 없음'}</span>
+                  <q>{quote || '이력서에서 근거를 찾지 못했습니다'}</q>
+                </div>
+              ))}
+              <p className="cmp-sum" data-on="0.68">
+                부족 역량 2개 · REST API, Docker <span>→ 다음 7일의 목표</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="pin duo" id="match" data-pin>
+          <div className="pin-stage duo-stage">
+            <div className="duo-copy">
+              <p className="kicker">팀 매칭</p>
+              <h2>
+                빈자리는,
+                <br />
+                팀으로 채웁니다.
+              </h2>
+              <p className="lead">
+                이력서에서 기술스택과 포지션을 읽어, 서로의 빈자리를 채우는 2–4인
+                팀으로 묶습니다.
+              </p>
+            </div>
+            <div className="mt">
+              <div className="mt-me" data-on="0.02">
+                <small>하린의 이력서에서 읽은 것</small>
+                <div className="mt-chips">
+                  {['포지션 · 백엔드', 'Java', 'Spring', 'SQL'].map((c, i) => (
+                    <span data-on={(0.08 + i * 0.06).toFixed(2)} key={c}>
+                      {c}
+                    </span>
+                  ))}
+                  <span className="mt-want" data-on="0.34">
+                    채울 역량 · REST API, Docker
+                  </span>
+                </div>
+              </div>
+              <div className="mt-team">
+                {[
+                  ['민', '민서', '기획 · PM', '서비스 기획 · Figma', 0.5],
+                  ['수', '수빈', '프론트엔드', 'React · TypeScript', 0.58],
+                  ['하', '하린', '백엔드', 'Java · Spring', 0.44],
+                  ['준', '준호', '인프라 · QA', 'Docker · 테스트 자동화', 0.66],
+                ].map(([av, name, pos, stack, on], i) => (
+                  <div
+                    className={`mt-card m${i}`}
+                    data-on={on as number}
+                    key={name as string}
+                  >
+                    <span className="mt-av">{av}</span>
+                    <b>{name}</b>
+                    <small>{pos}</small>
+                    <span className="mt-stack">{stack}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-done" data-on="0.8">
+                4인 팀 매칭 완료 · 포지션 겹침 없음
+              </p>
+            </div>
           </div>
         </section>
 
@@ -496,27 +586,6 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="pin cine" id="go" data-pin>
-          <div className="pin-stage">
-            <video
-              data-src="/landing/lights.mp4"
-              data-range="0,0.85"
-              poster="/landing/lights.jpg"
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-            />
-            <div className="cine-copy">
-              <p className="kicker">출발</p>
-              <p className="cine-line">
-                <span data-on="0.12">버튼을 클릭한 순간,</span>
-                <span data-on="0.56">168시간이 시작됩니다.</span>
-              </p>
-            </div>
-          </div>
-        </section>
-
         <section className="pin cine" id="checkin" data-pin>
           <div className="pin-stage">
             <video
@@ -676,6 +745,46 @@ export function LandingPage() {
               <p className="result" data-on="0.75">
                 완주 <small>31시간 남기고</small>
               </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="pin duo" id="proof" data-pin>
+          <div className="pin-stage duo-stage">
+            <div className="duo-copy">
+              <p className="kicker">증명</p>
+              <h2>
+                완주한 결과물이,
+                <br />
+                이력서의 다음 줄.
+              </h2>
+              <p className="lead">
+                팀장이 확인한 결과물과 근거가 그대로 이력서 항목이 됩니다. 같은
+                공고와 다시 비교하면 빈칸이 줄어듭니다.
+              </p>
+            </div>
+            <div className="pf">
+              <div className="pf-out" data-on="0.04">
+                <small>완주 · 러닝크루 MVP</small>
+                <b>참가 신청 API · 하린</b>
+                <span>저장소 · 실행 방법 · 3분 데모</span>
+              </div>
+              <div className="pf-cv">
+                <small>하린의 이력서</small>
+                <p>Spring 게시판 개인 프로젝트</p>
+                <p>데이터베이스 수업 팀 과제</p>
+                <p className="pf-new" data-on="0.36">
+                  참가 신청 REST API 설계·구현 · 4인 팀 7일 스프린트 완주
+                </p>
+              </div>
+              <div className="cmp-row cmp-gap pf-row" data-on="0.58">
+                <b>REST API</b>
+                <small>브릿지랩 · 백엔드 개발자 · 다시 비교</small>
+                <span className="cmp-tag swap" data-on="0.76">
+                  <span className="before">근거 없음</span>
+                  <span className="after">근거 있음</span>
+                </span>
+              </div>
             </div>
           </div>
         </section>

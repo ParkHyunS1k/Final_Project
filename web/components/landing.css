@@ -100,20 +100,6 @@ body:has(.rl) {
   font-size: 20px;
   letter-spacing: -0.03em;
 }
-.rl-top-actions {
-  display: flex;
-  align-items: center;
-  gap: clamp(10px, 2vw, 24px);
-}
-.rl .careerflow-link {
-  font-size: 13px;
-  white-space: nowrap;
-}
-@media (max-width: 767px) {
-  .rl .careerflow-link {
-    font-size: 11px;
-  }
-}
 
 /* 1. 히어로: 스크롤하면 7이 레이스카로 바뀌어 튀어나간다. */
 .hero {
@@ -256,6 +242,212 @@ body:has(.rl) {
   color: var(--dim);
   font-size: 17px;
   line-height: 1.65;
+}
+
+/* 진단·매칭·증명: 왼쪽은 문구, 오른쪽 카드가 스크롤을 따라 한 줄씩 켜진다. */
+#diagnose {
+  height: calc(100svh + 200svh);
+}
+#match {
+  height: calc(100svh + 220svh);
+}
+#proof {
+  height: calc(100svh + 160svh);
+}
+.duo-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: clamp(32px, 6vw, 96px);
+  align-items: center;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 72px clamp(16px, 6vw, 96px);
+  box-sizing: border-box;
+}
+.duo-copy h2 {
+  font-size: clamp(34px, 3.8vw, 60px);
+}
+.duo [data-on]:not(.on):not(.swap) {
+  opacity: 0;
+  transform: translateY(16px);
+}
+.cmp,
+.mt,
+.pf {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 560px;
+  justify-self: end;
+}
+.cmp-head,
+.mt-me,
+.pf-out,
+.pf-cv {
+  display: grid;
+  gap: 6px;
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+.cmp-head small,
+.mt-me small,
+.pf-out small,
+.pf-cv small {
+  color: var(--dim);
+  font-size: 13px;
+}
+.cmp-head b,
+.pf-out b {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* 비교 한 줄: 역량 · 필수/우대 · 판정, 아래에 이력서 속 근거. */
+.cmp-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgb(21 21 23 / 0.7);
+}
+.cmp-row b {
+  font-size: 17px;
+  font-weight: 600;
+}
+.cmp-row small {
+  color: var(--dim);
+  font-size: 12px;
+}
+.cmp-row q {
+  grid-column: 1 / -1;
+  color: var(--dim);
+  font-size: 13px;
+}
+.cmp-tag {
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.cmp-ok .cmp-tag,
+.cmp-tag.swap.on {
+  background: rgb(61 220 132 / 0.14);
+  color: var(--good);
+}
+.cmp-gap .cmp-tag:not(.on) {
+  background: rgb(255 59 48 / 0.14);
+  color: var(--bad);
+}
+/* 요약이 뜨면 근거 없는 줄만 남겨 강조한다. */
+.cmp:has(.cmp-sum.on) .cmp-ok {
+  opacity: 0.4;
+}
+.cmp:has(.cmp-sum.on) .cmp-gap {
+  border-color: var(--heat);
+}
+.cmp-sum,
+.mt-done {
+  margin: 4px 0 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--heat);
+  color: #fff;
+  font-weight: 600;
+}
+.cmp-sum span {
+  opacity: 0.8;
+}
+.mt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.mt-chips span {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: #1f1f22;
+  font-size: 14px;
+  font-weight: 600;
+}
+.mt-chips .mt-want {
+  border-color: var(--heat);
+  color: var(--heat);
+  background: none;
+}
+.mt-team {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+/* 팀원 카드는 사방에서 날아와 빈 칸에 들어간다. */
+.mt-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  transition: opacity 0.5s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.4s;
+}
+.duo .mt-card[data-on]:not(.on) {
+  transform: translate(var(--dx), var(--dy)) scale(0.9);
+}
+.m0 { --dx: -40px; --dy: -30px; }
+.m1 { --dx: 40px; --dy: -30px; }
+.m2 { --dx: -40px; --dy: 30px; }
+.m3 { --dx: 40px; --dy: 30px; }
+.mt-card.m2 {
+  border-color: var(--heat);
+}
+.mt-av {
+  grid-row: span 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #26262a;
+  font-weight: 600;
+}
+.mt-card small {
+  color: var(--dim);
+  font-size: 13px;
+}
+.mt-stack {
+  font-size: 13px;
+  color: var(--heat);
+}
+/* 증명: 결과물 카드가 물러나고 이력서에 새 줄이 들어온다. */
+.pf:has(.pf-new.on) .pf-out {
+  opacity: 0.35;
+  transform: scale(0.96);
+}
+.pf-cv p {
+  margin: 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  color: var(--dim);
+}
+.pf-cv .pf-new {
+  color: var(--text);
+  font-weight: 600;
+}
+.pf-cv .pf-new::before {
+  content: '+ ';
+  color: var(--good);
+}
+.pf-row:has(.cmp-tag.on) {
+  border-color: var(--good);
 }
 
 /* 3. 장면: 고정된 무대 위에서 스크롤할 때마다 한 단계씩 켜진다. */
@@ -754,7 +946,7 @@ body:has(.rl) {
   height: 100svh;
   overflow: hidden;
 }
-/* 모니터 화면 속으로 카메라가 들어가며 암전되고, 그대로 출발 신호로 이어진다. */
+/* 모니터 화면 속으로 카메라가 들어가며 암전되고, 그대로 체크인 장면으로 이어진다. */
 #dive {
   height: calc(100svh + 100svh);
 }
@@ -764,9 +956,6 @@ body:has(.rl) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-#go {
-  height: calc(100svh + 160svh);
 }
 #checkin {
   height: calc(100svh + 180svh);
@@ -1362,6 +1551,40 @@ body:has(.rl) {
   .rule-list li {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
+  }
+  .duo-stage {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 20px;
+    padding: 64px 16px 88px;
+  }
+  .duo-copy .lead {
+    display: none;
+  }
+  .cmp,
+  .mt,
+  .pf {
+    gap: 8px;
+    justify-self: stretch;
+  }
+  .cmp-head,
+  .mt-me,
+  .pf-out,
+  .pf-cv {
+    padding: 12px 16px;
+  }
+  .cmp-row {
+    padding: 9px 14px;
+  }
+  .cmp-row q {
+    display: none;
+  }
+  .mt-card {
+    padding: 10px 12px;
+  }
+  .mt-av {
+    width: 32px;
+    height: 32px;
   }
   .tele-stage {
     grid-template-columns: minmax(0, 1fr);

@@ -59,11 +59,6 @@ export default defineConfig(async ({ mode }) => {
   const { cloudflare } = await import('@cloudflare/vite-plugin');
 
   return {
-    define: {
-      'process.env.NEXT_PUBLIC_CAREERFLOW_URL': JSON.stringify(
-        localEnv.NEXT_PUBLIC_CAREERFLOW_URL || 'http://127.0.0.1:8766/',
-      ),
-    },
     css: { postcss: { plugins: [tailwindcss()] } },
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }
