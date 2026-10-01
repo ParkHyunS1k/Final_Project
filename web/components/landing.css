@@ -135,13 +135,131 @@ body:has(.rl) {
     filter: blur(10px);
   }
 }
-.hero-img {
+.hero-stage {
+  background: radial-gradient(ellipse 45% 55% at 72% 48%, rgb(255 90 31 / 0.14), transparent 70%);
+}
+/* 화면 조각 카드: 기울기(--r)와 깊이(--d)가 제각각이고, 깊을수록 마우스를 더 따라온다. */
+.hero-cards {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 70% 50%;
+  inset: 13svh 4vw 10svh 50%;
+}
+.hc {
+  position: absolute;
+  display: grid;
+  gap: 8px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgb(21 21 23 / 0.94);
+  box-shadow: 0 30px 60px rgb(0 0 0 / 0.5);
+  transform: translate(calc(var(--mx, 0) * var(--d) * 1px), calc(var(--my, 0) * var(--d) * 1px))
+    rotate(var(--r));
+  animation: hc-float 6s ease-in-out infinite alternate;
+}
+@keyframes hc-float {
+  to {
+    translate: 0 -12px;
+  }
+}
+.hc > small {
+  color: var(--dim);
+  font-size: 13px;
+}
+.hc > b {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.hc .cmp-row {
+  padding: 8px 12px;
+}
+.hc .cmp-row b {
+  font-size: 15px;
+}
+.hc-cmp {
+  left: 0;
+  top: 4%;
+  width: 290px;
+  --r: -4deg;
+  --d: 10;
+}
+.hc-team {
+  right: 0;
+  top: 0;
+  width: 220px;
+  --r: 5deg;
+  --d: 18;
+  animation-delay: -2s;
+}
+.hc-avs {
+  display: flex;
+}
+.hc-avs .mt-av {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--panel);
+}
+.hc-avs .mt-av + .mt-av {
+  margin-left: -8px;
+}
+.hc-avs .mt-av:nth-child(3) {
+  background: var(--heat);
+}
+.hc-task {
+  left: 34%;
+  top: 46%;
+  width: 250px;
+  border-color: var(--heat);
+  --r: 2deg;
+  --d: 26;
+  animation-delay: -4s;
+}
+.hc-task > span {
+  color: var(--dim);
+  font-size: 13px;
+}
+.hc-clock {
+  right: 2%;
+  bottom: 14%;
+  grid-template-columns: auto 90px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  --r: -3deg;
+  --d: 14;
+  animation-delay: -1s;
+}
+.hc-clock span {
+  color: var(--dim);
+}
+.hc-clock i {
+  height: 6px;
+  border-radius: 99px;
+  background:
+    linear-gradient(var(--heat), var(--heat)) 0 0 / 40% 100% no-repeat,
+    repeating-linear-gradient(90deg, #333 0 calc(100% / 7 - 2px), transparent 0 calc(100% / 7));
+}
+.hc-clock b {
+  color: var(--heat);
+  font-variant-numeric: tabular-nums;
+}
+.hc-done {
+  left: 8%;
+  bottom: 0;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 10px;
+  border-color: rgb(61 220 132 / 0.5);
+  --r: -6deg;
+  --d: 8;
+  animation-delay: -3s;
+}
+.hc-done b {
+  color: var(--good);
+  font-size: 26px;
 }
 .hero-stage::after {
   content: '';
@@ -171,7 +289,7 @@ body:has(.rl) {
   left: clamp(16px, 6vw, 96px);
   bottom: 14svh;
   margin: 0;
-  font-size: clamp(40px, 6vw, 88px);
+  font-size: clamp(36px, 4.4vw, 64px);
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.08;
@@ -1472,17 +1590,32 @@ body:has(.rl) {
   color: var(--good);
 }
 
-/* 휴대폰: 영상 대신 정지 화면, 장면은 고정하지 않고 화면에 들어올 때 켜진다. */
+/* 휴대폰: 영상 대신 정지 화면, 장면은 화면에 들어올 때 켜진다. */
 @media (max-width: 767px) {
   .hero {
     height: auto;
   }
-  /* 가로 사진을 세로 화면 위쪽에 책상 전체가 보이도록 놓는다. */
-  .hero-img {
-    inset: 10svh auto auto -15%;
-    width: 130%;
-    height: auto;
-    mask-image: radial-gradient(ellipse at 55% 55%, #000 45%, transparent 72%);
+  /* 카드 콜라주는 문구 위쪽 공간에 작게 모은다. 큰 비교 카드는 뺀다. */
+  .hero-cards {
+    inset: 10svh 16px auto 16px;
+    height: 36svh;
+  }
+  .hc-cmp,
+  .hc-done {
+    display: none;
+  }
+  .hc {
+    padding: 12px 14px;
+  }
+  .hc-task {
+    left: 0;
+    top: 40%;
+  }
+  .hc-team {
+    width: 190px;
+  }
+  .hc-clock {
+    bottom: -6%;
   }
   .hero-stage::after {
     background: linear-gradient(0deg, rgb(11 11 12 / 0.95) 35%, rgb(11 11 12 / 0.2));
@@ -1713,6 +1846,9 @@ body:has(.rl) {
   }
   .monitor {
     transform: none;
+  }
+  .hc {
+    animation: none;
   }
   .cursor {
     display: none;

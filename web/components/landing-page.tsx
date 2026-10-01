@@ -227,8 +227,48 @@ export function LandingPage() {
       <main>
         <section className="hero" id="top">
           <div className="hero-stage">
-            {/* eslint-disable-next-line @next/next/no-img-element -- 스크롤로 확대하는 배경, 최적화 경로 불필요 */}
-            <img className="hero-img" src="/landing/desk.jpg" alt="" />
+            {/* 배경: 아래 구간에 나올 화면 조각들을 미리 흩뿌린다. 마우스를 따라 깊이별로 움직인다. */}
+            <div className="hero-cards" aria-hidden="true">
+              <div className="hc hc-cmp">
+                <small>브릿지랩 · 백엔드 개발자</small>
+                <b>하린의 이력서와 비교</b>
+                <div className="cmp-row cmp-ok">
+                  <b>Java</b>
+                  <small>필수</small>
+                  <span className="cmp-tag">근거 있음</span>
+                </div>
+                <div className="cmp-row cmp-gap">
+                  <b>REST API</b>
+                  <small>필수</small>
+                  <span className="cmp-tag">근거 없음</span>
+                </div>
+              </div>
+              <div className="hc hc-team">
+                <small>팀 매칭</small>
+                <div className="hc-avs">
+                  {['민', '수', '하', '준'].map((a) => (
+                    <span className="mt-av" key={a}>
+                      {a}
+                    </span>
+                  ))}
+                </div>
+                <b>4인 팀 매칭 완료</b>
+              </div>
+              <div className="hc hc-task">
+                <small>프로젝트 업무 · DAY 05</small>
+                <b>참가 신청 API</b>
+                <span>하린 · 진행 중 · 18:00 마감</span>
+              </div>
+              <div className="hc hc-clock">
+                <span>DAY 03 / 07</span>
+                <i />
+                <b>112:14:05</b>
+              </div>
+              <div className="hc hc-done">
+                <b>완주</b>
+                <small>31시간 남기고</small>
+              </div>
+            </div>
             <div className="hero-copy">
               <p className="kicker">취준생을 위한 7일 프로젝트 스프린트</p>
               <h1>
