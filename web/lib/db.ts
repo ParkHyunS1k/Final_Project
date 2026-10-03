@@ -10,6 +10,24 @@ export type Statement = {
   all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
   run(): Promise<{ meta: { changes: number } }>;
 };
+/**
+ * DB 계층 오류. 라우트는 문구의 'database'로 장애를 가려 503으로 돌리고 원문을 응답에 넣지 않는다.
+ * 원래 오류(node:sqlite의 code·errcode)는 cause에 남는다.
+ */
+export class DatabaseError extends Error {
+  constructor(cause: unknown) {
+    super(`database error: ${cause instanceof Error ? cause.message : String(cause)}`, { cause });
+    this.name = 'DatabaseError';
+  }
+}
+function guarded<T>(work: () => T): T {
+  try {
+    return work();
+  } catch (e) {
+    throw new DatabaseError(e);
+  }
+}
+
 export type BatchResult<T> = { results: T[]; meta: { changes: number } };
 export type Db = {
   prepare(sql: string): Statement;
@@ -30,13 +48,15 @@ class SqliteStatement implements Statement {
     return new SqliteStatement(this.db, this.sql, args as SQLInputValue[]);
   }
   async first<T>() {
-    return (this.db.prepare(this.sql).get(...this.args) as T | undefined) ?? null;
+    return guarded(() => (this.db.prepare(this.sql).get(...this.args) as T | undefined) ?? null);
   }
   async all<T>() {
-    return { results: this.db.prepare(this.sql).all(...this.args) as T[] };
+    return guarded(() => ({ results: this.db.prepare(this.sql).all(...this.args) as T[] }));
   }
   async run() {
-    return { meta: { changes: Number(this.db.prepare(this.sql).run(...this.args).changes) } };
+    return guarded(() => ({
+      meta: { changes: Number(this.db.prepare(this.sql).run(...this.args).changes) },
+    }));
   }
   /** batch 안에서 동기 실행. 행을 돌려주는 문장(SELECT, RETURNING)인지는 열 정보로 판단한다. */
   execute(): BatchResult<unknown> {
@@ -54,14 +74,14 @@ export function openDatabase(path: string): Db {
     prepare: (sql) => new SqliteStatement(db, sql),
     // D1 batch처럼 한 트랜잭션. 안에 await가 없어 다른 요청과 섞이지 않는다.
     async batch<T>(statements: Statement[]) {
-      db.exec('BEGIN IMMEDIATE');
+      guarded(() => db.exec('BEGIN IMMEDIATE'));
       try {
         const out = statements.map((s) => (s as SqliteStatement).execute());
         db.exec('COMMIT');
         return out as BatchResult<T>[];
       } catch (e) {
         db.exec('ROLLBACK');
-        throw e;
+        throw new DatabaseError(e);
       }
     },
   };

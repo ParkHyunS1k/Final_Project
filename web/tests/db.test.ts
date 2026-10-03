@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openDatabase } from '../lib/db.ts';
+import { DatabaseError, openDatabase } from '../lib/db.ts';
 import { migrate } from '../scripts/migrate.mjs';
 
 function fresh() {
@@ -75,4 +75,22 @@ void test('마이그레이션은 여러 번 실행해도 파일마다 한 번만
   const rows = await db.prepare('SELECT name FROM _migrations ORDER BY name').all<{ name: string }>();
   assert.deepEqual(rows.results.map((r) => r.name), files.sort());
   assert.ok(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sprints'").first());
+});
+
+// 라우트는 오류 문구의 'database'로 DB 장애를 가려 503으로 돌리고 SQL 원문을 숨긴다.
+void test('DB 오류는 DatabaseError로 감싸고 원래 오류를 cause로 남긴다', async () => {
+  const db = withTables();
+  for (const run of [
+    () => db.prepare('SELECT * FROM missing').all(),
+    () => db.prepare('SELECT * FROM missing').first(),
+    () => db.prepare('INSERT INTO missing VALUES(1)').run(),
+    () => db.batch([db.prepare('INSERT INTO missing VALUES(1)')]),
+  ]) {
+    await assert.rejects(run(), (e: unknown) => {
+      assert.ok(e instanceof DatabaseError);
+      assert.match(e.message, /^database error: no such table: missing/);
+      assert.equal((e.cause as { code?: string }).code, 'ERR_SQLITE_ERROR');
+      return true;
+    });
+  }
 });
