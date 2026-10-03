@@ -316,7 +316,7 @@ export function ProjectWorkspace({
             {error.includes('로그인') && (
               <button
                 className="btn primary"
-                onClick={() => void signInWithGoogle()}
+                onClick={() => signInWithGoogle().catch((e: Error) => setError(e.message))}
               >
                 Google로 로그인
               </button>

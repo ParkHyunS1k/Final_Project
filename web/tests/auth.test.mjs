@@ -251,7 +251,7 @@ test('로그인 복귀 주소는 이전 OAuth 결과 파라미터를 버리고 �
   const out = join(dir, 'browser.mjs');
   await build({
     stdin: {
-      contents: "export { returnUrl } from './lib/supabase-browser';",
+      contents: "export { returnUrl, bearerFrom } from './lib/supabase-browser';",
       resolveDir: process.cwd(),
       loader: 'ts',
     },
@@ -265,7 +265,14 @@ test('로그인 복귀 주소는 이전 OAuth 결과 파라미터를 버리고 �
       'process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY': 'undefined',
     },
   });
-  const { returnUrl } = await import(pathToFileURL(out).href);
+  const { returnUrl, bearerFrom } = await import(pathToFileURL(out).href);
+  // 세션 갱신이 인증 서버 장애로 실패하면 토큰 없이 보내지 않는다(401·로그인 버튼 대신 오류 안내).
+  assert.throws(
+    () => bearerFrom({ data: { session: null }, error: new Error('fetch failed') }),
+    (e) => /인증 서버/.test(e.message) && !/로그인/.test(e.message),
+  );
+  assert.equal(bearerFrom({ data: { session: { access_token: 't1' } }, error: null }), 'Bearer t1');
+  assert.equal(bearerFrom({ data: { session: null }, error: null }), null);
   assert.equal(
     returnUrl(
       'https://app.test/workspace?invite=tok&error=access_denied&error_code=x&error_description=y&code=old#frag',
@@ -333,4 +340,12 @@ test('개발 서버는 127.0.0.1에만 열어 같은 네트워크에서 개발 �
 test('초대 안내에 더 이상 쓰지 않는 사이트 접근 권한 설명이 없다', () => {
   assert.doesNotMatch(readFileSync('components/project-workspace.tsx', 'utf8'), /사이트 접근 권한/);
   assert.doesNotMatch(readFileSync('README.md', 'utf8'), /플랫폼이 인증 헤더를 부여/);
+});
+
+test('Google 로그인 버튼은 실패를 버리지 않고 화면 오류로 보여준다', () => {
+  for (const file of ['app/workspace/page.tsx', 'components/project-workspace.tsx']) {
+    const src = readFileSync(file, 'utf8');
+    assert.doesNotMatch(src, /void signInWithGoogle\(\)/, file);
+    assert.match(src, /signInWithGoogle\(\)\.catch\(/, file);
+  }
 });
