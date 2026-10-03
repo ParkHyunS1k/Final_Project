@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DatabaseError, openPglite, toPositional, type Db } from '../lib/db.ts';
+import { DatabaseError, database, openPglite, toPositional, type Db } from '../lib/db.ts';
 import { migrate } from '../scripts/migrate.ts';
 
 async function fresh(): Promise<Db> {
@@ -138,4 +138,32 @@ void test('같은 PGlite 파일은 한 프로세스만 연다(두 번째 열기�
   const again = openPglite(dir);
   await again.prepare('SELECT 1').first();
   await again.close();
+});
+
+void test('운영(NODE_ENV=production)에서 DATABASE_URL이 없으면 로컬 PGlite로 넘어가지 않는다', () => {
+  const env = process.env as Record<string, string | undefined>;
+  const saved = { node: env.NODE_ENV, url: env.DATABASE_URL, path: env.DATABASE_PATH };
+  const shared = globalThis as { projectmateDb?: unknown };
+  const cached = shared.projectmateDb;
+  delete shared.projectmateDb;
+  const path = join(mkdtempSync(join(tmpdir(), 'pm-prod-')), 'pglite');
+  try {
+    env.NODE_ENV = 'production';
+    env.DATABASE_URL = '';
+    env.DATABASE_PATH = path;
+    assert.throws(
+      () => database(),
+      (e: unknown) =>
+        e instanceof DatabaseError &&
+        /DATABASE_URL/.test((e as Error).message) &&
+        !(e as Error).message.includes(path),
+    );
+    assert.equal(shared.projectmateDb, undefined);
+    assert.ok(!existsSync(path));
+  } finally {
+    for (const [k, v] of [['NODE_ENV', saved.node], ['DATABASE_URL', saved.url], ['DATABASE_PATH', saved.path]] as const)
+      if (v === undefined) delete env[k];
+      else env[k] = v;
+    if (cached !== undefined) shared.projectmateDb = cached;
+  }
 });
