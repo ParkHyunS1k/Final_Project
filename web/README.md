@@ -26,15 +26,15 @@
 
 ## 로컬 실행
 
-Node 22.16 이상이 필요하다(로컬 DB와 테스트가 `node:sqlite`를 쓴다). 이번 검증 환경은 Node 25.6.1이다.
+Node 22.16 이상이 필요하다(테스트·스크립트가 `--experimental-strip-types`로 TS를 직접 실행한다). 이번 검증 환경은 Node 25.6.1이다.
 
 ```sh
 npm ci
-npm run db:migrate   # 처음 한 번, 그리고 drizzle/에 새 파일이 생길 때마다. 앱은 자동으로 마이그레이션하지 않는다.
+npm run db:migrate   # 처음 한 번, 그리고 db/migrations/에 새 파일이 생길 때마다. 개발 서버를 끈 상태에서. 앱은 자동으로 마이그레이션하지 않는다.
 npm run dev
 ```
 
-로컬 DB는 `web/.data/projectmate.sqlite`(`DATABASE_PATH`로 바꿀 수 있다)다. 로그인은 Supabase Auth(Google)다. `.env.example`을 참고해 `web/.env.local`에 `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 넣고, Supabase Redirect URLs에 `http://localhost:*/**`를 등록한다. 토큰 없이 `oai-authenticated-*` 개발 헤더로 요청하는 방식은 `next dev`(`.env.development`의 `AUTH_DEV_HEADERS=1`)에서만 허용된다(`docs/dev-team-seed-notes.md`).
+DB는 Postgres다. `DATABASE_URL`이 없으면 로컬 PGlite(`web/.data/pglite`, `DATABASE_PATH`로 바꿀 수 있다)를 쓰고, 있으면 그 Postgres(Supabase 연결 풀러)를 쓴다. PGlite 파일은 한 프로세스만 열 수 있어 개발 서버가 켜져 있으면 `db:migrate`가 안내와 함께 멈춘다. 모든 테이블은 RLS가 켜져 있고(정책 없음) 서버만 접근한다. 로그인은 Supabase Auth(Google)다. `.env.example`을 참고해 `web/.env.local`에 `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 넣고, Supabase Redirect URLs에 `http://localhost:*/**`를 등록한다. 토큰 없이 `oai-authenticated-*` 개발 헤더로 요청하는 방식은 `next dev`(`.env.development`의 `AUTH_DEV_HEADERS=1`)에서만 허용된다(`docs/dev-team-seed-notes.md`).
 
 ```sh
 npm test
@@ -72,7 +72,7 @@ npm run build
 
 업무 이름은 1~200자, 남은 시간은 0.5~200시간(0.5시간 단위), 한 스프린트는 최대 100개 업무다. 참여 멤버에게만 배정하며 자기 참조·순환·중복·다른 프로젝트/보류 업무 참조를 거절한다. 완료·보류 업무는 편집하지 않는다. 편집 창을 연 시점의 버전을 유지하므로 다른 변경이 저장되면 창을 다시 열어 검토한다.
 
-한 DB batch(트랜잭션) 안에서 버전 비교 후 고유 mutation ID로 후속 쓰기를 제한한다. 업무·가용시간·제안·로그를 함께 저장하며 중간 실패는 롤백한다. DB 스키마는 db/schema.ts, 마이그레이션은 drizzle/이다. 적용한 마이그레이션은 수정하지 않는다.
+한 DB batch(트랜잭션) 안에서 버전 비교 후 고유 mutation ID로 후속 쓰기를 제한한다. 업무·가용시간·제안·로그를 함께 저장하며 중간 실패는 롤백한다. DB 스키마는 db/schema.ts, 마이그레이션은 db/migrations/이다. 적용한 마이그레이션은 수정하지 않는다.
 
 ## 작업 공간 체험 순서
 
@@ -98,9 +98,9 @@ npm run build
 
 ## 검증
 
-현재 구조(Next.js + 로컬 SQLite) 기준, 2026-10-03:
+현재 구조(Next.js + Postgres) 기준, 2026-10-03:
 
-- `npm test` 181개: 일정 계산, API 핸들러(SQLite 대역으로 실제 SQL 실행: 권한·계정 분리·초대 만료/취소·동시 수락·인원 제한·동시 쓰기·롤백·오래된 변경 거절·기한 경과), Supabase 토큰 검증과 개발 헤더 차단, DB 포트(`lib/db.ts`)와 마이그레이션, 실제 DB 어댑터를 거친 라우트의 503 처리.
+- `npm test` 185개: 일정 계산, API 핸들러(실제 `lib/db.ts` + PGlite로 실제 SQL 실행: 권한·계정 분리·초대 만료/취소·동시 수락·인원 제한·동시 쓰기·롤백·오래된 변경 거절·기한 경과), Supabase 토큰 검증과 개발 헤더 차단, DB 포트(값 타입·트랜잭션·RLS·마이그레이션·PGlite 잠금), 실제 DB 어댑터를 거친 라우트의 503 처리.
 - 타입 검사, 린트(기존 오류 외 새 오류 없음), `next build`.
 - `next dev`에서 시드 스크립트로 4인 프로젝트 생성, 개발 헤더 200. `next start`(운영 모드)에서는 개발 헤더 401.
 - 로컬에서 실제 Google 계정으로 로그인 → 프로젝트 생성 → 새로고침 유지. Google 두 계정 초대·수락은 Next.js 전환 전(2026-10-02, vinext 로컬)에 확인했고, 전환 후에는 한 계정만 다시 확인했다.
