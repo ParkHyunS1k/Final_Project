@@ -261,8 +261,8 @@ test('로그인 복귀 주소는 이전 OAuth 결과 파라미터를 버리고 �
     format: 'esm',
     // 환경값이 없으면 브라우저 클라이언트를 만들지 않는다.
     define: {
-      'import.meta.env.VITE_SUPABASE_URL': 'undefined',
-      'import.meta.env.VITE_SUPABASE_ANON_KEY': 'undefined',
+      'process.env.NEXT_PUBLIC_SUPABASE_URL': 'undefined',
+      'process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY': 'undefined',
     },
   });
   const { returnUrl } = await import(pathToFileURL(out).href);
@@ -304,4 +304,11 @@ test('운영 모드(NODE_ENV=production)에서는 AUTH_DEV_HEADERS=1이어도 �
     if (before === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = before;
   }
+});
+
+test('화면 코드는 NEXT_PUBLIC_ 환경값을 문자 그대로 읽는다(Next가 빌드 시 넣는다)', () => {
+  const src = readFileSync('lib/supabase-browser.ts', 'utf8');
+  assert.match(src, /process\.env\.NEXT_PUBLIC_SUPABASE_URL/);
+  assert.match(src, /process\.env\.NEXT_PUBLIC_SUPABASE_ANON_KEY/);
+  assert.doesNotMatch(src, /import\.meta\.env|VITE_/);
 });

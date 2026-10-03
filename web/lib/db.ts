@@ -71,6 +71,7 @@ export function openDatabase(path: string): Db {
 const shared = globalThis as typeof globalThis & { projectmateDb?: Db };
 export function database(): Db {
   return (shared.projectmateDb ??= openDatabase(
-    resolve(process.env.DATABASE_PATH || '.data/projectmate.sqlite'),
+    // 실행 시 정해지는 로컬 파일 경로. 빌드 추적 대상이 아니다(없으면 프로젝트 전체를 서버 산출물에 넣는다).
+    resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH || '.data/projectmate.sqlite'),
   ));
 }
