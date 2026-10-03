@@ -461,9 +461,9 @@ export function LandingPage() {
             <div className="feat-copy">
               <p className="kicker">출발 전 설계</p>
               <h2>
-                계획서를 올리면,
+                계획서를 붙여넣으면,
                 <br />
-                AI가 업무를 배정합니다.
+                업무 변경안이 나옵니다.
               </h2>
               <ol className="feat-list">
                 <li>

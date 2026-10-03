@@ -312,3 +312,25 @@ test('화면 코드는 NEXT_PUBLIC_ 환경값을 문자 그대로 읽는다(Next
   assert.match(src, /process\.env\.NEXT_PUBLIC_SUPABASE_ANON_KEY/);
   assert.doesNotMatch(src, /import\.meta\.env|VITE_/);
 });
+
+test('SUPABASE_URL이 URL 형식이 아니면 500이 아니라 503', async () => {
+  const before = process.env.SUPABASE_URL;
+  process.env.SUPABASE_URL = 'not a url';
+  try {
+    const r = await me(bearer(await token()));
+    assert.equal(r.status, 503);
+    assert.match((await r.json()).error, /인증 서버/);
+  } finally {
+    process.env.SUPABASE_URL = before;
+  }
+});
+
+test('개발 서버는 127.0.0.1에만 열어 같은 네트워크에서 개발 헤더로 사칭하지 못하게 한다', () => {
+  const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+  assert.match(pkg.scripts.dev, /^next dev (-H|--hostname) 127\.0\.0\.1$/);
+});
+
+test('초대 안내에 더 이상 쓰지 않는 사이트 접근 권한 설명이 없다', () => {
+  assert.doesNotMatch(readFileSync('components/project-workspace.tsx', 'utf8'), /사이트 접근 권한/);
+  assert.doesNotMatch(readFileSync('README.md', 'utf8'), /플랫폼이 인증 헤더를 부여/);
+});

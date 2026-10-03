@@ -21,8 +21,9 @@ function displayName(name: string, email: string) {
 /** Supabase가 발급한 access token만 받는다. 토큰 문제는 null, 로그인 서비스 장애는 AuthUnavailable. */
 async function fromToken(token: string): Promise<Identity | null | AuthUnavailable> {
   const base = (process.env.SUPABASE_URL ?? '').replace(/\/+$/, '');
-  if (!base) {
-    console.warn('auth: SUPABASE_URL is not set');
+  // 설정이 없거나 URL 형식이 아니면 토큰 문제가 아니라 서비스 설정 문제다(503).
+  if (!base || !URL.canParse(base)) {
+    console.warn(base ? 'auth: SUPABASE_URL is not a valid URL' : 'auth: SUPABASE_URL is not set');
     return new AuthUnavailable();
   }
   jwks ??= createRemoteJWKSet(new URL(base + '/auth/v1/.well-known/jwks.json'));

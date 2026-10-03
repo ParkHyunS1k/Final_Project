@@ -584,8 +584,8 @@ export function TeamInvites({
         </button>
       </form>
       <p className="hint">
-        초대 링크는 지정된 이메일로만 수락할 수 있으며 7일 뒤 만료됩니다.
-        현재 비공개 파일럿은 사이트 접근 권한도 별도로 필요합니다.
+        초대 링크는 지정된 이메일의 Google 계정으로만 수락할 수 있으며 7일 뒤
+        만료됩니다.
       </p>
       {link && (
         <label className="project-form">
