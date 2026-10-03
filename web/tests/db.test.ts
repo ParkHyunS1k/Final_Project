@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { DatabaseError, openPglite, toPositional, type Db } from '../lib/db.ts';
+import { migrate } from '../scripts/migrate.ts';
 
 async function fresh(): Promise<Db> {
   const db = openPglite();
@@ -90,4 +94,31 @@ void test('연결·쿼리 오류는 DatabaseError로 감싸고 cause를 남긴�
     assert.ok(e.cause);
     return true;
   });
+});
+
+void test('기준 마이그레이션: 두 번 실행해도 한 번만, 모든 테이블 RLS 켜짐, sprint_proposals 없음', async () => {
+  const db = openPglite();
+  const files = readdirSync('db/migrations').filter((n) => n.endsWith('.sql')).sort();
+  assert.deepEqual(await migrate(db), files);
+  assert.deepEqual(await migrate(db), []);
+  const tables = await db
+    .prepare("SELECT c.relname AS name, c.relrowsecurity AS rls FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relname<>'_migrations'")
+    .all<{ name: string; rls: boolean }>();
+  assert.equal(tables.results.length, 18);
+  assert.deepEqual(tables.results.filter((t) => !t.rls).map((t) => t.name), []);
+  assert.ok(!tables.results.some((t) => t.name === 'sprint_proposals'));
+});
+
+void test('같은 PGlite 파일은 한 프로세스만 연다(두 번째 열기는 거부, 닫으면 다시 열 수 있다)', async () => {
+  const dir = join(mkdtempSync(join(tmpdir(), 'pm-lock-')), 'pglite');
+  const first = openPglite(dir);
+  await first.prepare('SELECT 1').first();
+  assert.throws(
+    () => openPglite(dir),
+    (e: unknown) => e instanceof DatabaseError && /다른 프로세스/.test((e as Error).message),
+  );
+  await first.close();
+  const again = openPglite(dir);
+  await again.prepare('SELECT 1').first();
+  await again.close();
 });

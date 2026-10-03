@@ -1,6 +1,8 @@
 // 서버 DB 포트. D1에서 쓰던 모양(prepare/bind/first/all/run/batch)을 유지한다.
 // 운영은 Supabase Postgres(postgres.js), 로컬·테스트는 PGlite. 값은 Postgres 타입 그대로 돌려준다
 // (timestamptz→Date, boolean, jsonb→객체). date는 'YYYY-MM-DD' 문자열, int8은 number.
+import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { PGlite, types } from '@electric-sql/pglite';
 import postgres from 'postgres';
 
@@ -110,7 +112,48 @@ const pgliteParsers = {
   [types.DATE]: (v: string) => v,
 };
 
+/**
+ * PGlite는 파일 잠금이 없다. 두 프로세스(개발 서버와 마이그레이션 등)가 같은 파일에 쓰면 깨지므로
+ * `<경로>.lock`에 pid를 적어 한 번에 하나만 연다. 죽은 프로세스의 잠금은 지운다.
+ */
+function lockDataDir(dataDir: string): () => void {
+  const file = `${dataDir}.lock`;
+  mkdirSync(dirname(file), { recursive: true });
+  try {
+    const fd = openSync(file, 'wx');
+    writeSync(fd, String(process.pid));
+    closeSync(fd);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+    const pid = Number(readFileSync(file, 'utf8'));
+    let alive = false;
+    try {
+      process.kill(pid, 0);
+      alive = true;
+    } catch {}
+    if (alive)
+      throw new Error(
+        `로컬 DB(${dataDir})를 다른 프로세스(pid ${pid})가 쓰고 있습니다. 개발 서버를 끄고 다시 실행하세요.`,
+      );
+    unlinkSync(file);
+    return lockDataDir(dataDir);
+  }
+  const release = () => {
+    try {
+      if (readFileSync(file, 'utf8') === String(process.pid)) unlinkSync(file);
+    } catch {}
+  };
+  process.once('exit', release);
+  return release;
+}
+
 export function openPglite(dataDir?: string): Db {
+  let release = () => {};
+  try {
+    if (dataDir) release = lockDataDir(dataDir);
+  } catch (e) {
+    throw new DatabaseError(e);
+  }
   // new PGlite(dataDir, options)는 options를 무시한다(0.5.8에서 확인). 객체 하나로 넘긴다.
   const db = new PGlite({ dataDir, parsers: pgliteParsers });
   const query: Query = async (sql, args) => {
@@ -129,7 +172,10 @@ export function openPglite(dataDir?: string): Db {
     async (sql) => {
       await db.exec(sql);
     },
-    () => db.close(),
+    async () => {
+      await db.close();
+      release();
+    },
   );
 }
 
