@@ -20,21 +20,21 @@
 
 기존 샘플은 원래 소유자에게 보존한다. 새 계정에는 샘플을 자동 생성하지 않는다. 신규 프로젝트는 업무 없음·가용시간 0으로 시작한다. LLM, Python 서버 호출, 외부 업로드, 실제 결제·환급은 미연결이다.
 
-현재 Sites는 소유자 전용이다. 프로젝트 초대와 플랫폼 접근 권한은 별개이며 외부 계정에는 사이트 접근 설정도 필요하다. 초대 링크는 이메일을 보내지 않으며 해당 이메일 로그인으로만 수락한다. 실제 두 계정 브라우저 검증은 남아 있다.
+초대 링크는 이메일을 보내지 않으며 초대받은 이메일의 Google 계정으로 로그인해야 수락한다. 실제 두 계정 초대·수락은 로컬 개발 서버에서만 검증했다. 운영 배포(Vercel)는 아직 없다.
 
 가용시간은 오전 9시부터 30분 단위의 연속 슬롯으로 배치한다. 임의 시작 시각이나 분할 시간대는 아직 지원하지 않는다. 알고리즘은 탐욕적이며 최적 일정을 보장하지 않는다. 결과물은 팀이 직접 검증한 근거를 입력하며 시스템이 자동 확인하지 않는다.
 
 ## 로컬 실행
 
-Node 22.13 이상이 필요하며 API 통합 테스트는 node:sqlite를 제공하는 버전에서 실행한다. 이번 검증 환경은 Node 25.6.1이다.
+Node 22.16 이상이 필요하다(로컬 DB와 테스트가 `node:sqlite`를 쓴다). 이번 검증 환경은 Node 25.6.1이다.
 
 ```sh
 npm ci
-npm run db:migrate
+npm run db:migrate   # 처음 한 번, 그리고 drizzle/에 새 파일이 생길 때마다. 앱은 자동으로 마이그레이션하지 않는다.
 npm run dev
 ```
 
-로그인은 Supabase Auth(Google)다. `.env.example`을 참고해 `web/.env.local`에 `SUPABASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 넣고, Supabase의 Redirect URLs에 `http://localhost:*/**`를 등록한 뒤 화면의 Google로 로그인 버튼을 이용한다. 토큰 없이 `oai-authenticated-*` 개발 헤더로 요청하는 방식은 `vite dev`에서만 허용된다(`docs/dev-team-seed-notes.md`). 로컬 DB는 `.wrangler/state/`에 보관한다. 운영 DB는 Sites가 제공하는 D1이며 서로 독립이다.
+로컬 DB는 `web/.data/projectmate.sqlite`(`DATABASE_PATH`로 바꿀 수 있다)다. 로그인은 Supabase Auth(Google)다. `.env.example`을 참고해 `web/.env.local`에 `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 넣고, Supabase Redirect URLs에 `http://localhost:*/**`를 등록한다. 토큰 없이 `oai-authenticated-*` 개발 헤더로 요청하는 방식은 `next dev`(`.env.development`의 `AUTH_DEV_HEADERS=1`)에서만 허용된다(`docs/dev-team-seed-notes.md`).
 
 ```sh
 npm test
@@ -72,7 +72,7 @@ npm run build
 
 업무 이름은 1~200자, 남은 시간은 0.5~200시간(0.5시간 단위), 한 스프린트는 최대 100개 업무다. 참여 멤버에게만 배정하며 자기 참조·순환·중복·다른 프로젝트/보류 업무 참조를 거절한다. 완료·보류 업무는 편집하지 않는다. 편집 창을 연 시점의 버전을 유지하므로 다른 변경이 저장되면 창을 다시 열어 검토한다.
 
-한 D1 batch 안에서 버전 비교 후 고유 mutation ID로 후속 쓰기를 제한한다. 업무·가용시간·제안·로그를 함께 저장하며 중간 실패는 롤백한다. DB 스키마는 db/schema.ts, 마이그레이션은 drizzle/이다. 적용한 마이그레이션은 수정하지 않는다.
+한 DB batch(트랜잭션) 안에서 버전 비교 후 고유 mutation ID로 후속 쓰기를 제한한다. 업무·가용시간·제안·로그를 함께 저장하며 중간 실패는 롤백한다. DB 스키마는 db/schema.ts, 마이그레이션은 drizzle/이다. 적용한 마이그레이션은 수정하지 않는다.
 
 ## 작업 공간 체험 순서
 
@@ -100,11 +100,11 @@ npm run build
 
 - 일정 경계 테스트 10개.
 - API 및 마이그레이션 테스트 11개: 업무 설명·진행 상태·완료/재개·기존 데이터 보존과 업무 생성·편집·멤버 배정·의존관계·순환 거절·동시 쓰기·롤백과 프로젝트 생성·공유·권한·초대 만료/취소·동시 수락·인원 제한과 기존 인증/계정 분리/저장/복구/충돌/완주, 트랜잭션 롤백, 입력 검증, 기한 경과. Node SQLite로 실제 API 핸들러와 생성 SQL을 실행한다. 일정 10개와 합쳐 총 21개.
-- 실행 중인 로컬 Workers + D1에서 로그인 → 참여 → 체크인 → 제안 → 승인 → GET 재조회 확인.
+- (이전 vinext + D1 기준) 실행 중인 로컬 Workers + D1에서 로그인 → 참여 → 체크인 → 제안 → 승인 → GET 재조회 확인.
 - 타입 검사, 서비스 코드 린트, 프로덕션 빌드.
 - 로컬 브라우저에서 프로젝트 생성·재조회·초대 링크 생성·취소, 업무 추가·편집·선행 작업·가용시간 재계산·재접속 유지 확인. 운영 실제 로그인 계정에서 기존 체크인 새로고침 유지 확인.
-- 서로 다른 실제 로그인 계정의 운영 협업은 미검증. API 테스트는 플랫폼 인증 헤더를 대체한 테스트 신원으로 실행한다.
+- 서로 다른 실제 로그인 계정의 운영 협업은 미검증(로컬 개발 서버에서는 Google 두 계정으로 초대·수락 확인). API 테스트는 플랫폼 인증 헤더를 대체한 테스트 신원으로 실행한다.
 
 ## 소스와 배포
 
-`Final_Project` 저장소의 `phs` 브랜치는 `web/` 소스와 부모 프로젝트의 Python·문서·평가 자료를 함께 포함한다. 기존 로컬 작업 환경에 남아 있는 `web/.git`은 Sites 작업용 메타데이터이며 공유 저장소에 포함하지 않는다. `.openai/hosting.json`의 기존 프로젝트 ID를 유지한다. 배포는 스키마 생성·검증 → 빌드 → 소스 푸시 → 패키징 → 버전 저장 → 비공개 배포 순서다.
+`Final_Project` 저장소의 `web/`이 서비스 소스다. 운영 배포는 아직 없다. 이전의 OpenAI Sites 배포는 쓰지 않으며, Vercel + Supabase(Postgres·Auth)로 옮기는 중이다(`docs/superpowers/specs/2026-10-03-nextjs-migration-design.md`).
