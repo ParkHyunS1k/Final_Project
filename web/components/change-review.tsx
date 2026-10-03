@@ -551,6 +551,11 @@ export function ChangeReview({
             </>
           )}
         </section>
+      ) : aiAvailable === null ? (
+        // 서버가 사용 가능하다고 알리기 전(로딩·조회 실패)에는 입력을 열지 않는다.
+        <output className="empty-copy" aria-live="polite">
+          AI 변경안 사용 가능 여부를 불러오는 중입니다.
+        </output>
       ) : aiAvailable === false ? (
         <p className="empty-copy" role="note">
           AI 변경안은 준비 중입니다. 계획서를 붙여넣어 업무 변경안을 받는 기능은 아직

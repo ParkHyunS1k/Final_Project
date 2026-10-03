@@ -74,16 +74,18 @@ test('rolling number climbs, holds, then rolls to the next segment', () => {
   assert.equal(rollAt(0.5, []), 0);
 });
 
-test('구현되지 않은 출발 전 설계(AI)·진단·팀 매칭·증명 장면은 준비 중이라고 밝힌다', async () => {
+test('구현되지 않은 출발 전 설계·회의 정리(AI)·진단·팀 매칭·증명 장면은 준비 중이라고 밝힌다', async () => {
   const { readFileSync } = await import('node:fs');
   const page = readFileSync('components/landing-page.tsx', 'utf8');
-  for (const id of ['setup', 'diagnose', 'match', 'proof']) {
+  for (const id of ['setup', 'radio', 'diagnose', 'match', 'proof']) {
     const start = page.indexOf(`id="${id}"`);
     assert.ok(start > 0, id);
     const head = page.slice(start, page.indexOf('</h2>', start));
     assert.match(head, /준비 중/, id);
   }
   assert.doesNotMatch(page, /AI 변경안은 파일럿 단계/);
+  // 회의 정리 장면도 같은 AI 변경안이다. 지금 동작하는 기능처럼 약속하지 않는다.
+  assert.doesNotMatch(page, /골라 제안합니다/);
 });
 
 test('화면 문구는 보내지 않는 알림 메일을 약속하지 않는다', async () => {

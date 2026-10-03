@@ -696,7 +696,7 @@ export function LandingPage() {
           <div className="pin-stage radio-stage">
             <div className="cine-copy">
               <p className="kicker">
-                회의 정리 <span className="pilot">파일럿</span>
+                회의 정리 <span className="soon">준비 중인 기능</span>
               </p>
               <p className="cine-line">
                 <span data-on="0.02">회의는 끝났습니다.</span>
@@ -735,8 +735,8 @@ export function LandingPage() {
                 </p>
               </div>
               <p className="radio-note" data-on="0.72">
-                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안합니다. 적용은 사람이
-                승인해야만 됩니다.
+                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안하는 기능을 준비하고
+                있습니다. 적용은 사람이 승인해야만 됩니다.
               </p>
             </div>
           </div>
