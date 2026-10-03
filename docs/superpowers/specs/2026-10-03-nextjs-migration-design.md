@@ -21,7 +21,7 @@
 ## 2. 실행 환경과 설정
 
 - 의존성
-  - 추가: `next@^16`(React 19.2와 호환). `package.json`에 `"engines": { "node": ">=22.13" }`(`node:sqlite` 경고 없이 사용).
+  - 추가: `next@^16`(React 19.2와 호환). `package.json`에 `"engines": { "node": ">=22.16" }`(`node:sqlite`의 `StatementSync.columns()`가 22.16부터).
   - 제거: `vinext`, `vite`, `@cloudflare/vite-plugin`, `@cloudflare/workers-types`, `wrangler`, `@openai/sites-vite-plugin`. vinext의 RSC용으로만 쓰던 `react-server-dom-webpack`도 제거한다(Next는 자체 번들을 쓴다). 제거 후 `next build`가 실패하면 그 오류를 근거로 되돌린다.
   - 스크립트: `dev`=`next dev`, `build`=`next build`, `start`=`next start`. `db:migrate`는 3장.
 - 삭제: `web/vite.config.ts`, `web/wrangler.local.jsonc`, `web/.openai/`.
