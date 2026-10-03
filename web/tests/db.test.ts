@@ -96,15 +96,16 @@ void test('연결·쿼리 오류는 DatabaseError로 감싸고 cause를 남긴�
   });
 });
 
-void test('기준 마이그레이션: 두 번 실행해도 한 번만, 모든 테이블 RLS 켜짐, sprint_proposals 없음', async () => {
+void test('기준 마이그레이션: 두 번 실행해도 한 번만, 모든 테이블(_migrations 포함) RLS 켜짐, sprint_proposals 없음', async () => {
   const db = openPglite();
   const files = readdirSync('db/migrations').filter((n) => n.endsWith('.sql')).sort();
   assert.deepEqual(await migrate(db), files);
   assert.deepEqual(await migrate(db), []);
   const tables = await db
-    .prepare("SELECT c.relname AS name, c.relrowsecurity AS rls FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relname<>'_migrations'")
+    .prepare("SELECT c.relname AS name, c.relrowsecurity AS rls FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r'")
     .all<{ name: string; rls: boolean }>();
-  assert.equal(tables.results.length, 18);
+  // 앱 테이블 18개 + _migrations. _migrations도 anon REST로 읽고 쓰지 못하게 RLS를 켠다.
+  assert.equal(tables.results.length, 19);
   assert.deepEqual(tables.results.filter((t) => !t.rls).map((t) => t.name), []);
   assert.ok(!tables.results.some((t) => t.name === 'sprint_proposals'));
 });

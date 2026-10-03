@@ -5,8 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { database, type Db } from '../lib/db.ts';
 
 export async function migrate(db: Db, dir = 'db/migrations'): Promise<string[]> {
+  // 앱 테이블처럼 RLS를 켠다(정책 없음). 꺼 두면 Supabase anon 키로 기록을 지우거나 끼워 넣을 수 있다.
   await db.exec(
-    'CREATE TABLE IF NOT EXISTS _migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL)',
+    'CREATE TABLE IF NOT EXISTS _migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL);\nALTER TABLE _migrations ENABLE ROW LEVEL SECURITY;',
   );
   const done = new Set(
     (await db.prepare('SELECT name FROM _migrations').all<{ name: string }>()).results.map((r) => r.name),
