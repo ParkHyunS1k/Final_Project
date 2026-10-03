@@ -8,15 +8,14 @@ import {
   featureAt,
   cursorAt,
   rollAt,
+  SPRINT_SECONDS,
 } from '@/lib/landing-race.mjs';
 import './landing.css';
 
 const START = '/workspace?create=1';
-const CAREERFLOW_URL = process.env.NEXT_PUBLIC_CAREERFLOW_URL || 'http://127.0.0.1:8766/';
-// 첫 화면 영상은 스크롤의 앞 78% 동안 재생되고, 나머지 구간에서 둥근 카드로 줄어든다.
-const HERO_VIDEO_SHARE = 0.78;
-// 출발 신호 영상에서 불이 모두 꺼지는 지점(구간 진행률). 레이스 시계가 여기서 흐른다.
-const LIGHTS_OUT = 0.56;
+
+// 설계 구간의 앞 58%는 화면 세 개, 나머지는 모니터가 가운데로 와서 빨갛게 경고하는 체크인 장면.
+const SETUP_PANES_SHARE = 0.58;
 
 type Key = { t: number; k?: string; x?: number; y?: number; press?: boolean };
 // 모니터 속 화면별 커서 경로. k는 data-k 요소의 가운데, 없으면 x·y(화면 기준 %).
@@ -54,7 +53,6 @@ export function LandingPage() {
   useEffect(() => {
     const root = rootRef.current!;
     const hero = root.querySelector<HTMLElement>('.hero')!;
-    const heroVideo = root.querySelector<HTMLVideoElement>('.hero video')!;
     const rules = root.querySelector<HTMLElement>('#rules')!;
     const setup = root.querySelector<HTMLElement>('#setup')!;
     const setupStage = setup.querySelector<HTMLElement>('.stage')!;
@@ -65,18 +63,20 @@ export function LandingPage() {
     const menu = [...setup.querySelectorAll<HTMLElement>('.app-side [data-pane]')];
     // 고정 구간(data-pin)마다 진행률 --p를 주고, 안쪽 [data-on] 요소를 켜고 끈다.
     const pins = [...root.querySelectorAll<HTMLElement>('[data-pin]')];
-    const go = root.querySelector<HTMLElement>('#go')!;
+    const monitor = setup.querySelector<HTMLElement>('.monitor')!;
+    const alarmEls = [...setup.querySelectorAll<HTMLElement>('[data-alarm]')];
     const finish = root.querySelector<HTMLElement>('#finish')!;
     const hud = root.querySelector<HTMLElement>('.hud')!;
     const hudDay = hud.querySelector<HTMLElement>('.hud-day')!;
     const hudClock = hud.querySelector<HTMLElement>('.hud-clock')!;
+    const heroHours = hero.querySelector<HTMLElement>('.hero-clock b')!;
+    const heroRest = hero.querySelector<HTMLElement>('.hero-clock span')!;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const phone = matchMedia('(max-width: 767px)');
     const finePointer = matchMedia('(pointer: fine)');
     const videos = [...root.querySelectorAll<HTMLVideoElement>('video[data-src]')];
     // 휴대폰·동작 줄이기에서는 영상을 받지 않고 포스터만 보여 준다.
     if (!reduced.matches && !phone.matches) {
-      heroVideo.src = '/landing/race.mp4';
       for (const v of videos) v.src = v.dataset.src!;
     }
     // 영상별 목표 시각. 탐색이 끝나면(seeked) 그사이 바뀐 목표로 다시 맞춘다.
@@ -125,10 +125,17 @@ export function LandingPage() {
     function syncSetup(vh: number) {
       const rect = setup.getBoundingClientRect();
       setupStage.style.setProperty('--enter', String(clamp(1 - rect.top / vh)));
-      const { item, t } = featureAt(
-        sceneProgress(rect.top, setup.offsetHeight, setupStage.offsetHeight, vh),
-        panes.length,
+      const raw = sceneProgress(rect.top, setup.offsetHeight, setupStage.offsetHeight, vh);
+      const { item, t } = featureAt(Math.min(1, raw / SETUP_PANES_SHARE), panes.length);
+      // 체크인 단계: 모니터가 가운데로 오는 거리(--dx)와 진행률(--a). 동작 줄이기에서는 건너뛴다.
+      const a = reduced.matches ? 0 : clamp((raw - SETUP_PANES_SHARE) / (1 - SETUP_PANES_SHARE));
+      setupStage.style.setProperty('--a', String(a));
+      setupStage.style.setProperty(
+        '--dx',
+        setupStage.clientWidth / 2 - (monitor.offsetLeft + monitor.offsetWidth / 2) + 'px',
       );
+      for (const el of alarmEls) el.classList.toggle('on', a > 0 && a >= Number(el.dataset.alarm));
+      cursor.classList.toggle('gone', a > 0);
       items.forEach((li, i) => {
         li.classList.toggle('active', i === item);
         li.style.setProperty('--t', i < item ? '1' : i === item ? String(t) : '0');
@@ -176,18 +183,13 @@ export function LandingPage() {
         vh,
         vh,
       );
-      const videoP = Math.min(1, heroP / HERO_VIDEO_SHARE);
-      root.style.setProperty('--hero', String(videoP));
-      root.style.setProperty(
-        '--shrink',
-        String(clamp((heroP - HERO_VIDEO_SHARE) / (1 - HERO_VIDEO_SHARE))),
-      );
-      scrub(heroVideo, videoP);
+      root.style.setProperty('--hero', String(clamp(heroP)));
       syncSetup(vh);
       for (const sec of pins) syncPin(sec, vh);
-      // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 출발 신호가 꺼진 뒤부터 흐른다.
+      // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 설계가 끝나 체크인 장면이 시작되면 흐른다.
       const top = (el: HTMLElement) => el.getBoundingClientRect().top + scrollY;
-      const start = top(go) + (go.offsetHeight - stageOf(go).offsetHeight) * LIGHTS_OUT;
+      const start =
+        top(setup) + (setup.offsetHeight - setupStage.offsetHeight) * SETUP_PANES_SHARE;
       const end = top(finish) + finish.offsetHeight - vh;
       const lap = (scrollY - start) / (end - start);
       const clock = raceClock(lap);
@@ -206,18 +208,27 @@ export function LandingPage() {
       root.style.setProperty('--mx', String((e.clientX / innerWidth) * 2 - 1));
       root.style.setProperty('--my', String((e.clientY / innerHeight) * 2 - 1));
     }
-    const scrubbed = [heroVideo, ...videos];
-    for (const v of scrubbed) {
+    for (const v of videos) {
       v.addEventListener('loadeddata', sync);
       v.addEventListener('seeked', onSeeked);
     }
+    // 첫 화면 시계: 페이지를 연 순간부터 168시간이 실제로 줄어든다.
+    const openedAt = Date.now();
+    function tick() {
+      const left = Math.max(0, SPRINT_SECONDS - Math.floor((Date.now() - openedAt) / 1000));
+      const pad = (v: number) => String(v).padStart(2, '0');
+      heroHours.textContent = String(Math.floor(left / 3600));
+      heroRest.textContent = `${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
+    }
+    const ticker = reduced.matches ? 0 : window.setInterval(tick, 1000);
     addEventListener('scroll', onScroll, { passive: true });
     addEventListener('resize', onScroll);
     addEventListener('pointermove', onPointer, { passive: true });
     sync();
     return () => {
       cancelAnimationFrame(frame);
-      for (const v of scrubbed) {
+      clearInterval(ticker);
+      for (const v of videos) {
         v.removeEventListener('loadeddata', sync);
         v.removeEventListener('seeked', onSeeked);
       }
@@ -233,52 +244,174 @@ export function LandingPage() {
         <a className="rl-brand" href="#top">
           ProjectMate
         </a>
-        <div className="rl-top-actions">
-          <a className="rl-link careerflow-link" href={CAREERFLOW_URL} target="_blank" rel="noreferrer">
-            공고·이력서 ↗
-          </a>
-          <Link className="rl-btn small" href={START} prefetch={false}>
-            7일 시작하기
-          </Link>
-        </div>
+        <Link className="rl-btn small" href={START} prefetch={false}>
+          스프린트 시작하기
+        </Link>
       </header>
 
       <main>
         <section className="hero" id="top">
           <div className="hero-stage">
-            <video
-              muted
-              playsInline
-              preload="auto"
-              poster="/landing/poster.jpg"
-              aria-hidden="true"
-            />
-            {/* eslint-disable-next-line @next/next/no-img-element -- 모바일 정지 화면, 최적화 경로 불필요 */}
-            <img className="hero-still" src="/landing/car.jpg" alt="" />
+            {/* 배경: 168시간 시계가 실제로 1초씩 줄고, 아래로 7일 트랙이 지나간다. */}
+            <p className="hero-clock" aria-hidden="true">
+              <b>168</b>:<span>00:00</span>
+            </p>
+            <div className="hero-lanes" aria-hidden="true">
+              {[1, 2, 3, 4, 5, 6, 7].map((d) => (
+                <span key={d}>DAY {String(d).padStart(2, '0')}</span>
+              ))}
+            </div>
             <div className="hero-copy">
-              <p className="kicker">7일 프로젝트 스프린트</p>
+              <p className="kicker">취준생을 위한 7일 프로젝트 스프린트</p>
               <h1>
-                <span className="line">이번엔,</span>
-                <span className="line">끝까지.</span>
+                <span className="line">이력서와 프로젝트 관리를</span>
+                <span className="line">한 곳에.</span>
               </h1>
               <p className="lead">
-                기한은 7일. 목표는 고정, 연장은 없습니다.
-                <br />팀 전체를 한 번에 결승선까지
+                공고가 원하는 경험, 7일 팀 프로젝트로 채웁니다.
+                <br />기한은 7일. 목표는 고정, 연장은 없습니다.
               </p>
               <div className="hero-actions">
                 <Link className="rl-btn" href={START} prefetch={false}>
-                  7일 시작하기
+                  스프린트 시작하기
                 </Link>
-                <a className="rl-link" href="#rules">
+                <a className="rl-link" href="#diagnose">
                   스크롤해서 출발 ↓
                 </a>
               </div>
             </div>
             <p className="hero-end" aria-hidden="true">
-              계획이 끝나면
+              출발 전에,
               <br />
-              <em>이제, 스프린트.</em>
+              <em>무엇이 부족한지부터.</em>
             </p>
+          </div>
+        </section>
+
+        <section className="pin duo" id="diagnose" data-pin>
+          <div className="pin-stage duo-stage">
+            <div className="duo-copy">
+              <p className="kicker">
+                진단 <span className="soon">준비 중인 기능</span>
+              </p>
+              {/* 첫 줄만 먼저 보이고, 더 내리면 둘째 줄 → 설명 → 비교표 순서로 나온다. */}
+              <h2>
+                이력서와 공고를 넣으면,
+                <span className="h2-next" data-on="0.14">
+                  무엇이 부족한지 알려줍니다.
+                </span>
+              </h2>
+              <p className="lead" data-on="0.2">
+                관심 공고와 내 이력서를 나란히. 요구 역량마다 이력서 속 근거를
+                찾아 보여줍니다.
+              </p>
+            </div>
+            <div className="cmp">
+              <div className="cmp-head" data-on="0.26">
+                <small>브릿지랩 · 백엔드 개발자</small>
+                <b>하린의 이력서와 비교</b>
+              </div>
+              {[
+                ['Java', '필수', '자료구조 과제를 Java로 구현'],
+                ['Spring', '필수', 'Spring 게시판 개인 프로젝트'],
+                ['SQL', '필수', '데이터베이스 수업 팀 과제'],
+                ['REST API', '필수', ''],
+                ['Docker', '우대', ''],
+              ].map(([skill, kind, quote], i) => (
+                <div
+                  className={`cmp-row ${quote ? 'cmp-ok' : 'cmp-gap'}`}
+                  data-on={(0.32 + i * 0.08).toFixed(2)}
+                  key={skill}
+                >
+                  <b>{skill}</b>
+                  <small>{kind}</small>
+                  <span className="cmp-tag">{quote ? '근거 있음' : '근거 없음'}</span>
+                  <q>{quote || '이력서에서 근거를 찾지 못했습니다'}</q>
+                </div>
+              ))}
+              <p className="cmp-sum" data-on="0.78">
+                부족 역량 2개 · REST API, Docker <span>→ 다음 7일의 목표</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="pin duo" id="match" data-pin>
+          <div className="pin-stage duo-stage">
+            <div className="duo-copy">
+              <p className="kicker">
+                팀 매칭 <span className="soon">준비 중인 기능</span>
+              </p>
+              <h2>
+                빈자리는,
+                <br />
+                팀으로 채웁니다.
+              </h2>
+              <p className="lead">
+                이력서에서 기술스택과 포지션을 읽어, 서로의 빈자리를 채우는 2–4인
+                팀으로 묶습니다.
+              </p>
+            </div>
+            <div className="mt">
+              <div className="mt-me" data-on="0.01">
+                <small>하린의 이력서에서 읽은 것</small>
+                <div className="mt-chips">
+                  {['포지션 · 백엔드', 'Java', 'Spring', 'SQL'].map((c, i) => (
+                    <span data-on={(0.06 + i * 0.04).toFixed(2)} key={c}>
+                      {c}
+                    </span>
+                  ))}
+                  <span className="mt-want" data-on="0.24">
+                    채울 역량 · REST API, Docker
+                  </span>
+                </div>
+              </div>
+              <div className="mt-team">
+                {[
+                  ['민', '민서', '기획 · PM', '서비스 기획 · Figma', 0.35],
+                  ['수', '수빈', '프론트엔드', 'React · TypeScript', 0.41],
+                  ['하', '하린', '백엔드', 'Java · Spring', 0.31],
+                  ['준', '준호', '인프라 · QA', 'Docker · 테스트 자동화', 0.46],
+                ].map(([av, name, pos, stack, on], i) => (
+                  <div
+                    className={`mt-card m${i}`}
+                    data-on={on as number}
+                    key={name as string}
+                  >
+                    <span className="mt-av">{av}</span>
+                    <b>{name}</b>
+                    <small>{pos}</small>
+                    <span className="mt-stack">{stack}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-done" data-on="0.56">
+                4인 팀 매칭 완료 <span>· 포지션 겹침 없음</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="pin cine" id="launch" data-pin>
+          <div className="pin-stage">
+            <video
+              data-src="/landing/race.mp4"
+              data-range="0,0.85"
+              poster="/landing/car.jpg"
+              muted
+              playsInline
+              preload="auto"
+              aria-hidden="true"
+            />
+            <div className="cine-copy">
+              <p className="kicker" data-on="0.45">
+                스프린트
+              </p>
+              <p className="cine-line">
+                <span data-on="0.45">팀이 모이면,</span>
+                <span data-on="0.7">이제, 스프린트.</span>
+              </p>
+            </div>
           </div>
         </section>
 
@@ -323,14 +456,14 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="feat" id="setup">
+        <section className="feat alarm" id="setup">
           <div className="stage">
             <div className="feat-copy">
               <p className="kicker">출발 전 설계</p>
               <h2>
-                스프린트 전,
+                계획서를 붙여넣으면,
                 <br />
-                7일을 설계합니다.
+                업무 변경안이 나옵니다.
               </h2>
               <ol className="feat-list">
                 <li>
@@ -479,63 +612,24 @@ export function LandingPage() {
                 <svg className="cursor" viewBox="0 0 24 24">
                   <path d="M4 2l16 9-7 2-3 7z" />
                 </svg>
+                <i className="alarm-tint" data-alarm="0.45" />
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className="pin dive" id="dive" data-pin aria-hidden="true">
-          <div className="pin-stage">
-            <video
-              data-src="/landing/dive.mp4"
-              poster="/landing/dive.jpg"
-              muted
-              playsInline
-              preload="auto"
-            />
-          </div>
-        </section>
-
-        <section className="pin cine" id="go" data-pin>
-          <div className="pin-stage">
-            <video
-              data-src="/landing/lights.mp4"
-              data-range="0,0.85"
-              poster="/landing/lights.jpg"
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-            />
-            <div className="cine-copy">
-              <p className="kicker">출발</p>
+            {/* 체크인: 모니터가 가운데로 오면 문구가 왼쪽 위·오른쪽 아래에 엇갈려 뜬다. */}
+            <div className="alarm-left">
+              <p className="kicker" data-alarm="0.3">
+                체크인
+              </p>
               <p className="cine-line">
-                <span data-on="0.12">버튼을 클릭한 순간,</span>
-                <span data-on="0.56">168시간이 시작됩니다.</span>
+                <span data-alarm="0.3">마감이 임박하면,</span>
               </p>
             </div>
-          </div>
-        </section>
-
-        <section className="pin cine" id="checkin" data-pin>
-          <div className="pin-stage">
-            <video
-              data-src="/landing/checkin.mp4"
-              data-range="0,0.8"
-              poster="/landing/checkin.jpg"
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-            />
-            <div className="cine-copy center">
-              <p className="kicker">체크인</p>
-              <p className="cine-line big">
-                <span data-on="0.15">일정이 밀리는 순간,</span>
-                <span data-on="0.4">바로 경고</span>
+            <div className="alarm-right">
+              <p className="cine-line">
+                <span data-alarm="0.5">바로 빨간불.</span>
               </p>
-              <p className="lead" data-on="0.6">
-                체크인 한 번이면 남은 공수로 일정이 다시 계산됩니다.
+              <p className="lead" data-alarm="0.65">
+                체크인에 남은 공수를 적으면, 마감을 넘길 업무가 즉시 드러납니다.
               </p>
             </div>
           </div>
@@ -680,45 +774,69 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="pin mosaic" id="closing" data-pin>
+        <section className="pin duo" id="proof" data-pin>
+          <div className="pin-stage duo-stage">
+            <div className="duo-copy">
+              <p className="kicker">
+                증명 <span className="soon">준비 중인 기능</span>
+              </p>
+              <h2>
+                완주한 결과물이,
+                <br />
+                이력서의 다음 줄.
+              </h2>
+              <p className="lead">
+                팀장이 확인한 결과물과 근거가 그대로 이력서 항목이 됩니다. 같은
+                공고와 다시 비교하면 빈칸이 줄어듭니다.
+              </p>
+            </div>
+            <div className="pf">
+              <div className="pf-out" data-on="0.04">
+                <small>완주 · 러닝크루 MVP</small>
+                <b>참가 신청 API · 하린</b>
+                <span>저장소 · 실행 방법 · 3분 데모</span>
+              </div>
+              <div className="pf-cv">
+                <small>하린의 이력서</small>
+                <p>Spring 게시판 개인 프로젝트</p>
+                <p>데이터베이스 수업 팀 과제</p>
+                <p className="pf-new" data-on="0.36">
+                  참가 신청 REST API 설계·구현 · 4인 팀 7일 스프린트 완주
+                </p>
+              </div>
+              <div className="cmp-row cmp-gap pf-row" data-on="0.58">
+                <b>REST API</b>
+                <small>브릿지랩 · 백엔드 개발자 · 다시 비교</small>
+                <span className="cmp-tag swap" data-on="0.76">
+                  <span className="before">근거 없음</span>
+                  <span className="after">근거 있음</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 마지막: 버튼 하나. 첫 화면의 168:00:00을 다시 깔아 처음과 끝을 맞춘다. */}
+        <section className="pin final" id="closing" data-pin>
           <div className="pin-stage">
-            <div className="mosaic-grid">
-              {[
-                ['a', 'm1', 0.08],
-                ['b', 'm4', 0.14],
-                ['c', 'm3', 0.2],
-                ['d', 'm2', 0.12],
-                ['e', 'm5', 0.18],
-                ['f', 'm6', 0.1],
-                ['g', 'm7', 0.16],
-                ['i', 'm8', 0.22],
-              ].map(([area, img, on]) => (
-                <figure className={`tile ${area}`} data-on={on} key={area as string}>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- 장식용 모자이크 */}
-                  <img src={`/landing/${img}.jpg`} alt="" loading="lazy" />
-                </figure>
-              ))}
-              <div className="tile h text" data-on="0.24">
-                <small>출발부터 결승까지</small>
-                <strong>168:00:00</strong>
-                <i className="days" aria-hidden="true" />
-              </div>
-              <div className="tile j text" data-on="0.26">
-                <small>목표 잠금 · 이월 없음</small>
-                <strong>연장 0회</strong>
-              </div>
-              <div className="tile cta">
-                <h2>
-                  다음 7일,
-                  <br />
-                  <em>출발선에 서세요.</em>
-                </h2>
-                <div className="hero-actions">
-                  <Link className="rl-btn" href={START} prefetch={false}>
-                    7일 시작하기
-                  </Link>
-                </div>
-              </div>
+            <div className="final-inner">
+              <p className="final-clock" aria-hidden="true">
+                168:00:00
+              </p>
+              <h2 data-on="0.05">
+                지금 바로
+                <br />
+                <em>실행하세요.</em>
+              </h2>
+              <p className="lead" data-on="0.15">
+                팀을 만들고 목표를 정하면, 7일 스프린트가 시작됩니다.
+              </p>
+              <Link className="rl-btn big" href={START} prefetch={false} data-on="0.25">
+                스프린트 시작하기 <span aria-hidden="true">→</span>
+              </Link>
+              <p className="final-note" data-on="0.3">
+                Google 계정으로 바로 로그인 · 2–4인 팀 · 연장 없는 7일
+              </p>
             </div>
           </div>
         </section>

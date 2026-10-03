@@ -37,30 +37,8 @@ export class AccessError extends Error {
     super(message);
   }
 }
-export type Identity = { id: string; email: string; name: string };
-export function identity(request: Request): Identity | null {
-  const id = request.headers.get('oai-authenticated-user-id');
-  if (!id) return null;
-  const email = (request.headers.get('oai-authenticated-user-email') ?? '')
-    .trim()
-    .toLowerCase();
-  let name = request.headers.get('oai-authenticated-user-full-name') ?? '';
-  if (
-    request.headers.get('oai-authenticated-user-full-name-encoding') ===
-    'percent-encoded-utf-8'
-  ) {
-    try {
-      name = decodeURIComponent(name);
-    } catch {
-      name = '';
-    }
-  }
-  return {
-    id,
-    email,
-    name: (name || email.split('@')[0] || '팀원').slice(0, 60),
-  };
-}
+import type { Identity } from './auth';
+export { identity, AuthUnavailable, type Identity } from './auth';
 export async function adoptLegacy(user: Identity) {
   // Only the identity that owns a v2 row can import it. Never copy another user's data.
   // 이전 규칙 기록이므로 project_policy 행을 만들지 않는다. 열람·내보내기만 가능하다.

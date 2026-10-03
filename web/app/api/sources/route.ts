@@ -1,5 +1,5 @@
 // 붙여넣은 원문의 저장과 조회. 원문 문장은 데이터이며 지시로 실행하지 않는다.
-import { identity, member, actorOf, AccessError } from '@/lib/projects';
+import { identity, AuthUnavailable, member, actorOf, AccessError } from '@/lib/projects';
 import { readPolicy } from '@/lib/sprint-store';
 import { assertProjectMutationAllowed, PolicyError } from '@/lib/sprint-policy';
 import {
@@ -27,7 +27,9 @@ function failure(error: unknown) {
 }
 
 export async function GET(request: Request) {
-  const user = identity(request);
+  const user = await identity(request);
+  if (user instanceof AuthUnavailable)
+    return reply({ error: user.message }, user.status);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   try {
     const url = new URL(request.url);
@@ -48,7 +50,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = identity(request);
+  const user = await identity(request);
+  if (user instanceof AuthUnavailable)
+    return reply({ error: user.message }, user.status);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin)

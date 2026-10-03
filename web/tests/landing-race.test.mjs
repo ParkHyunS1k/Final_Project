@@ -73,3 +73,22 @@ test('rolling number climbs, holds, then rolls to the next segment', () => {
   assert.equal(rollAt(1, segs), -1);
   assert.equal(rollAt(0.5, []), 0);
 });
+
+test('구현되지 않은 진단·팀 매칭·증명 장면은 준비 중이라고 밝힌다', async () => {
+  const { readFileSync } = await import('node:fs');
+  const page = readFileSync('components/landing-page.tsx', 'utf8');
+  for (const id of ['diagnose', 'match', 'proof']) {
+    const start = page.indexOf(`id="${id}"`);
+    assert.ok(start > 0, id);
+    const head = page.slice(start, page.indexOf('</h2>', start));
+    assert.match(head, /준비 중/, id);
+  }
+});
+
+test('출발 전 설계 장면은 연결되지 않은 AI 배정을 약속하지 않는다', async () => {
+  const { readFileSync } = await import('node:fs');
+  const page = readFileSync('components/landing-page.tsx', 'utf8');
+  const start = page.indexOf('id="setup"');
+  const head = page.slice(start, page.indexOf('</h2>', start));
+  assert.doesNotMatch(head, /AI가 업무를 배정/);
+});

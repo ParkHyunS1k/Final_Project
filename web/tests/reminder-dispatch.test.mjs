@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+process.env.AUTH_DEV_HEADERS = '1';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { build } from 'esbuild';
@@ -85,13 +86,12 @@ await build({
     {
       name: 'test-d1',
       setup(b) {
-        b.onResolve({ filter: /^cloudflare:workers$/ }, () => ({
+        b.onResolve({ filter: /^\.\/db$/ }, () => ({
           path: 'd1',
           namespace: 'test',
         }));
         b.onLoad({ filter: /.*/, namespace: 'test' }, () => ({
-          contents:
-            'export const env=new Proxy({},{get:(_,k)=>k==="DB"?globalThis.__TEST_DB:globalThis.__TEST_ENV?.[k]});',
+          contents: 'export function database(){return globalThis.__TEST_DB}',
           loader: 'js',
         }));
       },
@@ -741,14 +741,14 @@ test('정기 실행 진입점은 서버 비밀값 없이는 실행되지 않는�
   const url = 'https://test.local/api/internal/reminders';
   const call = (headers = {}) =>
     api.runnerPOST(new Request(url, { method: 'POST', headers }));
-  globalThis.__TEST_ENV = {};
+  delete process.env.REMINDER_RUNNER_SECRET;
   // 비밀값이 설정되지 않았으면 무인증 호출을 허용하지 않는다.
   assert.equal((await call()).status, 401);
   assert.equal(
     (await call({ authorization: 'Bearer anything' })).status,
     401,
   );
-  globalThis.__TEST_ENV = { REMINDER_RUNNER_SECRET: 'runner-secret' };
+  process.env.REMINDER_RUNNER_SECRET = 'runner-secret';
   assert.equal((await call()).status, 401);
   assert.equal((await call({ authorization: 'Bearer wrong-secret' })).status, 401);
   // 일반 사용자 세션 헤더로는 실행되지 않는다.
@@ -762,7 +762,7 @@ test('정기 실행 진입점은 서버 비밀값 없이는 실행되지 않는�
   // 제공자 자격 정보가 없으면 실제 발송이 아니라 기록용 전송기를 쓴다.
   assert.equal(body.live, false);
   assert.equal(body.provider, 'recording');
-  globalThis.__TEST_ENV = {};
+  delete process.env.REMINDER_RUNNER_SECRET;
 });
 
 test('제공자 설정이 모두 있어야 운영 전송기를 사용한다', () => {

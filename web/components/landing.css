@@ -43,6 +43,16 @@ body:has(.rl) {
   font-weight: 600;
   line-height: 1;
 }
+/* 아직 구현되지 않은 장면 표시. 구현되면 해당 장면에서 뺀다. */
+.rl .kicker .soon {
+  margin-left: 8px;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
 .rl .lead {
   margin: 22px 0 0;
   max-width: 30em;
@@ -100,35 +110,21 @@ body:has(.rl) {
   font-size: 20px;
   letter-spacing: -0.03em;
 }
-.rl-top-actions {
-  display: flex;
-  align-items: center;
-  gap: clamp(10px, 2vw, 24px);
-}
-.rl .careerflow-link {
-  font-size: 13px;
-  white-space: nowrap;
-}
-@media (max-width: 767px) {
-  .rl .careerflow-link {
-    font-size: 11px;
-  }
-}
 
-/* 1. 히어로: 스크롤하면 7이 레이스카로 바뀌어 튀어나간다. */
+/* 1. 히어로: 밤 책상 사진 위 문구가 물러나고 끝 문구가 뜬 뒤, 무대 전체가 어둠으로 사라진다. */
 .hero {
-  height: 380svh;
+  height: 260svh;
 }
 .hero-stage {
   position: sticky;
   top: 0;
   height: 100svh;
   overflow: hidden;
-  /* 영상이 끝나면 화면을 채우던 무대가 둥근 카드로 줄어들며 다음 섹션으로 넘어간다. */
-  clip-path: inset(
-    calc(var(--shrink, 0) * 9%) calc(var(--shrink, 0) * 6%)
-      round calc(var(--shrink, 0) * 40px)
-  );
+  opacity: clamp(0, (1 - var(--hero)) / 0.3, 1);
+}
+/* 제목이 오른쪽 책상·노트북을 가리지 않도록 화면 왼쪽 절반 안에 둔다. */
+.hero-copy h1 {
+  font-size: clamp(40px, 4vw, 60px);
 }
 /* 헤드라인은 줄마다 흐림에서 떠오른다. */
 .hero-copy .line {
@@ -149,23 +145,49 @@ body:has(.rl) {
     filter: blur(10px);
   }
 }
-.hero video,
-.hero-still {
+/* 시계: 화면 폭을 거의 채우는 고정폭 숫자를 아주 흐리게 깐다. 시간 칸만 주황. */
+.hero-clock {
+  position: absolute;
+  left: clamp(16px, 6vw, 96px);
+  top: 13svh;
+  margin: 0;
+  color: rgb(255 255 255 / 0.07);
+  font: 500 17vw / 0.85 var(--font-geist-mono), monospace;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.hero-clock b {
+  font-weight: inherit;
+  color: rgb(255 90 31 / 0.4);
+}
+/* 7일 트랙: 화면을 세로 7칸으로 나누는 얇은 선. 첫날 칸만 살짝 밝다. */
+.hero-lanes {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 70% 50%;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  pointer-events: none;
 }
-.hero-still {
-  display: none;
+.hero-lanes span {
+  padding: 84px 0 0 10px;
+  border-left: 1px solid rgb(255 255 255 / 0.05);
+  color: rgb(255 255 255 / 0.22);
+  font: 500 11px var(--font-geist-mono), monospace;
+  letter-spacing: 0.08em;
+}
+.hero-lanes span:first-child {
+  border-left-color: rgb(255 90 31 / 0.5);
+  background: linear-gradient(rgb(255 90 31 / 0.06), transparent 60%);
+  color: var(--heat);
 }
 .hero-stage::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgb(11 11 12 / 0.9) 0%, rgb(11 11 12 / 0.2) 60%, transparent);
+  /* 아래쪽 문구 뒤만 눌러 시계·트랙 위에서도 읽히게 한다. */
+  background: linear-gradient(0deg, rgb(11 11 12 / 0.9) 0%, transparent 55%);
   pointer-events: none;
 }
 .hero-copy {
@@ -189,11 +211,11 @@ body:has(.rl) {
   left: clamp(16px, 6vw, 96px);
   bottom: 14svh;
   margin: 0;
-  font-size: clamp(40px, 6vw, 88px);
+  font-size: clamp(36px, 4.4vw, 64px);
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.08;
-  opacity: calc((var(--hero) - 0.72) * 5);
+  opacity: calc((var(--hero) - 0.35) * 6);
 }
 .hero-end em {
   font-style: normal;
@@ -258,6 +280,254 @@ body:has(.rl) {
   line-height: 1.65;
 }
 
+/* 진단·매칭·증명: 왼쪽은 문구, 오른쪽 카드가 스크롤을 따라 한 줄씩 켜진다. */
+/* 첫 줄만 보이는 구간이 있도록 조금 길게 둔다. */
+#diagnose {
+  height: calc(100svh + 260svh);
+}
+.h2-next {
+  display: block;
+}
+/* 내용은 앞 56%에서 다 나오고, 마지막 25%(약 80svh)는 페이드아웃에 쓴다. */
+#match {
+  height: calc(100svh + 320svh);
+}
+#proof {
+  height: calc(100svh + 160svh);
+}
+.duo-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: clamp(32px, 6vw, 96px);
+  align-items: center;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 72px clamp(16px, 6vw, 96px);
+  box-sizing: border-box;
+}
+.duo-copy h2 {
+  font-size: clamp(34px, 3.8vw, 60px);
+}
+/* 글자는 움직이지 않고 제자리에서 천천히 페이드인한다. */
+.rl .duo [data-on] {
+  transition: opacity 0.8s ease;
+}
+.duo [data-on]:not(.on):not(.swap) {
+  opacity: 0;
+}
+.cmp,
+.mt,
+.pf {
+  display: grid;
+  width: 100%;
+  max-width: 560px;
+  justify-self: end;
+}
+/* 상자 없이 표처럼: 머리는 굵은 선, 행은 얇은 선으로만 나눈다. */
+.cmp-head,
+.mt-me {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.3);
+}
+.cmp-head small,
+.mt-me small,
+.pf-out small,
+.pf-cv small {
+  color: var(--dim);
+  font-size: 13px;
+}
+.cmp-head b,
+.pf-out b {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* 비교 한 줄: 역량 · 필수/우대 · 판정, 아래에 이력서 속 근거. */
+.cmp-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.cmp-row b {
+  font-size: 18px;
+  font-weight: 600;
+  transition: color 0.35s;
+}
+.cmp-row small {
+  color: var(--dim);
+  font-size: 12px;
+}
+.cmp-row q {
+  grid-column: 1 / -1;
+  color: var(--dim);
+  font-size: 13px;
+}
+.cmp-tag {
+  font-size: 13px;
+  font-weight: 700;
+}
+.cmp-tag::before {
+  content: '● ';
+  font-size: 9px;
+  vertical-align: 2px;
+}
+.cmp-ok .cmp-tag,
+.cmp-tag.swap.on {
+  color: var(--good);
+}
+.cmp-gap .cmp-tag:not(.on) {
+  color: var(--bad);
+}
+/* 요약이 뜨면 근거 없는 줄만 남겨 강조한다. */
+.cmp:has(.cmp-sum.on) .cmp-ok {
+  opacity: 0.35;
+}
+.cmp:has(.cmp-sum.on) .cmp-gap b {
+  color: var(--heat);
+}
+/* 요약: 상자 대신 큰 글자 한 줄. */
+.cmp-sum,
+.mt-done {
+  margin: 22px 0 0;
+  font-size: clamp(18px, 1.6vw, 22px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.cmp-sum span,
+.mt-done span {
+  color: var(--heat);
+}
+/* 이력서에서 읽은 것: 태그 상자 대신 글자만 나란히. */
+.mt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+.mt-chips .mt-want {
+  flex-basis: 100%;
+  color: var(--heat);
+  font-size: 14px;
+}
+/* 팀: 출발선의 명단처럼 세로선으로 4칸을 나누고, 아래에서 차례로 올라온다. */
+.mt-team {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 28px;
+}
+.mt-card {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 2px 14px;
+  border-left: 1px solid var(--line);
+}
+/* 팀원 칸만은 아래에서 차례로 올라온다(글자 페이드인보다 우선). */
+.rl .duo .mt-card[data-on] {
+  transition: opacity 0.5s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.duo .mt-card[data-on]:not(.on) {
+  transform: translateY(28px);
+}
+.mt-card.m2 {
+  border-left-color: var(--heat);
+}
+.mt-av {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: #26262a;
+  font-weight: 600;
+}
+.mt-card.m2 .mt-av {
+  background: var(--heat);
+}
+.mt-card b {
+  font-size: 18px;
+  font-weight: 600;
+}
+.mt-card small,
+.mt-stack {
+  color: var(--dim);
+  font-size: 13px;
+}
+.mt-card.m2 .mt-stack {
+  color: var(--heat);
+}
+/* 증명: 결과물 설명이 물러나고 이력서에 새 줄이 들어온다. */
+.pf-out {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 20px;
+  transition: opacity 0.4s;
+}
+.pf-out span {
+  color: var(--dim);
+  font-size: 14px;
+}
+.pf:has(.pf-new.on) .pf-out {
+  opacity: 0.35;
+}
+/* 이력서는 실제 문서 한 장이라 이것만 종이처럼 둔다. */
+.pf-cv {
+  display: grid;
+  padding: 22px 24px;
+  border-radius: 14px;
+  background: #f4f2ee;
+  color: #1b1b1d;
+  box-shadow: 0 24px 48px rgb(0 0 0 / 0.45);
+}
+.pf-cv small {
+  margin-bottom: 6px;
+  color: #8a877f;
+}
+.pf-cv p {
+  margin: 0;
+  padding: 9px 0;
+  border-top: 1px solid #dcd9d2;
+  color: #55524c;
+}
+.pf-cv .pf-new {
+  color: #1b1b1d;
+  font-weight: 600;
+}
+.pf-cv .pf-new::before {
+  content: '+ ';
+  color: #1f9d55;
+}
+.pf-row {
+  margin-top: 16px;
+}
+
+/* 넓은 화면에서는 진단·매칭·증명을 좌우로만 넓혀 양옆 여백을 줄인다(글자·세로 간격은 그대로). */
+@media (min-width: 1024px) {
+  .duo-stage {
+    max-width: 1560px;
+    gap: clamp(56px, 8vw, 160px);
+  }
+  .cmp,
+  .mt,
+  .pf {
+    max-width: 760px;
+  }
+  .mt-chips {
+    gap: 6px 32px;
+  }
+  .mt-card {
+    padding: 2px 20px;
+  }
+}
+
 /* 3. 장면: 고정된 무대 위에서 스크롤할 때마다 한 단계씩 켜진다. */
 .scene {
   height: calc(100svh + 120svh);
@@ -300,8 +570,13 @@ body:has(.rl) {
 }
 
 /* 설계: 모니터를 고정하고 왼쪽 목록을 따라 화면 속 앱이 바뀐다. */
+/* 앞 300svh는 화면 세 개, 뒤 220svh는 모니터가 가운데로 와서 경고하는 체크인 단계. */
 .feat {
-  height: calc(100svh + 300svh);
+  height: calc(100svh + 520svh);
+}
+/* 체크인 단계(--a)가 시작되면 왼쪽 설명은 빠르게 사라진다. */
+.feat-copy {
+  opacity: calc(1 - var(--a, 0) * 4);
 }
 .feat .stage {
   grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
@@ -361,7 +636,9 @@ body:has(.rl) {
   /* 화면 속 글씨가 읽히도록 오른쪽 여백까지 넘쳐 크게 둔다. */
   width: 116%;
   transform-origin: 50% 85%;
-  transform: perspective(1800px)
+  /* 체크인 단계 앞 40% 동안 화면 가운데(--dx)로 미끄러져 온다. */
+  transform: translateX(calc(min(1, var(--a, 0) * 2.5) * var(--dx, 0px)))
+    perspective(1800px)
     rotateX(calc((1 - var(--enter, 1)) * 28deg - var(--my, 0) * 2deg))
     rotateY(calc(var(--mx, 0) * 3deg))
     translateY(calc((1 - var(--enter, 1)) * 80px))
@@ -688,15 +965,18 @@ body:has(.rl) {
 }
 
 /* 결승 */
-.finish {
-  overflow: hidden;
+.panel.finish {
+  /* 결승은 상자 없이 영상과 글자만 둔다. */
   padding: 0;
+  border: 0;
+  background: none;
 }
 .finish video {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
+  border-radius: 16px;
 }
 .flag {
   display: none;
@@ -712,7 +992,7 @@ body:has(.rl) {
 .finish ul {
   list-style: none;
   margin: 0;
-  padding: 24px 28px 0;
+  padding: 24px 0 0;
   display: grid;
   gap: 10px;
   font-weight: 700;
@@ -723,7 +1003,7 @@ body:has(.rl) {
 }
 .result {
   margin: 0;
-  padding: 16px 28px 28px;
+  padding: 16px 0 0;
   font-size: clamp(40px, 5vw, 64px);
   font-weight: 600;
   letter-spacing: -0.04em;
@@ -754,22 +1034,21 @@ body:has(.rl) {
   height: 100svh;
   overflow: hidden;
 }
-/* 모니터 화면 속으로 카메라가 들어가며 암전되고, 그대로 출발 신호로 이어진다. */
-#dive {
-  height: calc(100svh + 100svh);
+/* 레이싱카 영상(5초)이 스크롤 약 290svh에 걸쳐 재생되도록 길게 둔다. */
+#launch {
+  height: calc(100svh + 340svh);
 }
-.dive video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+/* 팀 매칭 → 레이싱카는 스크롤로 밀려 올라가지 않고 페이드아웃·페이드인으로 넘어간다.
+   레이싱카 구간을 팀 매칭 끝 100svh에 겹쳐 두면, 매칭이 사라지는 순간 바로 레이싱카 고정이 시작된다. */
+#match .pin-stage {
+  opacity: clamp(0, (1 - var(--p, 0)) / 0.25, 1);
 }
-#go {
-  height: calc(100svh + 160svh);
+#launch {
+  position: relative;
+  margin-top: -100svh;
 }
-#checkin {
-  height: calc(100svh + 180svh);
+#launch .pin-stage {
+  opacity: clamp(0, var(--p, 0) / 0.2, 1);
 }
 #telemetry {
   height: calc(100svh + 220svh);
@@ -778,7 +1057,7 @@ body:has(.rl) {
   height: calc(100svh + 200svh);
 }
 #closing {
-  height: calc(100svh + 150svh);
+  height: calc(100svh + 60svh);
 }
 
 /* 시네마틱: 영상이 화면을 채우고 큰 글자가 흐림에서 떠오른다. */
@@ -788,6 +1067,16 @@ body:has(.rl) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+/* 16:9보다 좁은 창에서는 높이에 맞추면 좌우가 크게 잘려 확대돼 보인다.
+   가로폭에 맞추고(최대 75% 높이까지는 채움) 위아래는 배경으로 흐린다. 휴대폰은 그대로 채운다. */
+@media (min-width: 768px) and (max-aspect-ratio: 16 / 9) {
+  .cine video {
+    inset: 50% 0 auto;
+    height: max(56.25vw, 75svh);
+    transform: translateY(-50%);
+    mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent);
+  }
 }
 .cine .pin-stage::after {
   content: '';
@@ -833,10 +1122,83 @@ body:has(.rl) {
   transition: opacity 0.6s, filter 0.6s, transform 0.6s;
 }
 .cine-line span:not(.on),
+.cine-copy .kicker[data-on]:not(.on),
 .cine-copy .lead:not(.on) {
   opacity: 0;
   filter: blur(14px);
   transform: translateY(0.25em);
+}
+
+/* 체크인 문구: 모니터가 가운데로 오면 왼쪽 위·오른쪽 아래에 엇갈려 뜬다. */
+.alarm-left,
+.alarm-right {
+  position: absolute;
+  z-index: 1;
+}
+.alarm-left {
+  left: clamp(16px, 6vw, 96px);
+  top: 13svh;
+}
+.alarm-right {
+  right: clamp(16px, 6vw, 96px);
+  bottom: 14svh;
+  max-width: 24em;
+  text-align: right;
+}
+.alarm .cine-line {
+  font-size: clamp(34px, 4vw, 64px);
+}
+.alarm-right .cine-line span {
+  color: var(--bad);
+}
+.alarm .kicker {
+  transition: opacity 0.4s;
+}
+.alarm .kicker[data-alarm]:not(.on) {
+  opacity: 0;
+}
+.alarm-right .lead {
+  margin-left: auto;
+  font-size: 16px;
+  transition: opacity 0.6s;
+}
+.alarm-right .lead:not(.on) {
+  opacity: 0;
+}
+.cursor.gone {
+  opacity: 0;
+}
+.alarm-tint {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgb(255 59 48 / 0.18), rgb(255 59 48 / 0.6));
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transition: opacity 0.6s;
+  pointer-events: none;
+}
+.alarm-tint.on {
+  /* 홀수 번 왕복이라 마지막은 가장 빨간 상태로 멈춘다. */
+  animation: alarm-pulse 0.45s ease-in-out 5 alternate both;
+}
+@keyframes alarm-pulse {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* 경고가 켜지면 오늘 칸도 빨개지고, 모니터 주변으로 붉은 빛이 번진다. */
+.alarm:has(.alarm-tint.on) .s-today {
+  border-color: #d92d20;
+  background: #fdecea;
+}
+.alarm .monitor img {
+  transition: filter 0.6s;
+}
+.alarm:has(.alarm-tint.on) .monitor img {
+  filter: drop-shadow(0 0 70px rgb(255 59 48 / 0.45));
 }
 
 /* 텔레메트리: 팀원 체크인 카드가 떠 있고, 가운데 숫자가 굴러간다. */
@@ -859,12 +1221,11 @@ body:has(.rl) {
   display: grid;
   gap: 6px;
   width: clamp(180px, 17vw, 250px);
-  padding: 16px 18px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgb(21 21 23 / 0.92);
+  /* 상자 대신 왼쪽 선 하나로 묶은 메모처럼. 위험하면 선이 빨개진다. */
+  padding: 4px 0 4px 16px;
+  border-left: 2px solid rgb(255 255 255 / 0.18);
   transform: translateY(calc((1 - var(--p, 0)) * var(--drift, 60px))) scale(var(--s, 1));
-  transition: opacity 0.5s, border-color 0.4s, box-shadow 0.4s;
+  transition: opacity 0.5s, border-color 0.4s;
 }
 .tcard:not(.on) {
   opacity: 0;
@@ -907,12 +1268,10 @@ body:has(.rl) {
   --drift: 70px;
 }
 .tele:has(.tele-big.on) .t1 {
-  border-color: var(--bad);
-  box-shadow: 0 0 40px rgb(255 59 48 / 0.35);
+  border-left-color: var(--bad);
 }
 .tele:has(.verdict.on) .t1 {
-  border-color: var(--good);
-  box-shadow: 0 0 40px rgb(61 220 132 / 0.25);
+  border-left-color: var(--good);
 }
 .tele-big {
   position: absolute;
@@ -1102,139 +1461,69 @@ body:has(.rl) {
   opacity: 0;
 }
 
-/* 마무리: 가까이 당겨 둔 모자이크가 스크롤하면 한 장으로 물러나며 모인다. */
-#closing .pin-stage {
+/* 마무리: 화면 하나에 제목·부제·버튼 하나. 뒤에는 첫 화면의 168:00:00이 흐리게 돌아온다. */
+.final .pin-stage {
   display: grid;
   place-items: center;
-  /* 위는 헤더, 아래는 레이스 시계 자리를 비운다. */
-  padding: 72px 0 92px;
-  box-sizing: border-box;
+  background: radial-gradient(ellipse 60% 45% at 50% 100%, rgb(255 90 31 / 0.2), transparent 70%);
 }
-.mosaic-grid {
-  --z: calc(1 + 1.3 * (1 - clamp(0, var(--p, 0) * 1.6, 1)));
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: 1fr 1.3fr 1fr;
-  grid-template-areas:
-    'a b c d'
-    'e cta cta f'
-    'g h i j';
-  gap: 14px;
-  width: min(1360px, calc(100vw - 48px));
-  height: calc(100svh - 164px);
-  transform: scale(var(--z));
-}
-.tile {
+.final-inner {
   position: relative;
-  margin: 0;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--panel);
-  transition: opacity 0.6s;
-}
-.tile:not(.on):not(.cta) {
-  opacity: 0;
-}
-.tile img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* 사진마다 주황이 강해 톤을 살짝 눌러 한 장처럼 보이게 한다. */
-  filter: saturate(0.85) brightness(0.88);
-  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.4s;
-}
-.tile::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(transparent 55%, rgb(11 11 12 / 0.45));
-  pointer-events: none;
-}
-@media (hover: hover) {
-  figure.tile:hover img {
-    transform: scale(1.04);
-    filter: saturate(1) brightness(1);
-  }
-}
-.tile.a { grid-area: a; }
-.tile.b { grid-area: b; }
-.tile.c { grid-area: c; }
-.tile.d { grid-area: d; }
-.tile.e { grid-area: e; }
-.tile.f { grid-area: f; }
-.tile.g { grid-area: g; }
-.tile.h { grid-area: h; }
-.tile.i { grid-area: i; }
-.tile.j { grid-area: j; }
-/* 숫자 칸: 위에 짧은 설명, 아래에 큰 숫자. */
-.tile.text {
+  isolation: isolate;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  align-items: end;
-  gap: 12px;
-  padding: clamp(18px, 1.8vw, 26px);
-  background: linear-gradient(160deg, #1b1b1e, #111113 70%);
-}
-.tile.text::after {
-  display: none;
-}
-.tile.text small {
-  color: var(--dim);
-  font-size: 14px;
-}
-.tile.text strong {
-  color: var(--heat);
-  font: 600 clamp(28px, 2.8vw, 46px) / 1 var(--font-geist-mono), monospace;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-}
-.tile.j strong {
-  color: var(--text);
-  font-family: inherit;
-  letter-spacing: -0.03em;
-}
-/* 168 칸 아래 7일 막대: 레이스 시계와 같은 눈금. */
-.tile .days {
-  display: block;
-  height: 6px;
-  border-radius: 99px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--heat) 0 calc(100% / 7 - 4px),
-    transparent 0 calc(100% / 7)
-  );
-  opacity: 0.85;
-}
-/* 가운데 카드: 시선이 모이도록 뒤에 은은한 빛을 깐다. */
-.tile.cta {
-  grid-area: cta;
-  display: grid;
-  place-content: center;
   justify-items: center;
-  gap: 4px;
-  padding: clamp(18px, 2vw, 32px);
-  background:
-    radial-gradient(ellipse 70% 90% at 50% 110%, rgb(255 90 31 / 0.22), transparent 70%),
-    #0e0e10;
+  padding: 0 16px;
   text-align: center;
 }
-.tile.cta::after {
-  display: none;
+.final-clock {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 46%;
+  margin: 0;
+  color: rgb(255 255 255 / 0.05);
+  font: 500 19vw / 1 var(--font-geist-mono), monospace;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
-.tile.cta h2 {
-  font-size: clamp(28px, 3.2vw, 50px);
-  line-height: 1.15;
+.final h2 {
+  font-size: clamp(44px, 6.4vw, 104px);
+  line-height: 1.05;
 }
-.tile.cta h2 em {
+.final h2 em {
   color: var(--heat);
   font-style: normal;
 }
-.tile.cta .hero-actions {
-  justify-content: center;
-  margin-top: 22px;
+.final .lead {
+  margin: 24px auto 0;
+}
+.rl-btn.big {
+  gap: 10px;
+  min-height: 64px;
+  margin-top: 40px;
+  padding: 0 36px;
+  font-size: 19px;
+  box-shadow: 0 16px 48px rgb(255 90 31 / 0.35);
+}
+.rl-btn.big span {
+  transition: transform 0.2s;
+}
+.rl-btn.big:hover span {
+  transform: translateX(4px);
+}
+.final-note {
+  margin: 18px 0 0;
+  color: var(--dim);
+  font-size: 13px;
+}
+.final [data-on] {
+  transition: opacity 0.7s, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.final [data-on]:not(.on) {
+  opacity: 0;
+  transform: translateY(24px);
 }
 
 /* 레이스 시계: 스크롤이 곧 7일이다. */
@@ -1284,27 +1573,25 @@ body:has(.rl) {
   color: var(--good);
 }
 
-/* 휴대폰: 영상 대신 정지 화면, 장면은 고정하지 않고 화면에 들어올 때 켜진다. */
+/* 휴대폰: 영상 대신 정지 화면, 장면은 화면에 들어올 때 켜진다. */
 @media (max-width: 767px) {
   .hero {
     height: auto;
   }
-  .hero video {
-    display: none;
+  .hero-clock {
+    top: 14svh;
+    font-size: 18vw;
   }
-  /* 가로 영상 프레임을 세로 화면 위쪽에 차 전체가 보이도록 놓는다. */
-  .hero-still {
-    display: block;
-    inset: 10svh auto auto -15%;
-    width: 130%;
-    height: auto;
-    mask-image: radial-gradient(ellipse at 55% 55%, #000 45%, transparent 72%);
+  .hero-lanes span {
+    padding: 72px 0 0 4px;
+    font-size: 8px;
+    letter-spacing: 0;
   }
   .hero-stage::after {
     background: linear-gradient(0deg, rgb(11 11 12 / 0.95) 35%, rgb(11 11 12 / 0.2));
   }
   .hero-stage {
-    clip-path: none;
+    opacity: 1;
   }
   .hero-copy {
     opacity: 1;
@@ -1315,7 +1602,7 @@ body:has(.rl) {
   }
   /* 설계 섹션은 휴대폰에서도 고정해 두고, 지금 항목만 보여 준다. */
   .feat {
-    height: calc(100svh + 240svh);
+    height: calc(100svh + 420svh);
   }
   .feat .stage {
     position: sticky;
@@ -1363,6 +1650,60 @@ body:has(.rl) {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
+  .duo-stage {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 20px;
+    padding: 64px 16px 88px;
+  }
+  .duo-copy .lead {
+    display: none;
+  }
+  .cmp,
+  .mt,
+  .pf {
+    justify-self: stretch;
+  }
+  .pf-cv {
+    padding: 14px 16px;
+  }
+  .cmp-row {
+    padding: 10px 0;
+  }
+  .cmp-row q {
+    display: none;
+  }
+  .mt-chips {
+    font-size: 17px;
+  }
+  .mt-team {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 18px;
+    margin-top: 20px;
+  }
+  .mt-av {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 6px;
+  }
+  /* 휴대폰: 경고 문구 두 줄을 설명이 있던 화면 카드 위쪽에 차례로 쌓는다. */
+  .alarm-left {
+    top: 64px;
+    left: 16px;
+  }
+  .alarm-right {
+    top: 140px;
+    right: auto;
+    bottom: auto;
+    left: 16px;
+    text-align: left;
+  }
+  .alarm .cine-line {
+    font-size: 28px;
+  }
+  .alarm-right .lead {
+    display: none;
+  }
   .tele-stage {
     grid-template-columns: minmax(0, 1fr);
     align-content: center;
@@ -1374,7 +1715,7 @@ body:has(.rl) {
   }
   .tcard {
     width: 150px;
-    padding: 10px 12px;
+    padding: 2px 0 2px 10px;
   }
   .tcard b {
     font-size: 15px;
@@ -1429,39 +1770,8 @@ body:has(.rl) {
     --x: -6vw;
     --y: 28svh;
   }
-  #closing .pin-stage {
-    padding: 64px 0 84px;
-  }
-  .mosaic-grid {
-    width: calc(100vw - 32px);
-    height: calc(100svh - 148px);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 1fr 1.7fr 1fr 0.8fr;
-    grid-template-areas:
-      'a b'
-      'cta cta'
-      'e f'
-      'h j';
-    gap: 8px;
-  }
-  .tile.cta h2 {
-    font-size: 28px;
-  }
-  .tile.text strong {
-    font-size: 24px;
-  }
-  .tile.text small {
-    font-size: 12px;
-  }
-  /* 휴대폰에는 모니터가 없으니 줌인 전환도 뺀다. */
-  #dive {
-    display: none;
-  }
-  .tile.c,
-  .tile.d,
-  .tile.g,
-  .tile.i {
-    display: none;
+  .final-clock {
+    font-size: 16vw;
   }
   .hud {
     font-size: 12px;
@@ -1479,14 +1789,15 @@ body:has(.rl) {
   .pin-stage {
     position: relative;
   }
-  #dive {
-    display: none;
+  #launch {
+    margin-top: 0;
   }
-  .mosaic-grid {
-    --z: 1;
+  #match .pin-stage,
+  #launch .pin-stage {
+    opacity: 1;
   }
   .hero-stage {
-    clip-path: none;
+    opacity: 1;
   }
   .hero-copy .line,
   .hero-copy .lead,
@@ -1495,6 +1806,10 @@ body:has(.rl) {
   }
   .monitor {
     transform: none;
+  }
+  .alarm-tint.on {
+    animation: none;
+    opacity: 1;
   }
   .cursor {
     display: none;

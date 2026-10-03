@@ -6,23 +6,21 @@ HTTP API로 프로젝트 생성, 이메일 지정 초대, 초대 수락, 목표 
 
 ## 준비와 실행
 
-`web/`에서 로컬 D1 migration과 production build를 준비한 뒤, build 산출물을 같은
-D1 저장소로 실행한다. `--persist-to`를 생략하면 build용 Wrangler가 빈 별도 로컬
-DB를 열 수 있다.
+`web/`에서 로컬 DB 마이그레이션을 적용한 뒤 개발 서버를 실행한다.
 
 ```bash
 npm run db:migrate
-npm run build
-./node_modules/.bin/wrangler dev \
-  --config dist/server/wrangler.json \
-  --port 3001 \
-  --persist-to "$PWD/.wrangler/state"
+npm run dev   # http://localhost:3000
 ```
+
+개발 서버는 `.env.development`의 `AUTH_DEV_HEADERS=1`로 아래 `oai-authenticated-*` 헤더를
+받는다. `next start`와 운영(NODE_ENV=production)에서는 이 값이 있어도 헤더를 무시한다.
+운영 로그인은 Supabase Auth(Google) 토큰이다.
 
 다른 터미널의 `web/`에서 시드를 실행한다.
 
 ```bash
-node scripts/seed-dev-team.mjs --base-url http://127.0.0.1:3001
+node scripts/seed-dev-team.mjs --base-url http://localhost:3000
 ```
 
 도움말은 서버 없이 확인할 수 있다.
@@ -79,14 +77,14 @@ members: 4
 
 ## 브라우저에서 보는 법
 
-1. 위 Wrangler 서버를 실행한 상태로 둔다.
+1. 위 개발 서버(`npm run dev`)를 실행한 상태로 둔다.
 2. 브라우저의 request-header 편집 기능 또는 개발용 header extension에서 아래 네
    헤더를 한 인물의 값으로 설정한다.
    - `oai-authenticated-user-id`
    - `oai-authenticated-user-email`
    - `oai-authenticated-user-full-name`
    - `oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`
-3. `http://127.0.0.1:3001`을 연다. 헤더는 문서 요청뿐 아니라 같은 origin의
+3. `http://localhost:3000`을 연다. 헤더는 문서 요청뿐 아니라 같은 origin의
    `/api/*` 요청에도 적용해야 한다.
 4. 팀장을 보려면 김리드 헤더를, 팀원 계정을 확인하려면 나머지 인물 중 하나의 헤더
    세트를 사용한다. 서로 다른 인물의 값을 섞지 않는다.
@@ -94,5 +92,3 @@ members: 4
    `web/fixtures/dev-team-plan-samples/`의 `.txt` 네 건을 차례로 붙여넣는다.
    대응하는 `.expected.md`는 사람이 결과를 대조할 때만 사용한다.
 
-개발 서버 `vinext dev`가 인증용 `oai-authenticated-user-*` 헤더를 보존하지 않는
-환경에서는 위 build + Wrangler 실행법을 사용한다.

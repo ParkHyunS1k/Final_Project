@@ -1,5 +1,6 @@
 import {
   identity,
+  AuthUnavailable,
   listProjects,
   createProject,
   createInvite,
@@ -46,7 +47,9 @@ function failure(error: unknown) {
   );
 }
 export async function GET(request: Request) {
-  const user = identity(request);
+  const user = await identity(request);
+  if (user instanceof AuthUnavailable)
+    return reply({ error: user.message }, user.status);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   try {
     const token = new URL(request.url).searchParams.get('invite');
@@ -63,7 +66,9 @@ export async function GET(request: Request) {
   }
 }
 export async function POST(request: Request) {
-  const user = identity(request);
+  const user = await identity(request);
+  if (user instanceof AuthUnavailable)
+    return reply({ error: user.message }, user.status);
   if (!user) return reply({ error: '로그인이 필요합니다.' }, 401);
   if (
     request.headers.get('origin') &&
