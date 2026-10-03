@@ -454,7 +454,7 @@ function TaskDetail({
                     (!task.done && Date.parse(task.dueAt) < Date.parse(asOf)
                       ? ' · 마감 지남'
                       : '')
-                  : '미정 · 독촉 이메일 예약 없음'}
+                  : '미정'}
               </dd>
             </div>
             <div>

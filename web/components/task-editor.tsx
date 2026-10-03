@@ -61,8 +61,7 @@ export function TaskEditor({
         <DialogTitle>{task ? '업무 편집' : '업무 추가'}</DialogTitle>
         <DialogDescription>
           담당자와 남은 시간을 정하면 전원 하루 8시간 가정으로 실행 순서를
-          계산합니다. 승인된 마감은 이 예상 종료와 별개이며, 지정하면 마감
-          2시간·1시간·30분 전에 담당자에게 이메일을 보냅니다.
+          계산합니다. 승인된 마감은 이 예상 종료와 별개입니다.
         </DialogDescription>
         <form
           onSubmit={async (e) => {
@@ -136,7 +135,7 @@ export function TaskEditor({
             />
             <p className="tiny muted">
               {projectDeadline
-                ? '비워두면 마감 미정으로 저장되고 독촉 이메일이 예약되지 않습니다. 프로젝트 최종 기한을 넘길 수 없습니다.'
+                ? '비워두면 마감 미정으로 저장됩니다. 프로젝트 최종 기한을 넘길 수 없습니다.'
                 : '스프린트를 시작한 뒤에 업무 마감을 지정할 수 있습니다.'}
             </p>
             <p className="tiny muted">
