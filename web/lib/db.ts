@@ -67,9 +67,13 @@ class SqliteStatement implements Statement {
 }
 
 export function openDatabase(path: string): Db {
-  if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
-  const db = new DatabaseSync(path);
-  db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;');
+  // 경로를 만들거나 열지 못한 오류도 DB 오류로 감싼다(라우트가 경로를 응답에 넣지 않도록).
+  const db = guarded(() => {
+    if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
+    const opened = new DatabaseSync(path);
+    opened.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;');
+    return opened;
+  });
   return {
     prepare: (sql) => new SqliteStatement(db, sql),
     // D1 batch처럼 한 트랜잭션. 안에 await가 없어 다른 요청과 섞이지 않는다.
