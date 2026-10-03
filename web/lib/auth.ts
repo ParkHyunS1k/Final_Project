@@ -1,9 +1,7 @@
-import { env } from 'cloudflare:workers';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 export type Identity = { id: string; email: string; name: string };
 
-type AuthEnv = { SUPABASE_URL?: string; AUTH_DEV_HEADERS?: string };
 let jwks: ReturnType<typeof createRemoteJWKSet> | undefined;
 
 /** 토큰이 아니라 로그인 서비스(설정·키 서버) 쪽 문제. 401 대신 503으로 돌려준다. */
@@ -22,7 +20,7 @@ function displayName(name: string, email: string) {
 
 /** Supabase가 발급한 access token만 받는다. 토큰 문제는 null, 로그인 서비스 장애는 AuthUnavailable. */
 async function fromToken(token: string): Promise<Identity | null | AuthUnavailable> {
-  const base = ((env as unknown as AuthEnv).SUPABASE_URL ?? '').replace(/\/+$/, '');
+  const base = (process.env.SUPABASE_URL ?? '').replace(/\/+$/, '');
   if (!base) {
     console.warn('auth: SUPABASE_URL is not set');
     return new AuthUnavailable();
@@ -87,8 +85,9 @@ export async function identity(
   const auth = request.headers.get('authorization') ?? '';
   // Bearer가 있으면 그 결과만 쓴다. 실패해도 개발 헤더로 넘어가지 않는다.
   if (auth.startsWith('Bearer ')) return fromToken(auth.slice(7).trim());
-  // 운영에서 켜지면 누구나 헤더로 사칭할 수 있다. 로컬 개발(vite dev)과 테스트에만 둔다.
-  if ((env as unknown as AuthEnv).AUTH_DEV_HEADERS === '1')
+  // 운영에서 켜지면 누구나 헤더로 사칭할 수 있다. 로컬 개발(next dev)과 테스트에만 둔다.
+  // 운영(next start·Vercel은 NODE_ENV=production)에서는 값이 잘못 설정돼도 열리지 않는다.
+  if (process.env.AUTH_DEV_HEADERS === '1' && process.env.NODE_ENV !== 'production')
     return fromDevHeaders(request);
   return null;
 }

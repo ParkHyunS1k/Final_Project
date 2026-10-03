@@ -1,6 +1,5 @@
 // 정기 실행기 진입점. 사용자 세션이 아니라 서버 비밀값으로만 실행한다.
 // 브라우저 타이머나 위조한 플랫폼 사용자 헤더로 배치 작업을 실행하지 않는다.
-import { env } from 'cloudflare:workers';
 import { dispatchReminders } from '@/lib/reminder-dispatch';
 import { senderFrom, type EmailEnv } from '@/lib/email';
 export const dynamic = 'force-dynamic';
@@ -21,10 +20,7 @@ function sameSecret(a: string, b: string) {
 }
 
 export async function POST(request: Request) {
-  const secret = (
-    (env as unknown as { REMINDER_RUNNER_SECRET?: string })
-      .REMINDER_RUNNER_SECRET ?? ''
-  ).trim();
+  const secret = (process.env.REMINDER_RUNNER_SECRET ?? '').trim();
   const presented = (request.headers.get('authorization') ?? '').replace(
     /^Bearer\s+/i,
     '',
@@ -34,7 +30,7 @@ export async function POST(request: Request) {
     return reply({ error: 'not authorized' }, 401);
   try {
     const result = await dispatchReminders({
-      sender: senderFrom(env as unknown as EmailEnv),
+      sender: senderFrom(process.env as EmailEnv),
       origin: new URL(request.url).origin,
     });
     return reply(result);

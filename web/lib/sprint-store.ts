@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { database, type Statement } from './db';
 import {
   seed,
   schedule,
@@ -16,9 +16,7 @@ import {
   type Policy,
 } from './sprint-policy';
 import { completionCheck, deliverableRow } from './deliverables';
-export function database() {
-  return (env as unknown as { DB: D1Database }).DB;
-}
+export { database };
 export async function readSprint(owner: string): Promise<Sprint | null> {
   const db = database();
   const results = await db.batch<Record<string, unknown>>([
@@ -303,13 +301,13 @@ function policyGuard(states: Lifecycle[]) {
   );
 }
 
-// One D1 transaction. Every write after compare-and-swap is gated by its unique mutation ID.
+// One transaction. Every write after compare-and-swap is gated by its unique mutation ID.
 export async function save(
   owner: string,
   s: Sprint,
   action: string,
   detail: string,
-  extras: (mutation: string) => D1PreparedStatement[] = () => [],
+  extras: (mutation: string) => Statement[] = () => [],
   states: Lifecycle[] | null = null,
   // 저장 시점에 함께 확인할 추가 조건. 실패하면 아무것도 쓰이지 않는다.
   guard: { sql: string; args: unknown[] } | null = null,

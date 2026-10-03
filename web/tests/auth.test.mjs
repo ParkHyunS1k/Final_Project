@@ -58,7 +58,7 @@ globalThis.__TEST_DB = {
 // --- Supabase 대역: 키 쌍과 JWKS 응답 ---
 const SUPABASE = 'https://ref.supabase.test';
 const JWKS_URL = SUPABASE + '/auth/v1/.well-known/jwks.json';
-globalThis.__TEST_ENV = { SUPABASE_URL: SUPABASE };
+process.env.SUPABASE_URL = SUPABASE;
 const { privateKey, publicKey } = await generateKeyPair('ES256');
 const stranger = await generateKeyPair('ES256');
 const publicJwk = { ...(await exportJWK(publicKey)), kid: 'k1', alg: 'ES256', use: 'sig' };
@@ -112,10 +112,9 @@ await build({
     {
       name: 'test-d1',
       setup(b) {
-        b.onResolve({ filter: /^cloudflare:workers$/ }, () => ({ path: 'd1', namespace: 'test' }));
+        b.onResolve({ filter: /^\.\/db$/ }, () => ({ path: 'd1', namespace: 'test' }));
         b.onLoad({ filter: /.*/, namespace: 'test' }, () => ({
-          contents:
-            'export const env=new Proxy({},{get:(_,k)=>k==="DB"?globalThis.__TEST_DB:globalThis.__TEST_ENV?.[k]});',
+          contents: 'export function database(){return globalThis.__TEST_DB}',
           loader: 'js',
         }));
       },
@@ -212,12 +211,12 @@ test('개발 헤더는 AUTH_DEV_HEADERS=1일 때만, Bearer가 있으면 쓰지 
     'oai-authenticated-user-email': 'a@test.local',
   };
   assert.equal((await me(dev)).status, 401);
-  globalThis.__TEST_ENV = { SUPABASE_URL: SUPABASE, AUTH_DEV_HEADERS: '1' };
+  process.env.AUTH_DEV_HEADERS = '1';
   try {
     assert.equal((await me(dev)).status, 200);
     assert.equal((await me({ ...dev, authorization: 'Bearer not-a-jwt' })).status, 401);
   } finally {
-    globalThis.__TEST_ENV = { SUPABASE_URL: SUPABASE };
+    delete process.env.AUTH_DEV_HEADERS;
   }
 });
 
@@ -289,9 +288,20 @@ test('화면 문구에 이전 ChatGPT 로그인 안내가 남지 않는다', () 
     assert.doesNotMatch(readFileSync(file, 'utf8'), /ChatGPT[^\n]{0,12}로그인|signin-with-chatgpt/, file);
 });
 
-test('개발 헤더 플래그는 vite 개발 서버(serve)에서만 켜고 빌드 모드와 무관하다', () => {
-  const config = readFileSync('vite.config.ts', 'utf8');
-  // `vite build --mode development`도 mode는 development라 산출물에 들어간다.
-  assert.match(config, /if \(command === 'serve'\) liveModelVars\.AUTH_DEV_HEADERS = '1';/);
-  assert.doesNotMatch(config, /mode === 'development'/);
+test('운영 모드(NODE_ENV=production)에서는 AUTH_DEV_HEADERS=1이어도 개발 헤더를 무시한다', async () => {
+  const dev = {
+    'oai-authenticated-user-id': 'mallory',
+    'oai-authenticated-user-email': 'a@test.local',
+  };
+  const before = process.env.NODE_ENV;
+  process.env.AUTH_DEV_HEADERS = '1';
+  try {
+    assert.equal((await me(dev)).status, 200);
+    process.env.NODE_ENV = 'production';
+    assert.equal((await me(dev)).status, 401);
+  } finally {
+    delete process.env.AUTH_DEV_HEADERS;
+    if (before === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = before;
+  }
 });

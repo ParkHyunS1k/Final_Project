@@ -110,18 +110,15 @@ function liveCreate(over = {}) {
   };
 }
 
-test('Vite 개발 서버는 live-model 환경값을 Workers binding으로 전달한다', () => {
-  const config = readFileSync('vite.config.ts', 'utf8');
-  assert.match(config, /loadEnv\(mode, process\.cwd\(\), ''\)/);
-  assert.match(config, /'OPENAI_API_KEY'/);
-  assert.match(config, /'PROJECTMATE_LIVE_MODEL'/);
-  assert.match(config, /vars: liveModelVars/);
-  assert.doesNotMatch(config, /sk-[A-Za-z0-9_-]{10,}/);
+test('route는 live-model 값을 process.env에서 읽고 저장소에 키를 두지 않는다', () => {
+  const route = readFileSync('app/api/change-proposals/route.ts', 'utf8');
+  assert.match(route, /const devBindings = process\.env as DevModelBindings;/);
+  assert.doesNotMatch(route, /cloudflare:workers/);
+  assert.doesNotMatch(route, /sk-[A-Za-z0-9_-]{10,}/);
 });
 
 test('live-model binding이 없을 때 route 기본 모델은 기존 fakeModel이다', async () => {
   const route = readFileSync('app/api/change-proposals/route.ts', 'utf8');
-  assert.match(route, /import \{ env \} from 'cloudflare:workers';/);
   assert.match(route, /let model: Model = fakeModel\(\);/);
   assert.match(
     route,

@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+process.env.AUTH_DEV_HEADERS = '1';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { build } from 'esbuild';
@@ -85,13 +86,12 @@ await build({
     {
       name: 'test-d1',
       setup(b) {
-        b.onResolve({ filter: /^cloudflare:workers$/ }, () => ({
+        b.onResolve({ filter: /^\.\/db$/ }, () => ({
           path: 'd1',
           namespace: 'test',
         }));
         b.onLoad({ filter: /.*/, namespace: 'test' }, () => ({
-          contents:
-            'export const env=new Proxy({},{get:(_,k)=>k==="DB"?globalThis.__TEST_DB:k==="AUTH_DEV_HEADERS"?"1":globalThis.__TEST_ENV?.[k]});',
+          contents: 'export function database(){return globalThis.__TEST_DB}',
           loader: 'js',
         }));
       },
