@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
+process.env.AI_FAKE_MODEL = '1';
 import assert from 'node:assert/strict';
 import { setupTestDb } from './helpers/pg-db.mjs';
 import { build } from 'esbuild';

@@ -14,6 +14,7 @@ import {
 import { assertProjectMutationAllowed, PolicyError } from '@/lib/sprint-policy';
 import { readSource, WRITABLE_PROJECT } from '@/lib/source-documents';
 import {
+  aiAvailable,
   buildPrompt,
   fakeModel,
   PROMPT_VERSION,
@@ -101,6 +102,7 @@ export async function GET(request: Request) {
         proposals: await listProposals(projectId),
         applications: await listApplications(projectId),
         replayCases: replayCases(),
+        aiAvailable: aiAvailable(model),
       });
     const proposal = await readProposal(projectId, id);
     if (!proposal) return reply({ error: '변경안을 찾을 수 없습니다.' }, 404);
@@ -180,6 +182,8 @@ export async function POST(request: Request) {
     };
     const db = database();
     if (action === 'create') {
+      // 운영 모델이 없으면 가짜 결과를 만들지 않는다. 멤버·정책 검사는 위에서 이미 끝났다.
+      if (!aiAvailable(model)) return reply({ error: 'AI 변경안은 준비 중입니다.' }, 503);
       const source = await readSource(
         projectId,
         typeof b.sourceId === 'string' ? b.sourceId : '',
