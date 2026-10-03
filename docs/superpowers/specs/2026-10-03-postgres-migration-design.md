@@ -28,8 +28,8 @@ Vercel + Supabase 이전의 2단계다(1단계 Next.js 이전은 `2026-10-03-nex
   - 나머지 정수 → `integer`, 글자 → `text`. `bigint`·`numeric`은 쓰지 않는다(드라이버가 문자열로 돌려준다).
   - `''`를 날짜로 쓰던 `sprints.start_date`, `sprints.deadline`, `project_agreement.fixed_at`은 NULL 허용으로 바꾸고 NULL을 쓴다.
   - 읽거나 쓰는 코드가 없는 `sprint_proposals` 테이블은 만들지 않는다.
-- `drizzle.config.ts`: `dialect: 'postgresql'`, 출력 디렉터리 `drizzle/`.
-- 마이그레이션: SQLite `drizzle/0000~0009.sql`을 지우고 `drizzle-kit generate`로 Postgres 기준 파일 하나를 만든다. 그 파일 끝(같은 파일)에 모든 테이블의 `ALTER TABLE … ENABLE ROW LEVEL SECURITY;`를 붙인다. 정책은 만들지 않는다.
+- `drizzle.config.ts`: `dialect: 'postgresql'`, 출력 디렉터리 `db/migrations/`(전환 중 기존 SQLite `drizzle/`과 섞이지 않게. 전환이 끝나면 `drizzle/`은 지운다).
+- 마이그레이션: SQLite `drizzle/0000~0009.sql`을 지우고 `drizzle-kit generate`로 `db/migrations/`에 Postgres 기준 파일 하나를 만든다. 그 파일 끝(같은 파일)에 모든 테이블의 `ALTER TABLE … ENABLE ROW LEVEL SECURITY;`를 붙인다. 정책은 만들지 않는다.
   - Supabase는 `public` 테이블을 anon 키(화면 번들에 공개)로 REST에 노출한다. RLS를 켜고 정책이 없으면 anon·authenticated 역할은 아무 행도 읽고 쓰지 못한다. 서버는 테이블 소유자(`postgres`) 역할로 접속하므로 RLS 영향을 받지 않고, 권한 검사는 지금처럼 서버 코드가 한다.
 - `scripts/migrate.mjs`: `DATABASE_URL`이 있으면 postgres.js로 그 DB에, 없으면 PGlite `web/.data/pglite`에 적용한다. `_migrations(name text primary key, applied_at timestamptz not null)`로 파일마다 한 번만, 파일 하나를 트랜잭션 하나로. PGlite 파일이 이미 열려 있으면(개발 서버 실행 중) "개발 서버를 끄고 다시 실행" 안내와 함께 실패한다.
 - SQLite 연결(`node:sqlite`)과 SQLite 대역은 모두 제거한다.
