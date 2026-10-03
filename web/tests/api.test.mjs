@@ -1,74 +1,13 @@
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { setupTestDb } from './helpers/pg-db.mjs';
 import { build } from 'esbuild';
-import { readFileSync, readdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-const db = new DatabaseSync(':memory:');
-db.exec('PRAGMA foreign_keys=ON');
-for (const name of readdirSync('drizzle')
-  .filter((n) => n.endsWith('.sql'))
-  .sort())
-  db.exec(readFileSync('drizzle/' + name, 'utf8'));
-// 실제 쓰기 직전에 상태를 바꾸는 상황을 재현하기 위한 훅.
-// __BEFORE_WRITE_SQL로 어떤 문장 직전에 실행할지 지정한다(기본값: 버전 증가 UPDATE).
-function fireBeforeWrite(sqls) {
-  const hook = globalThis.__BEFORE_WRITE;
-  if (!hook) return;
-  const pattern = globalThis.__BEFORE_WRITE_SQL ?? 'UPDATE sprints SET revision';
-  if (!sqls.some((sql) => sql.includes(pattern))) return;
-  globalThis.__BEFORE_WRITE = null;
-  globalThis.__BEFORE_WRITE_SQL = null;
-  hook();
-}
-class Prepared {
-  constructor(sql, args = []) {
-    this.sql = sql;
-    this.args = args;
-  }
-  bind(...args) {
-    return new Prepared(this.sql, args);
-  }
-  async first() {
-    return db.prepare(this.sql).get(...this.args) ?? null;
-  }
-  async run() {
-    return this.execute();
-  }
-  async all() {
-    return this.execute();
-  }
-  execute() {
-    if (!/^\s*SELECT/.test(this.sql)) fireBeforeWrite([this.sql]);
-    const st = db.prepare(this.sql);
-    if (/^\s*SELECT/.test(this.sql))
-      return {
-        results: st.all(...this.args),
-        meta: { changes: 0 },
-        success: true,
-      };
-    const r = st.run(...this.args);
-    return { results: [], meta: { changes: Number(r.changes) }, success: true };
-  }
-}
-globalThis.__TEST_DB = {
-  prepare: (sql) => new Prepared(sql),
-  async batch(statements) {
-    fireBeforeWrite(statements.map((s) => s.sql));
-    db.exec('BEGIN');
-    try {
-      const rows = statements.map((s) => s.execute());
-      db.exec('COMMIT');
-      return rows;
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
-    }
-  },
-};
+const { one, run, exec } = await setupTestDb();
 const dir = mkdtempSync(join(tmpdir(), 'projectmate-api-test-'));
 const outfile = join(dir, 'route.mjs');
 await build({
@@ -384,9 +323,11 @@ test('마감 이후에는 실제 저장 시점에서 모든 변경이 거절된�
   });
   // 요청 시작 시점에는 마감 전이지만, 실제 쓰기 직전에 마감이 지난 경우.
   globalThis.__BEFORE_WRITE = () =>
-    db
-      .prepare('UPDATE project_policy SET deadline_at=? WHERE project_id=?')
-      .run('2000-01-01T00:00:00.000Z', projectId);
+    run(
+      'UPDATE project_policy SET deadline_at=? WHERE project_id=?',
+      '2000-01-01T00:00:00.000Z',
+      projectId,
+    );
   const late = await post('clock', 'checkin', withTask.sprint.revision, {
     projectId,
     taskId: 1,
@@ -694,9 +635,8 @@ test('저장 실패는 업무·체크인·이력을 함께 되돌린다', async 
     remaining: 2,
     dependsOn: [],
   });
-  db.exec(
-    "CREATE TRIGGER fail_checkin2 BEFORE INSERT ON sprint_checkins BEGIN SELECT RAISE(ABORT,'SQLITE test rollback'); END;",
-  );
+  await exec(`CREATE OR REPLACE FUNCTION pm_test_fail() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'forced failure'; END $$ LANGUAGE plpgsql;
+CREATE TRIGGER fail_checkin2 BEFORE INSERT ON sprint_checkins FOR EACH ROW EXECUTE FUNCTION pm_test_fail();`);
   try {
     const r = await post('rollback2', 'checkin', s.sprint.revision, {
       projectId,
@@ -706,7 +646,7 @@ test('저장 실패는 업무·체크인·이력을 함께 되돌린다', async 
     });
     assert.equal(r.status, 503);
   } finally {
-    db.exec('DROP TRIGGER fail_checkin2');
+    await exec('DROP TRIGGER fail_checkin2 ON sprint_checkins; DROP FUNCTION pm_test_fail();');
   }
   const after = await read('rollback2', projectId);
   assert.equal(after.sprint.revision, s.sprint.revision);
@@ -906,66 +846,55 @@ test('잘못된 형식·교차 출처 요청은 쓰기 없이 거절된다', asy
   assert.equal((await read('guard', projectId)).sprint.revision, state.sprint.revision);
 });
 
-test('새 마이그레이션은 기존 데이터와 관계를 보존한다', () => {
-  const old = new DatabaseSync(':memory:');
-  try {
-    const files = readdirSync('drizzle')
-      .filter((f) => f.endsWith('.sql'))
-      .sort();
-    for (const file of files.filter((f) => f < '0005')) old.exec(readFileSync('drizzle/' + file, 'utf8'));
-    old.exec(
-      "INSERT INTO sprints(owner,title,start_date,deadline,updated_at) VALUES('legacy','출시','2026-09-08','2026-09-17T18:00:00+09:00','2026-09-08')",
-    );
-    old.exec(
-      "INSERT INTO sprint_tasks(owner,id,title,person,remaining,done,evidence) VALUES('legacy',1,'기존 완료 업무',0,0,1,'실행 결과 확인')",
-    );
-    old.exec(
-      "INSERT INTO project_details(project_id,created_by,goal,deliverables,completion_criteria,created_at) VALUES('legacy','u','기존 목표','[\"기존 결과물\"]','기존 기준','2026-09-08')",
-    );
-    old.exec(
-      "INSERT INTO project_members(project_id,user_id,display_name,role,person,joined_at) VALUES('legacy','u','기존 팀장','owner',0,'2026-09-08')",
-    );
-    old.exec(
-      "INSERT INTO sprint_capacity(owner,person,date,hours) VALUES('legacy',0,'2026-09-08',3)",
-    );
-    old.exec(readFileSync('drizzle/0005_spartan_policy.sql', 'utf8'));
-    assert.deepEqual(
-      { ...old.prepare('SELECT title,done,evidence FROM sprint_tasks').get() },
-      { title: '기존 완료 업무', done: 1, evidence: '실행 결과 확인' },
-    );
-    assert.deepEqual(
-      {
-        ...old
-          .prepare(
-            'SELECT display_name,agreed_goal_version,email,left_at FROM project_members',
-          )
-          .get(),
-      },
-      {
-        display_name: '기존 팀장',
-        agreed_goal_version: 0,
-        email: null,
-        left_at: null,
-      },
-    );
-    // 기존 결과물 텍스트와 가용시간 기록은 남는다.
-    assert.equal(
-      old.prepare('SELECT deliverables FROM project_details').get().deliverables,
-      '["기존 결과물"]',
-    );
-    assert.equal(old.prepare('SELECT hours FROM sprint_capacity').get().hours, 3);
-    // 기존 프로젝트에는 새 정책 행이 자동으로 생기지 않는다.
-    assert.equal(
-      old.prepare('SELECT count(*) AS n FROM project_policy').get().n,
-      0,
-    );
-  } finally {
-    old.close();
-  }
+test('기존 형태의 데이터는 새 스키마에서 값과 관계를 보존한다', async () => {
+  // 옛 SQLite 단계별 마이그레이션은 Postgres 기준 마이그레이션에 합쳐졌다. 옛 형태의 행을 그대로 넣어 기본값을 확인한다.
+  await run(
+    "INSERT INTO sprints(owner,title,start_date,deadline,updated_at) VALUES('legacy','출시','2026-09-08','2026-09-17T18:00:00+09:00','2026-09-08T00:00:00Z')",
+  );
+  await run(
+    "INSERT INTO sprint_tasks(owner,id,title,person,remaining,done,evidence) VALUES('legacy',1,'기존 완료 업무',0,0,true,'실행 결과 확인')",
+  );
+  await run(
+    "INSERT INTO project_details(project_id,created_by,goal,deliverables,completion_criteria,created_at) VALUES('legacy','u','기존 목표','[\"기존 결과물\"]','기존 기준','2026-09-08T00:00:00Z')",
+  );
+  await run(
+    "INSERT INTO project_members(project_id,user_id,display_name,role,person,joined_at) VALUES('legacy','u','기존 팀장','owner',0,'2026-09-08T00:00:00Z')",
+  );
+  await run(
+    "INSERT INTO sprint_capacity(owner,person,date,hours) VALUES('legacy',0,'2026-09-08',3)",
+  );
+  assert.deepEqual(
+    { ...(await one('SELECT title,done,evidence FROM sprint_tasks WHERE owner=?', 'legacy')) },
+    { title: '기존 완료 업무', done: true, evidence: '실행 결과 확인' },
+  );
+  assert.deepEqual(
+    {
+      ...(await one(
+        'SELECT display_name,agreed_goal_version,email,left_at FROM project_members WHERE project_id=?',
+        'legacy',
+      )),
+    },
+    {
+      display_name: '기존 팀장',
+      agreed_goal_version: 0,
+      email: null,
+      left_at: null,
+    },
+  );
+  // 기존 결과물 텍스트와 가용시간 기록은 남는다.
+  assert.deepEqual(
+    (await one('SELECT deliverables FROM project_details WHERE project_id=?', 'legacy')).deliverables,
+    ['기존 결과물'],
+  );
+  assert.equal((await one('SELECT hours FROM sprint_capacity WHERE owner=?', 'legacy')).hours, 3);
+  // 기존 프로젝트에는 새 정책 행이 자동으로 생기지 않는다.
+  assert.equal(
+    Number((await one('SELECT count(*) AS n FROM project_policy WHERE project_id=?', 'legacy')).n),
+    0,
+  );
 });
 
 // 빈 DB에도 전체 마이그레이션이 적용되는지는 이 파일 상단에서 확인한다.
 process.on('exit', () => {
-  db.close();
   rmSync(dir, { recursive: true, force: true });
 });

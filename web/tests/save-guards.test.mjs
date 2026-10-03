@@ -1,74 +1,13 @@
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { setupTestDb } from './helpers/pg-db.mjs';
 import { build } from 'esbuild';
-import { readFileSync, readdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-const db = new DatabaseSync(':memory:');
-db.exec('PRAGMA foreign_keys=ON');
-for (const name of readdirSync('drizzle')
-  .filter((n) => n.endsWith('.sql'))
-  .sort())
-  db.exec(readFileSync('drizzle/' + name, 'utf8'));
-// 실제 쓰기 직전에 상태를 바꾸는 상황을 재현하기 위한 훅.
-// __BEFORE_WRITE_SQL로 어떤 문장 직전에 실행할지 지정한다(기본값: 버전 증가 UPDATE).
-function fireBeforeWrite(sqls) {
-  const hook = globalThis.__BEFORE_WRITE;
-  if (!hook) return;
-  const pattern = globalThis.__BEFORE_WRITE_SQL ?? 'UPDATE sprints SET revision';
-  if (!sqls.some((sql) => sql.includes(pattern))) return;
-  globalThis.__BEFORE_WRITE = null;
-  globalThis.__BEFORE_WRITE_SQL = null;
-  hook();
-}
-class Prepared {
-  constructor(sql, args = []) {
-    this.sql = sql;
-    this.args = args;
-  }
-  bind(...args) {
-    return new Prepared(this.sql, args);
-  }
-  async first() {
-    return db.prepare(this.sql).get(...this.args) ?? null;
-  }
-  async run() {
-    return this.execute();
-  }
-  async all() {
-    return this.execute();
-  }
-  execute() {
-    if (!/^\s*SELECT/.test(this.sql)) fireBeforeWrite([this.sql]);
-    const st = db.prepare(this.sql);
-    if (/^\s*SELECT/.test(this.sql))
-      return {
-        results: st.all(...this.args),
-        meta: { changes: 0 },
-        success: true,
-      };
-    const r = st.run(...this.args);
-    return { results: [], meta: { changes: Number(r.changes) }, success: true };
-  }
-}
-globalThis.__TEST_DB = {
-  prepare: (sql) => new Prepared(sql),
-  async batch(statements) {
-    fireBeforeWrite(statements.map((s) => s.sql));
-    db.exec('BEGIN');
-    try {
-      const rows = statements.map((s) => s.execute());
-      db.exec('COMMIT');
-      return rows;
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
-    }
-  },
-};
+const { rows, run, exec } = await setupTestDb();
 const dir = mkdtempSync(join(tmpdir(), 'projectmate-api-test-'));
 const outfile = join(dir, 'route.mjs');
 await build({
@@ -274,9 +213,6 @@ async function propose(user, projectId, sourceId) {
 
 let seq = 0;
 const mutation = (label) => `mut-${label}-${++seq}-${crypto.randomUUID()}`;
-function rows(sql, ...args) {
-  return db.prepare(sql).all(...args);
-}
 
 // --- 1. 확인하지 않은 목표에 동의하는 문제 ---------------------------------
 
@@ -312,11 +248,11 @@ test('화면에서 확인한 목표 버전과 저장 시점 버전이 다르면 
   assert.equal(body.details.goal, '팀원이 보지 못한 새 목표');
   // 가입·동의 기록이 남지 않아야 한다.
   assert.equal(
-    rows('SELECT count(*) AS n FROM project_members WHERE project_id=?', projectId)[0].n,
+    (await rows('SELECT count(*) AS n FROM project_members WHERE project_id=?', projectId))[0].n,
     1,
   );
   assert.equal(
-    rows("SELECT status FROM project_invites WHERE project_id=?", projectId)[0].status,
+    (await rows("SELECT status FROM project_invites WHERE project_id=?", projectId))[0].status,
     'pending',
   );
   assert.equal((await read('gv', projectId)).sprint.revision, edited.sprint.revision);
@@ -329,7 +265,7 @@ test('화면에서 확인한 목표 버전과 저장 시점 버전이 다르면 
   assert.equal(missing.status, 400);
   assert.match((await missing.json()).error, /확인한 목표 버전/);
   assert.equal(
-    rows('SELECT count(*) AS n FROM project_members WHERE project_id=?', projectId)[0].n,
+    (await rows('SELECT count(*) AS n FROM project_members WHERE project_id=?', projectId))[0].n,
     1,
   );
   // 최신 버전을 확인하고 나면 수락된다.
@@ -358,9 +294,7 @@ test('수락 저장 직전에 목표가 바뀌면 저장 조건에서 거절된�
   const { token } = await invite.json();
   // 요청 시작 시점의 검사는 통과하고, 실제 쓰기 직전에 목표 버전이 올라간다.
   globalThis.__BEFORE_WRITE = () =>
-    db
-      .prepare('UPDATE project_policy SET goal_version=5 WHERE project_id=?')
-      .run(projectId);
+    run('UPDATE project_policy SET goal_version=5 WHERE project_id=?', projectId);
   const late = await projectRequest('gv2mate', {
     action: 'accept',
     token,
@@ -370,11 +304,11 @@ test('수락 저장 직전에 목표가 바뀌면 저장 조건에서 거절된�
   globalThis.__BEFORE_WRITE = null;
   assert.equal(late.status, 409, await late.clone().text());
   assert.equal(
-    rows('SELECT count(*) AS n FROM project_members WHERE project_id=?', projectId)[0].n,
+    (await rows('SELECT count(*) AS n FROM project_members WHERE project_id=?', projectId))[0].n,
     1,
   );
   assert.equal(
-    rows("SELECT status FROM project_invites WHERE project_id=?", projectId)[0].status,
+    (await rows("SELECT status FROM project_invites WHERE project_id=?", projectId))[0].status,
     'pending',
   );
 });
@@ -385,9 +319,11 @@ test('원문 저장 직전에 마감이 지나면 원문이 남지 않는다', a
   const { projectId } = await startedTeam('late1', 'late1mate');
   globalThis.__BEFORE_WRITE_SQL = 'INSERT INTO source_documents';
   globalThis.__BEFORE_WRITE = () =>
-    db
-      .prepare('UPDATE project_policy SET deadline_at=? WHERE project_id=?')
-      .run('2000-01-01T00:00:00.000Z', projectId);
+    run(
+      'UPDATE project_policy SET deadline_at=? WHERE project_id=?',
+      '2000-01-01T00:00:00.000Z',
+      projectId,
+    );
   const r = await sourceRequest('late1', {
     projectId,
     body: '마감 직전에 도착한 원문',
@@ -395,7 +331,7 @@ test('원문 저장 직전에 마감이 지나면 원문이 남지 않는다', a
   globalThis.__BEFORE_WRITE = null;
   assert.equal(r.status, 400, await r.clone().text());
   assert.equal(
-    rows('SELECT count(*) AS n FROM source_documents WHERE project_id=?', projectId)[0].n,
+    (await rows('SELECT count(*) AS n FROM source_documents WHERE project_id=?', projectId))[0].n,
     0,
   );
 });
@@ -471,7 +407,7 @@ test('모델 실행 중 완주하면 새 변경안이 남지 않는다', async (
   });
   assert.equal(r.status, 400, await r.clone().text());
   assert.equal(
-    rows('SELECT count(*) AS n FROM ai_change_proposals WHERE project_id=?', projectId)[0].n,
+    (await rows('SELECT count(*) AS n FROM ai_change_proposals WHERE project_id=?', projectId))[0].n,
     0,
   );
   assert.equal((await read('late2', projectId)).lifecycle, 'completed');
@@ -499,9 +435,8 @@ test('변경안 저장이 실패하면 세부 항목도 남지 않는다', async
       },
     ]),
   );
-  db.exec(
-    "CREATE TRIGGER fail_changes BEFORE INSERT ON ai_proposal_changes BEGIN SELECT RAISE(ABORT,'SQLITE change rollback'); END;",
-  );
+  await exec(`CREATE OR REPLACE FUNCTION pm_test_fail() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'forced failure'; END $$ LANGUAGE plpgsql;
+CREATE TRIGGER fail_changes BEFORE INSERT ON ai_proposal_changes FOR EACH ROW EXECUTE FUNCTION pm_test_fail();`);
   try {
     const r = await proposalRequest('atomic3', {
       action: 'create',
@@ -510,14 +445,14 @@ test('변경안 저장이 실패하면 세부 항목도 남지 않는다', async
     });
     assert.equal(r.status, 503, await r.clone().text());
   } finally {
-    db.exec('DROP TRIGGER fail_changes');
+    await exec('DROP TRIGGER fail_changes ON ai_proposal_changes; DROP FUNCTION pm_test_fail();');
   }
   assert.equal(
-    rows('SELECT count(*) AS n FROM ai_change_proposals WHERE project_id=?', projectId)[0].n,
+    (await rows('SELECT count(*) AS n FROM ai_change_proposals WHERE project_id=?', projectId))[0].n,
     0,
   );
   assert.equal(
-    rows('SELECT count(*) AS n FROM ai_proposal_changes').length ? 0 : 0,
+    (await rows('SELECT count(*) AS n FROM ai_proposal_changes')).length ? 0 : 0,
     0,
   );
   assert.deepEqual((await read('atomic3', projectId)).events, s.events);
@@ -526,9 +461,7 @@ test('변경안 저장이 실패하면 세부 항목도 남지 않는다', async
 test('멤버가 아니게 되면 원문·변경안을 저장할 수 없다', async () => {
   const { projectId } = await startedTeam('gone', 'gonemate');
   const sourceId = await paste('gonemate', projectId, '아직 멤버일 때 붙여넣음');
-  db.prepare(
-    'DELETE FROM project_members WHERE project_id=? AND user_id=?',
-  ).run(projectId, 'gonemate');
+  await run('DELETE FROM project_members WHERE project_id=? AND user_id=?', projectId, 'gonemate');
   assert.equal(
     (await sourceRequest('gonemate', { projectId, body: '탈퇴 후 붙여넣기' })).status,
     403,
@@ -544,12 +477,11 @@ test('멤버가 아니게 되면 원문·변경안을 저장할 수 없다', asy
     403,
   );
   assert.equal(
-    rows('SELECT count(*) AS n FROM source_documents WHERE project_id=?', projectId)[0].n,
+    (await rows('SELECT count(*) AS n FROM source_documents WHERE project_id=?', projectId))[0].n,
     1,
   );
 });
 
 process.on('exit', () => {
-  db.close();
   rmSync(dir, { recursive: true, force: true });
 });

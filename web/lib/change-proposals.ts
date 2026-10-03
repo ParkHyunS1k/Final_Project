@@ -1,5 +1,6 @@
 // 변경안 저장, 사용자 편집·선택 반영, 권한·충돌 검사, 역변경 계산.
 // 모델 출력이 아니라 사용자가 승인한 항목만 이 경계를 지나 저장된다.
+import { sameInstant, type Instant } from './time';
 import { database } from './sprint-store';
 import { PolicyError } from './sprint-policy';
 import { validateHours, type Task } from './sprint';
@@ -17,14 +18,20 @@ const FIELD_LABELS: Record<string, string> = {
   dueAt: '마감',
 };
 
+// 업무 마감(dueAt)은 DB에서 Date, 변경안 스냅샷(JSON)에서는 ISO 문자열이다. 시각으로 비교한다.
+function sameField(field: string, current: unknown, value: unknown) {
+  if (field === 'dueAt') return sameInstant(current as Instant, value as Instant);
+  return (current ?? null) === (value ?? null);
+}
+
 export function changeRow(row: Record<string, unknown>): StoredChange {
   return {
     changeId: String(row.change_id),
     kind: String(row.kind) as Kind,
     taskId: row.task_id === null ? null : Number(row.task_id),
     newKey: (row.new_key as string | null) ?? null,
-    before: JSON.parse(String(row.before)),
-    after: JSON.parse(String(row.after)),
+    before: row.before as Record<string, unknown>,
+    after: row.after as Record<string, unknown>,
     evidence:
       row.evidence_start === null
         ? null
@@ -61,7 +68,7 @@ export async function readProposal(projectId: string, proposalId: string) {
     status: String(head.status),
     error: text(head.error),
     createdBy: String(head.created_by),
-    createdAt: String(head.created_at),
+    createdAt: head.created_at as Date,
     changes: rows.results.map(changeRow),
   };
 }
@@ -98,10 +105,10 @@ export async function appliedCandidateKeys(projectId: string, sourceId: string) 
         ' AND NOT EXISTS(SELECT 1 FROM ai_change_applications r WHERE r.project_id=ai_change_applications.project_id AND r.reverts=ai_change_applications.id)',
     )
     .bind(projectId, sourceId)
-    .all<{ id: string; entries: string }>();
+    .all<{ id: string; entries: AppliedEntry[] }>();
   const keys = new Set<string>();
   for (const r of rows.results)
-    for (const e of JSON.parse(r.entries) as AppliedEntry[])
+    for (const e of r.entries)
       if (e.kind === 'createTask' && typeof e.candidateKey === 'string')
         keys.add(e.candidateKey);
   return keys;
@@ -151,9 +158,9 @@ function applyEdits(change: StoredChange, edited: Record<string, unknown>) {
 
 export type Context = {
   tasks: Task[];
-  members: { person: number; userId: string; leftAt: string | null }[];
+  members: { person: number; userId: string; leftAt: Date | null }[];
   actor: { userId: string; role: string; person: number };
-  deadline: string | null;
+  deadline: Date | null;
   now: Date;
 };
 
@@ -277,7 +284,7 @@ export function prepareApplication(
     // 오래된 변경안은 최신 차이로 다시 검토하게 한다. 스냅샷을 덮어쓰지 않는다.
     for (const [field, value] of Object.entries(change.before)) {
       const current = (task as unknown as Record<string, unknown>)[field] ?? null;
-      if ((current ?? null) !== (value ?? null))
+      if (!sameField(field, current, value))
         throw new PolicyError(
           `"${task.title}"의 ${field} 값이 그사이 바뀌었습니다. 최신 상태로 다시 검토해주세요.`,
           409,
@@ -290,7 +297,7 @@ export function prepareApplication(
         throw new PolicyError('마감 값이 올바르지 않습니다.');
       if (!ctx.deadline)
         throw new PolicyError('시작 전에는 업무 마감을 지정할 수 없습니다.');
-      if (at > Date.parse(ctx.deadline))
+      if (at > ctx.deadline.getTime())
         throw new PolicyError('업무 마감은 프로젝트 최종 기한을 넘을 수 없습니다.');
       after.dueAt = new Date(at).toISOString();
     }
@@ -408,7 +415,7 @@ export function revertCandidates(
     const restore: Record<string, unknown> = {};
     for (const [field, value] of Object.entries(entry.after)) {
       const current = (task as unknown as Record<string, unknown>)[field] ?? null;
-      if ((current ?? null) !== (value ?? null))
+      if (!sameField(field, current, value))
         return {
           entry,
           status: 'changed' as const,

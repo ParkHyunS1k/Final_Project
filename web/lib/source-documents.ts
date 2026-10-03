@@ -11,10 +11,10 @@ export type SourceDocument = {
   authorId: string;
   body: string;
   origin: string;
-  capturedAt: string | null;
+  capturedAt: Date | null;
   hash: string;
   supersedes: string | null;
-  createdAt: string;
+  createdAt: Date;
 };
 
 export function sourceRow(row: Record<string, unknown>): SourceDocument {
@@ -25,10 +25,10 @@ export function sourceRow(row: Record<string, unknown>): SourceDocument {
     // 공백·줄바꿈을 포함해 받은 그대로 돌려준다.
     body: typeof row.body === 'string' ? row.body : '',
     origin: typeof row.origin === 'string' ? row.origin : '',
-    capturedAt: (row.captured_at as string | null) ?? null,
+    capturedAt: (row.captured_at as Date | null) ?? null,
     hash: String(row.hash),
     supersedes: (row.supersedes as string | null) ?? null,
-    createdAt: String(row.created_at),
+    createdAt: row.created_at as Date,
   };
 }
 
@@ -66,7 +66,7 @@ export function sourceInput(b: Record<string, unknown>) {
 // 모델 호출이나 해시 계산이 끝난 뒤 상태가 바뀌었다면 아무것도 남지 않는다.
 export const WRITABLE_PROJECT =
   " FROM project_policy p WHERE p.project_id=? AND p.lifecycle IN ('draft','active')" +
-  " AND (p.deadline_at IS NULL OR p.deadline_at > strftime('%Y-%m-%dT%H:%M:%fZ','now'))" +
+  " AND (p.deadline_at IS NULL OR p.deadline_at > now())" +
   ' AND EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=p.project_id AND m.user_id=? AND m.left_at IS NULL)';
 
 export async function createSource(
@@ -128,10 +128,10 @@ export async function listSources(projectId: string, limit = 20) {
     id: String(r.id),
     authorId: String(r.author_id),
     origin: text(r.origin),
-    capturedAt: (r.captured_at as string | null) ?? null,
+    capturedAt: (r.captured_at as Date | null) ?? null,
     hash: String(r.hash),
     supersedes: (r.supersedes as string | null) ?? null,
-    createdAt: String(r.created_at),
+    createdAt: r.created_at as Date,
     size: Number(r.size),
   }));
 }

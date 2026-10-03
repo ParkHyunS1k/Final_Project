@@ -106,9 +106,9 @@ export type ProjectMeta = {
   };
   details: {
     goal: string;
-    deliverables: string;
+    deliverables: string[];
     completion_criteria: string;
-    legacy: number;
+    legacy: boolean;
   };
   members: {
     display_name: string;
@@ -489,7 +489,7 @@ export function ProjectDetails({
       </span>
       <h2>{state.details.goal}</h2>
       <ul>
-        {JSON.parse(state.details.deliverables).map((v: string) => (
+        {state.details.deliverables.map((v: string) => (
           <li key={v}>{v}</li>
         ))}
       </ul>

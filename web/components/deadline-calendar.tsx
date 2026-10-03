@@ -1,5 +1,8 @@
 import { ArrowRight, CalendarDays, Check, Flag } from 'lucide-react';
-import { deadlineDays, seoulTime, type Task } from '@/lib/sprint';
+import { deadlineDays, seoulTime, type Task as ServerTask } from '@/lib/sprint';
+import type { Wire } from '@/lib/wire';
+// 화면은 JSON으로 받은 값을 다룬다(시각은 ISO 문자열).
+type Task = Wire<ServerTask>;
 
 const DAY_MS = 86400000;
 const weekday = new Intl.DateTimeFormat('ko-KR', {

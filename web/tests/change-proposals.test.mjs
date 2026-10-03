@@ -1,74 +1,13 @@
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
 import { build } from 'esbuild';
-import { readFileSync, readdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-const db = new DatabaseSync(':memory:');
-db.exec('PRAGMA foreign_keys=ON');
-for (const name of readdirSync('drizzle')
-  .filter((n) => n.endsWith('.sql'))
-  .sort())
-  db.exec(readFileSync('drizzle/' + name, 'utf8'));
-// 실제 쓰기 직전에 상태를 바꾸는 상황을 재현하기 위한 훅.
-// __BEFORE_WRITE_SQL로 어떤 문장 직전에 실행할지 지정한다(기본값: 버전 증가 UPDATE).
-function fireBeforeWrite(sqls) {
-  const hook = globalThis.__BEFORE_WRITE;
-  if (!hook) return;
-  const pattern = globalThis.__BEFORE_WRITE_SQL ?? 'UPDATE sprints SET revision';
-  if (!sqls.some((sql) => sql.includes(pattern))) return;
-  globalThis.__BEFORE_WRITE = null;
-  globalThis.__BEFORE_WRITE_SQL = null;
-  hook();
-}
-class Prepared {
-  constructor(sql, args = []) {
-    this.sql = sql;
-    this.args = args;
-  }
-  bind(...args) {
-    return new Prepared(this.sql, args);
-  }
-  async first() {
-    return db.prepare(this.sql).get(...this.args) ?? null;
-  }
-  async run() {
-    return this.execute();
-  }
-  async all() {
-    return this.execute();
-  }
-  execute() {
-    if (!/^\s*SELECT/.test(this.sql)) fireBeforeWrite([this.sql]);
-    const st = db.prepare(this.sql);
-    if (/^\s*SELECT/.test(this.sql))
-      return {
-        results: st.all(...this.args),
-        meta: { changes: 0 },
-        success: true,
-      };
-    const r = st.run(...this.args);
-    return { results: [], meta: { changes: Number(r.changes) }, success: true };
-  }
-}
-globalThis.__TEST_DB = {
-  prepare: (sql) => new Prepared(sql),
-  async batch(statements) {
-    fireBeforeWrite(statements.map((s) => s.sql));
-    db.exec('BEGIN');
-    try {
-      const rows = statements.map((s) => s.execute());
-      db.exec('COMMIT');
-      return rows;
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
-    }
-  },
-};
+import { setupTestDb } from './helpers/pg-db.mjs';
+const { rows, one, run } = await setupTestDb();
 const dir = mkdtempSync(join(tmpdir(), 'projectmate-api-test-'));
 const outfile = join(dir, 'route.mjs');
 await build({
@@ -387,13 +326,13 @@ test('고정한 실제 응답 4건이 변경·무변경·확인 필요·담당�
 
 test('회원은 실제 평가 응답 4건을 읽고 DB는 바뀌지 않는다', async () => {
   const { projectId } = await startedTeam('replay', 'replaymate');
-  const count = (table) => Number(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n);
-  const snapshot = () => ({
-    tasks: count('sprint_tasks'),
-    proposals: count('ai_change_proposals'),
-    applications: count('ai_change_applications'),
+  const count = async (table) => Number((await one(`SELECT COUNT(*) AS n FROM ${table}`)).n);
+  const snapshot = async () => ({
+    tasks: await count('sprint_tasks'),
+    proposals: await count('ai_change_proposals'),
+    applications: await count('ai_change_applications'),
   });
-  const before = snapshot();
+  const before = await snapshot();
   const listResponse = await proposalGet('replay', `project=${projectId}`);
   assert.equal(listResponse.status, 200);
   const list = await listResponse.json();
@@ -405,7 +344,7 @@ test('회원은 실제 평가 응답 4건을 읽고 DB는 바뀌지 않는다', 
   assert.equal(replay.decision, 'propose_changes');
   const evidence = replay.proposal.changes[0].evidenceItems[0];
   assert.equal(replay.source.body.slice(evidence.start, evidence.end), evidence.quote);
-  assert.deepEqual(snapshot(), before);
+  assert.deepEqual(await snapshot(), before);
 });
 
 test('비회원과 없는 replay ID는 각각 403과 404다', async () => {
@@ -699,8 +638,8 @@ test('같은 업무의 같은 값을 쓰는 항목은 함께 승인하지 못하
   const remaining = created.proposal.changes.find((c) => c.kind === 'remaining' && c.taskId === taskId);
   const complete = created.proposal.changes.find((c) => c.kind === 'complete' && c.taskId === taskId);
   assert.ok(remaining && complete);
-  const applications = () => Number(db.prepare('SELECT COUNT(*) AS n FROM ai_change_applications').get().n);
-  const before = applications();
+  const applications = async () => Number((await one('SELECT COUNT(*) AS n FROM ai_change_applications')).n);
+  const before = await applications();
 
   const both = await proposalRequest('overlap', {
     action: 'apply',
@@ -715,9 +654,9 @@ test('같은 업무의 같은 값을 쓰는 항목은 함께 승인하지 못하
   const unchanged = await read('overlap', projectId);
   assert.equal(unchanged.sprint.tasks[0].remaining, 4);
   assert.equal(unchanged.sprint.tasks[0].done, false);
-  assert.equal(applications(), before);
+  assert.equal(await applications(), before);
 
-  const one = await proposalRequest('overlap', {
+  const single = await proposalRequest('overlap', {
     action: 'apply',
     projectId,
     revision: unchanged.sprint.revision,
@@ -725,8 +664,8 @@ test('같은 업무의 같은 값을 쓰는 항목은 함께 승인하지 못하
     mutationId: mutation('overlap'),
     selections: [{ changeId: complete.changeId }],
   });
-  assert.equal(one.status, 200, await one.clone().text());
-  const { applicationId, state: applied } = await one.json();
+  assert.equal(single.status, 200, await single.clone().text());
+  const { applicationId, state: applied } = await single.json();
   const reverted = await proposalRequest('overlap', {
     action: 'revert',
     projectId,
@@ -1043,10 +982,7 @@ test('승인 직전 마감이 지나면 A 정책에 따라 전체가 거절된�
     ]),
   );
   const created = await propose('expired', projectId, sourceId);
-  db.prepare('UPDATE project_policy SET deadline_at=? WHERE project_id=?').run(
-    '2000-01-01T00:00:00.000Z',
-    projectId,
-  );
+  await run('UPDATE project_policy SET deadline_at=? WHERE project_id=?', '2000-01-01T00:00:00.000Z', projectId);
   const applied = await proposalRequest('expired', {
     action: 'apply',
     projectId,
@@ -1269,10 +1205,7 @@ test('되돌리기도 권한과 마감을 다시 검사하고 신규 업무 참�
   after = await read('rev3', projectId);
   assert.deepEqual(after.sprint.tasks.map((t) => t.id), [2]);
   // 마감이 지나면 되돌리기도 거절한다.
-  db.prepare('UPDATE project_policy SET deadline_at=? WHERE project_id=?').run(
-    '2000-01-01T00:00:00.000Z',
-    projectId,
-  );
+  await run('UPDATE project_policy SET deadline_at=? WHERE project_id=?', '2000-01-01T00:00:00.000Z', projectId);
   const late = await proposalRequest('rev3', {
     action: 'revert',
     projectId,
@@ -1321,11 +1254,10 @@ test('AI 승인으로 바뀐 마감은 알림 예약을 같은 저장에서 갱�
   assert.equal(applied.status, 200, await applied.clone().text());
   const after = await read('remai', projectId);
   assert.equal(after.sprint.tasks[0].dueAt, due);
-  const items = db
-    .prepare(
-      "SELECT stage_minutes,user_id,status FROM reminder_items WHERE project_id=? AND kind='task' AND status='pending' ORDER BY stage_minutes DESC",
-    )
-    .all(projectId);
+  const items = await rows(
+    "SELECT stage_minutes,user_id,status FROM reminder_items WHERE project_id=? AND kind='task' AND status='pending' ORDER BY stage_minutes DESC",
+    projectId,
+  );
   assert.deepEqual(items.map((i) => i.stage_minutes), [120, 60, 30]);
   assert.ok(items.every((i) => i.user_id === 'remaimate'));
   // 프로젝트 최종 기한을 넘는 마감 제안은 검증 단계에서 걸러진다.
@@ -1348,6 +1280,5 @@ test('AI 승인으로 바뀐 마감은 알림 예약을 같은 저장에서 갱�
 });
 
 process.on('exit', () => {
-  db.close();
   rmSync(dir, { recursive: true, force: true });
 });

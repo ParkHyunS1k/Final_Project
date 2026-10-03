@@ -13,3 +13,8 @@ export function sameInstant(a: Instant, b: Instant): boolean {
   if (Number.isNaN(x) || Number.isNaN(y)) return Number.isNaN(x) && Number.isNaN(y);
   return x === y;
 }
+
+/** 저장·비교 키(알림 중복 방지 키 등)는 이전과 같은 UTC ISO 문자열로 만든다. */
+export function iso(x: Date | string): string {
+  return new Date(ms(x)).toISOString();
+}

@@ -22,7 +22,7 @@ export function scheduleStatements(
     taskId?: number;
     userId: string;
     deadlineVersion: number;
-    dueAt: string;
+    dueAt: Date | string;
   }[],
   now: Date,
 ) {
@@ -36,7 +36,7 @@ export function scheduleStatements(
           .prepare(
             'INSERT INTO reminder_items(id,project_id,kind,task_id,user_id,deadline_version,stage_minutes,due_at,scheduled_at,created_at)' +
               ' SELECT ?,owner,?,?,?,?,?,?,?,? FROM sprints WHERE owner=? AND mutation=?' +
-              " ON CONFLICT DO UPDATE SET status='pending',batch_id=NULL,claim_owner=NULL,claimed_at=NULL,resolved_at=NULL,detail=''" +
+              " ON CONFLICT (project_id,kind,task_id,user_id,deadline_version,stage_minutes) DO UPDATE SET status='pending',batch_id=NULL,claim_owner=NULL,claimed_at=NULL,resolved_at=NULL,detail=''" +
               " WHERE reminder_items.status='cancelled'",
           )
           .bind(
@@ -138,8 +138,8 @@ export async function claimDue(
     userId: String(r.user_id),
     deadlineVersion: Number(r.deadline_version),
     stage: Number(r.stage_minutes),
-    dueAt: String(r.due_at),
-    scheduledAt: String(r.scheduled_at),
+    dueAt: r.due_at as Date,
+    scheduledAt: r.scheduled_at as Date,
   })) satisfies ClaimedRow[];
 }
 

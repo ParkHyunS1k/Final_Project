@@ -63,8 +63,9 @@ export async function readSprint(owner: string): Promise<Sprint | null> {
         )
       : people,
     title: String(row.title),
-    startDate: String(row.start_date),
-    deadline: String(row.deadline),
+    // 이전 규칙 일정(lib/sprint.ts)은 날짜·시각 문자열을 쓴다.
+    startDate: (row.start_date as string | null) ?? '',
+    deadline: row.deadline ? (row.deadline as Date).toISOString() : '',
     revision: Number(row.revision),
     joined: Boolean(row.joined),
     finished: Boolean(row.finished),
@@ -79,7 +80,7 @@ export async function readSprint(owner: string): Promise<Sprint | null> {
       deferred: Boolean(t.deferred),
       done: Boolean(t.done),
       evidence: String(t.evidence),
-      dueAt: (t.due_at as string | null) ?? null,
+      dueAt: (t.due_at as Date | null) ?? null,
       deadlineVersion: Number(t.deadline_version ?? 0),
       changeVersion: Number(t.change_version ?? 0),
       dependsOn: results[2].results
@@ -101,7 +102,7 @@ export async function initialize(owner: string) {
   const statements = [
     db
       .prepare(
-        'INSERT OR IGNORE INTO sprints(owner,title,start_date,deadline,updated_at) VALUES(?,?,?,?,?)',
+        'INSERT INTO sprints(owner,title,start_date,deadline,updated_at) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING',
       )
       .bind(owner, s.title, s.startDate, s.deadline, new Date().toISOString()),
   ];
@@ -109,15 +110,15 @@ export async function initialize(owner: string) {
     statements.push(
       db
         .prepare(
-          'INSERT OR IGNORE INTO sprint_tasks(owner,id,title,person,remaining,optional) VALUES(?,?,?,?,?,?)',
+          'INSERT INTO sprint_tasks(owner,id,title,person,remaining,optional) VALUES(?,?,?,?,?,?) ON CONFLICT DO NOTHING',
         )
-        .bind(owner, t.id, t.title, t.person, t.remaining, Number(t.optional)),
+        .bind(owner, t.id, t.title, t.person, t.remaining, t.optional),
     );
     for (const d of t.dependsOn)
       statements.push(
         db
           .prepare(
-            'INSERT OR IGNORE INTO sprint_dependencies(owner,task_id,depends_on) VALUES(?,?,?)',
+            'INSERT INTO sprint_dependencies(owner,task_id,depends_on) VALUES(?,?,?) ON CONFLICT DO NOTHING',
           )
           .bind(owner, t.id, d),
       );
@@ -126,7 +127,7 @@ export async function initialize(owner: string) {
     statements.push(
       db
         .prepare(
-          'INSERT OR IGNORE INTO sprint_capacity(owner,person,date,hours) VALUES(?,?,?,?)',
+          'INSERT INTO sprint_capacity(owner,person,date,hours) VALUES(?,?,?,?) ON CONFLICT DO NOTHING',
         )
         .bind(owner, c.person, c.date, c.hours),
     );
@@ -156,8 +157,8 @@ export type Member = {
   role: string;
   person: number;
   agreedGoalVersion: number;
-  joinedAt: string;
-  leftAt: string | null;
+  joinedAt: Date;
+  leftAt: Date | null;
   leftNote: string;
 };
 
@@ -183,8 +184,8 @@ export async function readMembers(owner: string): Promise<Member[]> {
     role: String(r.role),
     person: Number(r.person),
     agreedGoalVersion: Number(r.agreed_goal_version),
-    joinedAt: String(r.joined_at),
-    leftAt: (r.left_at as string | null) ?? null,
+    joinedAt: r.joined_at as Date,
+    leftAt: (r.left_at as Date | null) ?? null,
     leftNote: typeof r.left_note === 'string' ? r.left_note : '',
   }));
 }
@@ -297,7 +298,7 @@ function policyGuard(states: Lifecycle[]) {
   return (
     " AND EXISTS(SELECT 1 FROM project_policy p WHERE p.project_id=sprints.owner" +
     ` AND p.lifecycle IN (${list.map((s) => `'${s}'`).join(',')})` +
-    " AND (p.deadline_at IS NULL OR p.deadline_at > strftime('%Y-%m-%dT%H:%M:%fZ','now')))"
+    " AND (p.deadline_at IS NULL OR p.deadline_at > now()))"
   );
 }
 
@@ -323,8 +324,8 @@ export async function save(
     );
   const headArgs: unknown[] = [
     mutation,
-    Number(s.joined),
-    Number(s.finished),
+    s.joined,
+    s.finished,
     now,
     owner,
     s.revision,
@@ -339,8 +340,8 @@ export async function save(
         )
         .bind(
           t.remaining,
-          Number(t.deferred),
-          Number(t.done),
+          t.deferred,
+          t.done,
           t.evidence,
           t.status ?? 'todo',
           t.description ?? '',

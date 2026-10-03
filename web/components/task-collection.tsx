@@ -23,11 +23,15 @@ import {
 import { Plus, Columns3, Table2, FileText, Clock3 } from 'lucide-react';
 import {
   people as samplePeople,
-  type Sprint,
-  type Task,
+  type Sprint as ServerSprint,
+  type Task as ServerTask,
   type Plan,
   seoulTime,
 } from '@/lib/sprint';
+import type { Wire } from '@/lib/wire';
+// 화면은 JSON으로 받은 값을 다룬다(시각은 ISO 문자열).
+type Sprint = Wire<ServerSprint>;
+type Task = Wire<ServerTask>;
 import type { ProjectMeta } from './project-workspace';
 
 type Checkin = {

@@ -52,12 +52,12 @@ export async function adoptLegacy(user: Identity) {
   await db.batch([
     db
       .prepare(
-        "INSERT OR IGNORE INTO project_details(project_id,created_by,goal,deliverables,completion_criteria,legacy,created_at) VALUES(?,?,'기존 샘플 프로젝트','[\"핵심 사용자 흐름\"]','기존 결과물 확인 기준',1,?)",
+        "INSERT INTO project_details(project_id,created_by,goal,deliverables,completion_criteria,legacy,created_at) VALUES(?,?,'기존 샘플 프로젝트','[\"핵심 사용자 흐름\"]','기존 결과물 확인 기준',true,?) ON CONFLICT DO NOTHING",
       )
       .bind(user.id, user.id, now),
     db
       .prepare(
-        "INSERT OR IGNORE INTO project_members(project_id,user_id,display_name,role,person,agreed_at,joined_at,email) VALUES(?,?,?,'owner',0,?,?,?)",
+        "INSERT INTO project_members(project_id,user_id,display_name,role,person,agreed_at,joined_at,email) VALUES(?,?,?,'owner',0,?,?,?) ON CONFLICT DO NOTHING",
       )
       .bind(
         user.id,
@@ -75,10 +75,10 @@ export type MemberRow = {
   display_name: string;
   role: string;
   person: number;
-  agreed_at: string | null;
+  agreed_at: Date | null;
   agreed_goal_version: number;
   email: string | null;
-  left_at: string | null;
+  left_at: Date | null;
   left_note: string;
 };
 export async function member(project: string, user: Identity) {
@@ -121,8 +121,8 @@ export async function listProjects(user: Identity) {
       revision: number;
       role: string;
       lifecycle: string | null;
-      started_at: string | null;
-      deadline_at: string | null;
+      started_at: Date | null;
+      deadline_at: Date | null;
       duration_days: number | null;
     }>();
   const now = new Date();
@@ -270,7 +270,7 @@ export async function createProject(
   await db.batch([
     db
       .prepare(
-        "INSERT INTO sprints(owner,title,start_date,deadline,joined,updated_at) VALUES(?,?,'','',0,?)",
+        "INSERT INTO sprints(owner,title,start_date,deadline,joined,updated_at) VALUES(?,?,NULL,NULL,false,?)",
       )
       .bind(id, v.title, now),
     db
@@ -281,7 +281,7 @@ export async function createProject(
         id,
         user.id,
         v.goal,
-        JSON.stringify(v.deliverables),
+        v.deliverables,
         v.completion,
         now,
       ),
@@ -294,7 +294,7 @@ export async function createProject(
       .prepare(
         'INSERT INTO project_agreement(project_id,goal_version,title,goal,scope,completion_criteria,fixed_at) VALUES(?,1,?,?,?,?,?)',
       )
-      .bind(id, v.title, v.goal, v.scope, v.completion, ''),
+      .bind(id, v.title, v.goal, v.scope, v.completion, null),
     db
       .prepare(
         "INSERT INTO project_members(project_id,user_id,display_name,role,person,agreed_at,agreed_goal_version,joined_at,email) VALUES(?,?,?,'owner',0,?,1,?,?)",
@@ -377,7 +377,7 @@ export async function inspectInvite(user: Identity, token: string) {
     throw new AccessError('초대받은 이메일의 계정으로 로그인해주세요.');
   if (
     invite.status !== 'pending' ||
-    String(invite.expires_at) <= new Date().toISOString()
+    (invite.expires_at as Date).getTime() <= Date.now()
   )
     throw new AccessError('만료되었거나 이미 처리된 초대입니다.', 410);
   const project = String(invite.project_id);
@@ -428,7 +428,7 @@ export async function acceptInvite(
     (i) => !rows.some((r) => r.person === i),
   )!;
   const now = new Date().toISOString();
-  if (String(invite.expires_at) <= now)
+  if ((invite.expires_at as Date).getTime() <= Date.now())
     throw new AccessError('만료된 초대입니다.', 410);
   await save(
     project,

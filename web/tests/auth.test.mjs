@@ -1,59 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { setupTestDb } from './helpers/pg-db.mjs';
 import { build } from 'esbuild';
-import { readFileSync, readdirSync, mkdtempSync } from 'node:fs';
+import { readFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { SignJWT, exportJWK, generateKeyPair } from 'jose';
 
-// --- D1 대역(tests/api.test.mjs와 같은 방식, 쓰기 직전 훅은 필요 없어 뺐다) ---
-const db = new DatabaseSync(':memory:');
-db.exec('PRAGMA foreign_keys=ON');
-for (const name of readdirSync('drizzle')
-  .filter((n) => n.endsWith('.sql'))
-  .sort())
-  db.exec(readFileSync('drizzle/' + name, 'utf8'));
-class Prepared {
-  constructor(sql, args = []) {
-    this.sql = sql;
-    this.args = args;
-  }
-  bind(...args) {
-    return new Prepared(this.sql, args);
-  }
-  async first() {
-    return db.prepare(this.sql).get(...this.args) ?? null;
-  }
-  async run() {
-    return this.execute();
-  }
-  async all() {
-    return this.execute();
-  }
-  execute() {
-    const st = db.prepare(this.sql);
-    if (/^\s*SELECT/.test(this.sql))
-      return { results: st.all(...this.args), meta: { changes: 0 }, success: true };
-    const r = st.run(...this.args);
-    return { results: [], meta: { changes: Number(r.changes) }, success: true };
-  }
-}
-globalThis.__TEST_DB = {
-  prepare: (sql) => new Prepared(sql),
-  async batch(statements) {
-    db.exec('BEGIN');
-    try {
-      const rows = statements.map((s) => s.execute());
-      db.exec('COMMIT');
-      return rows;
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
-    }
-  },
-};
+// --- 테스트 DB: 실제 lib/db.ts + PGlite(tests/helpers/pg-db.mjs) ---
+await setupTestDb();
 
 // --- Supabase 대역: 키 쌍과 JWKS 응답 ---
 const SUPABASE = 'https://ref.supabase.test';

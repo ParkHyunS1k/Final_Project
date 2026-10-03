@@ -15,9 +15,9 @@ export type Policy = {
   goalVersion: number;
   durationDays: number;
   dailyHours: number;
-  startedAt: string | null;
-  deadlineAt: string | null;
-  completedAt: string | null;
+  startedAt: Date | null;
+  deadlineAt: Date | null;
+  completedAt: Date | null;
 };
 
 export type Actor = {
@@ -25,7 +25,7 @@ export type Actor = {
   role: string;
   person: number;
   agreedGoalVersion: number;
-  leftAt: string | null;
+  leftAt: Date | null;
 };
 
 export class PolicyError extends Error {
@@ -45,9 +45,9 @@ export function policyRow(row: Record<string, unknown> | null | undefined) {
     goalVersion: Number(row.goal_version),
     durationDays: Number(row.duration_days),
     dailyHours: Number(row.daily_hours),
-    startedAt: (row.started_at as string | null) ?? null,
-    deadlineAt: (row.deadline_at as string | null) ?? null,
-    completedAt: (row.completed_at as string | null) ?? null,
+    startedAt: (row.started_at as Date | null) ?? null,
+    deadlineAt: (row.deadline_at as Date | null) ?? null,
+    completedAt: (row.completed_at as Date | null) ?? null,
   } satisfies Policy;
 }
 
@@ -56,7 +56,7 @@ export function policyRow(row: Record<string, unknown> | null | undefined) {
 export function effectiveLifecycle(policy: Policy | null, now: Date): Lifecycle {
   if (!policy) return 'legacy';
   if (policy.lifecycle !== 'active') return policy.lifecycle;
-  if (policy.deadlineAt && now.getTime() >= Date.parse(policy.deadlineAt))
+  if (policy.deadlineAt && now.getTime() >= policy.deadlineAt.getTime())
     return 'expired';
   return 'active';
 }
@@ -181,7 +181,7 @@ export type StartCheck = {
 // 시작 자격: 팀장 권한, 실제 가입한 최소 2명, 현재 멤버 전원의 최신 목표 동의.
 // 초대만 보낸 사람은 가입 인원으로 세지 않는다.
 export function startReadiness(
-  members: { agreedGoalVersion: number; displayName: string; leftAt: string | null }[],
+  members: { agreedGoalVersion: number; displayName: string; leftAt: Date | null }[],
   goalVersion: number,
   deliverables: number,
 ): StartCheck {

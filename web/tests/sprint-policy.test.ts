@@ -19,8 +19,8 @@ function policy(over: Partial<Policy> = {}): Policy {
     goalVersion: 2,
     durationDays: 7,
     dailyHours: 8,
-    startedAt: started,
-    deadlineAt: deadline,
+    startedAt: new Date(started),
+    deadlineAt: new Date(deadline),
     completedAt: null,
     ...over,
   };
@@ -203,7 +203,7 @@ test('최신 목표에 동의하지 않은 사람은 읽기만 하고, 동의는
 
 test('참여 중단을 보고한 팀원은 목표 동의 외 변경을 하지 않는다', () => {
   const now = new Date(started);
-  const gone = actor({ role: 'member', person: 1, leftAt: started });
+  const gone = actor({ role: 'member', person: 1, leftAt: new Date(started) });
   assert.throws(
     () =>
       allow({
@@ -276,7 +276,7 @@ test('시작 자격: 최소 2명 가입과 전원 최신 목표 동의', () => {
   // 참여 중단자는 인원으로 세지 않는다.
   assert.equal(
     startReadiness(
-      [...ready, { agreedGoalVersion: 0, displayName: '나감', leftAt: started }],
+      [...ready, { agreedGoalVersion: 0, displayName: '나감', leftAt: new Date(started) }],
       2,
       1,
     ).ready,
@@ -284,7 +284,7 @@ test('시작 자격: 최소 2명 가입과 전원 최신 목표 동의', () => {
   );
   assert.equal(
     startReadiness(
-      [ready[0], { ...ready[1], leftAt: started }],
+      [ready[0], { ...ready[1], leftAt: new Date(started) }],
       2,
       1,
     ).ready,

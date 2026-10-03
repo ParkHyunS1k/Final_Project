@@ -8,7 +8,10 @@ import {
 } from '@/components/ui/native-select';
 import { SourceList, SourcePaste, type SourceSummary } from './source-paste';
 import type { ProjectMeta } from './project-workspace';
-import { seoulTime, type Task } from '@/lib/sprint';
+import { seoulTime, type Task as ServerTask } from '@/lib/sprint';
+import type { Wire } from '@/lib/wire';
+// 화면은 JSON으로 받은 값을 다룬다(시각은 ISO 문자열).
+type Task = Wire<ServerTask>;
 import { text } from '@/lib/utils';
 import { apiFetch } from '@/lib/supabase-browser';
 import type {

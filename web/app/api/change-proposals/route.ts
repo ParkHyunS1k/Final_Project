@@ -1,5 +1,6 @@
 // AI 변경안 생성·조회·승인·되돌리기. 모델 출력은 여기서 DB를 바꾸지 못하고,
 // 사용자가 선택·편집·승인한 항목만 기존 원자적 저장 경계를 지난다.
+import { sameInstant } from '@/lib/time';
 import { identity, AuthUnavailable, member, actorOf, projectState, AccessError } from '@/lib/projects';
 import {
   database,
@@ -128,9 +129,9 @@ async function listApplications(projectId: string) {
     sourceId: (r.source_id as string | null) ?? null,
     reverts: (r.reverts as string | null) ?? null,
     approvedBy: String(r.approved_by),
-    approvedAt: String(r.approved_at),
+    approvedAt: r.approved_at as Date,
     revision: Number(r.revision),
-    entries: JSON.parse(String(r.entries)) as AppliedEntry[],
+    entries: r.entries as AppliedEntry[],
   }));
 }
 
@@ -193,14 +194,15 @@ export async function POST(request: Request) {
           status: t.status ?? 'todo',
           remaining: t.remaining,
           done: t.done,
-          dueAt: t.dueAt ?? null,
+          // 모델 입력은 JSON 자료다. 시각은 ISO 문자열로 넘긴다.
+          dueAt: t.dueAt ? t.dueAt.toISOString() : null,
         })),
         members: members
           .filter((m) => !m.leftAt)
           .map((m) => ({ person: m.person, displayName: m.displayName })),
         deliverables: [] as string[],
         now: now.toISOString(),
-        deadline: policy?.deadlineAt ?? null,
+        deadline: policy?.deadlineAt ? policy.deadlineAt.toISOString() : null,
       };
       const proposalId = 'cp_' + crypto.randomUUID();
       let changes: ReturnType<typeof validateChanges>['changes'] = [];
@@ -255,8 +257,8 @@ export async function POST(request: Request) {
               c.kind,
               c.taskId,
               c.newKey,
-              JSON.stringify(c.before),
-              JSON.stringify(c.after),
+              c.before,
+              c.after,
               c.evidence?.start ?? null,
               c.evidence?.end ?? null,
               c.evidence?.quote ?? '',
@@ -365,7 +367,7 @@ export async function POST(request: Request) {
         .first();
       if (already)
         throw new PolicyError('이미 되돌린 변경입니다.');
-      const entries = JSON.parse(String(row.entries)) as AppliedEntry[];
+      const entries = row.entries as AppliedEntry[];
       const wanted = Array.isArray(b.changeIds)
         ? (b.changeIds as string[])
         : entries.map((e) => e.changeId);
@@ -457,7 +459,7 @@ async function writeApplication(
     userId: string;
     name: string;
     now: Date;
-    members: { person: number; userId: string; leftAt: string | null }[];
+    members: { person: number; userId: string; leftAt: Date | null }[];
     deadlineNote: string;
     deletions?: number[];
   },
@@ -528,14 +530,14 @@ async function writeApplication(
           }
           if (value === null && column === 'remaining') continue;
           sets.push(`${column}=?`);
-          args.push(typeof value === 'boolean' ? Number(value) : value);
+          args.push(value);
         }
         // 마감 버전은 실제 마감이 바뀔 때만 올린다. 담당자만 바뀌면 그대로 둔다.
         const finalDue =
           'dueAt' in acc.fields
             ? (acc.fields.dueAt as string | null)
             : (task?.dueAt ?? null);
-        const dueChanged = (task?.dueAt ?? null) !== (finalDue ?? null);
+        const dueChanged = !sameInstant(task?.dueAt ?? null, finalDue ?? null);
         const deadlineVersion =
           (task?.deadlineVersion ?? 0) + (dueChanged ? 1 : 0);
         if (dueChanged) {
@@ -624,7 +626,7 @@ async function writeApplication(
             meta.reverts,
             meta.userId,
             meta.now.toISOString(),
-            JSON.stringify(entries),
+            entries,
             projectId,
             m,
           ),
