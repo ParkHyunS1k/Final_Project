@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseError, openPglite, toPositional, type Db } from '../lib/db.ts';
@@ -107,6 +107,22 @@ void test('기준 마이그레이션: 두 번 실행해도 한 번만, 모든 �
   assert.equal(tables.results.length, 18);
   assert.deepEqual(tables.results.filter((t) => !t.rls).map((t) => t.name), []);
   assert.ok(!tables.results.some((t) => t.name === 'sprint_proposals'));
+});
+
+void test('마이그레이션은 BEGIN 문자열 없이 적용하고(postgres.js max>1은 거절), 실패한 파일은 남기지 않는다', async () => {
+  const db = openPglite();
+  // postgres.js는 연결이 여럿인 풀에서 BEGIN 문장을 UNSAFE_TRANSACTION으로 거절한다.
+  const strict: Db = {
+    ...db,
+    exec: (sql) => (/^\s*BEGIN\b/im.test(sql) ? Promise.reject(new DatabaseError('UNSAFE_TRANSACTION')) : db.exec(sql)),
+  };
+  assert.deepEqual(await migrate(strict), readdirSync('db/migrations').filter((n) => n.endsWith('.sql')).sort());
+
+  const dir = mkdtempSync(join(tmpdir(), 'pm-mig-'));
+  writeFileSync(join(dir, '0001_bad.sql'), 'CREATE TABLE half (id text);\nSELECT * FROM missing;');
+  await assert.rejects(migrate(strict, dir), DatabaseError);
+  assert.equal(await db.prepare("SELECT to_regclass('half') AS t").first<{ t: unknown }>().then((r) => r!.t), null);
+  assert.equal(await db.prepare("SELECT name FROM _migrations WHERE name='0001_bad.sql'").first(), null);
 });
 
 void test('같은 PGlite 파일은 한 프로세스만 연다(두 번째 열기는 거부, 닫으면 다시 열 수 있다)', async () => {
