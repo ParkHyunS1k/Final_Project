@@ -1,3 +1,4 @@
+import { sameInstant } from '@/lib/time';
 import {
   identity,
   AuthUnavailable,
@@ -39,7 +40,7 @@ export const dynamic = 'force-dynamic';
  */
 function taskDueAt(
   value: unknown,
-  policy: { deadlineAt: string | null },
+  policy: { deadlineAt: Date | null },
   now: Date,
 ): string | null {
   if (value === undefined || value === null || value === '') return null;
@@ -52,7 +53,7 @@ function taskDueAt(
     throw new PolicyError(
       '스프린트를 시작한 뒤에 업무 마감을 지정할 수 있습니다.',
     );
-  if (at > Date.parse(policy.deadlineAt))
+  if (at > policy.deadlineAt.getTime())
     throw new PolicyError('업무 마감은 프로젝트 최종 기한을 넘을 수 없습니다.');
   if (at <= now.getTime())
     throw new PolicyError('업무 마감은 현재 시각 이후여야 합니다.');
@@ -197,7 +198,7 @@ export async function POST(request: Request) {
               )
               .bind(
                 v.goal,
-                JSON.stringify(v.deliverables),
+                v.deliverables,
                 v.completion,
                 id,
                 id,
@@ -310,7 +311,7 @@ export async function POST(request: Request) {
       // 승인된 업무 마감. 팀장의 명시적 입력만 확정하며 예상 종료와 별개다.
       const dueAt = taskDueAt(b.dueAt, policy!, now);
       const previous = existing ?? null;
-      const dueChanged = (previous?.dueAt ?? null) !== dueAt;
+      const dueChanged = !sameInstant(previous?.dueAt ?? null, dueAt);
       const personChanged = previous ? previous.person !== input.person : true;
       const deadlineVersion =
         (previous?.deadlineVersion ?? 0) + (dueChanged ? 1 : 0);
@@ -506,7 +507,7 @@ export async function POST(request: Request) {
           // 증빙을 바꿔도 시작 시 고정한 제목·순서는 변하지 않는다.
           db
             .prepare(
-              'UPDATE project_deliverables SET evidence=?,evidence_by=?,evidence_at=?,confirmed=0,confirmed_by=NULL,confirmed_at=NULL WHERE project_id=? AND deliverable_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+              'UPDATE project_deliverables SET evidence=?,evidence_by=?,evidence_at=?,confirmed=false,confirmed_by=NULL,confirmed_at=NULL WHERE project_id=? AND deliverable_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
             )
             .bind(
               evidence,
@@ -540,7 +541,7 @@ export async function POST(request: Request) {
               'UPDATE project_deliverables SET confirmed=?,confirmed_by=?,confirmed_at=? WHERE project_id=? AND deliverable_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
             )
             .bind(
-              Number(b.confirmed),
+              Boolean(b.confirmed),
               b.confirmed ? user.id : null,
               b.confirmed ? timestamp : null,
               id,

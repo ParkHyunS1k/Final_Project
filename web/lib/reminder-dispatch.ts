@@ -1,5 +1,6 @@
 // 도래한 예약을 확보하고, 전송 직전 최신 상태를 다시 읽고, 묶어서 전송한다.
 // 전송 결과는 업무 상태나 완주 판정을 바꾸지 않는다.
+import { sameInstant } from './time';
 import { database, readPolicy, readDeliverables } from './sprint-store';
 import { effectiveLifecycle } from './sprint-policy';
 import {
@@ -56,15 +57,15 @@ async function validate(item: ClaimedRow, now: Date): Promise<Check> {
   // 수신 주소를 추측하지 않는다. 인증된 연락처가 없으면 발송 불가로 기록한다.
   if (!email) return { ok: false, reason: '인증된 수신 주소 없음' };
   if (item.kind === 'project') {
-    if (policy!.deadlineAt !== item.dueAt)
+    if (!sameInstant(policy!.deadlineAt, item.dueAt))
       return { ok: false, reason: '프로젝트 기한 변경' };
     return { ok: true, email, task: null };
   }
   const task = await taskRow(item.projectId, item.taskId);
   if (!task) return { ok: false, reason: '업무 없음' };
-  if (Number(task.done)) return { ok: false, reason: '업무 완료' };
+  if (task.done) return { ok: false, reason: '업무 완료' };
   if (
-    task.due_at !== item.dueAt ||
+    !sameInstant(task.due_at as Date | null, item.dueAt) ||
     Number(task.deadline_version) !== item.deadlineVersion
   )
     return { ok: false, reason: '승인된 마감 변경' };
@@ -81,11 +82,11 @@ async function projectTitle(projectId: string) {
   return row?.title ?? projectId;
 }
 
-async function projectBody(projectId: string, now: Date, deadline: string) {
+async function projectBody(projectId: string, now: Date, deadline: Date | string) {
   const deliverables = await readDeliverables(projectId);
   const open = await database()
     .prepare(
-      'SELECT title,person FROM sprint_tasks WHERE owner=? AND done=0 ORDER BY id',
+      'SELECT title,person FROM sprint_tasks WHERE owner=? AND done=false ORDER BY id',
     )
     .bind(projectId)
     .all<{ title: string }>();
@@ -100,7 +101,7 @@ async function projectBody(projectId: string, now: Date, deadline: string) {
 
 function taskBody(
   task: Record<string, unknown>,
-  dueAt: string,
+  dueAt: Date | string,
   now: Date,
   link: string,
 ) {

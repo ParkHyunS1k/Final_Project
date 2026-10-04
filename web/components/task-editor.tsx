@@ -11,7 +11,10 @@ import {
   NativeSelectOption,
 } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { Task } from '@/lib/sprint';
+import type { Task as ServerTask } from '@/lib/sprint';
+import type { Wire } from '@/lib/wire';
+// 화면은 JSON으로 받은 값을 다룬다(시각은 ISO 문자열).
+type Task = Wire<ServerTask>;
 import type { ProjectMeta } from './project-workspace';
 
 export function TaskEditor({

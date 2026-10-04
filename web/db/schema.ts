@@ -1,24 +1,33 @@
 import {
-  sqliteTable,
+  pgTable,
   text,
   integer,
-  real,
+  doublePrecision,
+  boolean,
+  jsonb,
+  timestamp,
+  date,
   primaryKey,
   index,
   uniqueIndex,
-} from 'drizzle-orm/sqlite-core';
-export const sprints = sqliteTable('sprints', {
+} from 'drizzle-orm/pg-core';
+
+const tz = { withTimezone: true, mode: 'date' } as const;
+// Supabase는 public 테이블을 anon 키(화면 번들에 공개)로 REST에 노출한다. 모든 테이블에 RLS를 켜고
+// 정책을 두지 않아 막는다. 서버는 테이블 소유자 역할로 접속하므로 영향을 받지 않는다.
+export const sprints = pgTable('sprints', {
   owner: text('owner').primaryKey(),
   title: text('title').notNull(),
-  startDate: text('start_date').notNull(),
-  deadline: text('deadline').notNull(),
+  // 준비 중 프로젝트는 시작 전이라 NULL.
+  startDate: date('start_date', { mode: 'string' }),
+  deadline: timestamp('deadline', tz),
   revision: integer('revision').notNull().default(0),
   mutation: text('mutation').notNull().default(''),
-  joined: integer('joined').notNull().default(0),
-  finished: integer('finished').notNull().default(0),
-  updatedAt: text('updated_at').notNull(),
-});
-export const tasks = sqliteTable(
+  joined: boolean('joined').notNull().default(false),
+  finished: boolean('finished').notNull().default(false),
+  updatedAt: timestamp('updated_at', tz).notNull(),
+}).enableRLS();
+export const tasks = pgTable(
   'sprint_tasks',
   {
     owner: text('owner')
@@ -29,19 +38,19 @@ export const tasks = sqliteTable(
     person: integer('person').notNull(),
     status: text('status').notNull().default('todo'),
     description: text('description').notNull().default(''),
-    remaining: real('remaining').notNull(),
-    dueAt: text('due_at'),
+    remaining: doublePrecision('remaining').notNull(),
+    dueAt: timestamp('due_at', tz),
     deadlineVersion: integer('deadline_version').notNull().default(0),
     // 업무 단위 변경 버전. 생성 이후 수정 여부를 업무별로 판단한다.
     changeVersion: integer('change_version').notNull().default(0),
-    optional: integer('optional').notNull().default(0),
-    deferred: integer('deferred').notNull().default(0),
-    done: integer('done').notNull().default(0),
+    optional: boolean('optional').notNull().default(false),
+    deferred: boolean('deferred').notNull().default(false),
+    done: boolean('done').notNull().default(false),
     evidence: text('evidence').notNull().default(''),
   },
   (t) => [primaryKey({ columns: [t.owner, t.id] })],
-);
-export const dependencies = sqliteTable(
+).enableRLS();
+export const dependencies = pgTable(
   'sprint_dependencies',
   {
     owner: text('owner')
@@ -51,20 +60,20 @@ export const dependencies = sqliteTable(
     dependsOn: integer('depends_on').notNull(),
   },
   (t) => [primaryKey({ columns: [t.owner, t.taskId, t.dependsOn] })],
-);
-export const capacity = sqliteTable(
+).enableRLS();
+export const capacity = pgTable(
   'sprint_capacity',
   {
     owner: text('owner')
       .notNull()
       .references(() => sprints.owner),
     person: integer('person').notNull(),
-    date: text('date').notNull(),
-    hours: real('hours').notNull(),
+    date: date('date', { mode: 'string' }).notNull(),
+    hours: doublePrecision('hours').notNull(),
   },
   (t) => [primaryKey({ columns: [t.owner, t.person, t.date] })],
-);
-export const checkins = sqliteTable(
+).enableRLS();
+export const checkins = pgTable(
   'sprint_checkins',
   {
     id: text('id').primaryKey(),
@@ -73,26 +82,12 @@ export const checkins = sqliteTable(
       .references(() => sprints.owner),
     taskId: integer('task_id').notNull(),
     note: text('note').notNull(),
-    remaining: real('remaining').notNull(),
-    createdAt: text('created_at').notNull(),
+    remaining: doublePrecision('remaining').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
   },
   (t) => [index('idx_checkins_owner_createdAt').on(t.owner, t.createdAt)],
-);
-export const proposals = sqliteTable(
-  'sprint_proposals',
-  {
-    id: text('id').primaryKey(),
-    owner: text('owner')
-      .notNull()
-      .references(() => sprints.owner),
-    baseRevision: integer('base_revision').notNull(),
-    deferIds: text('defer_ids').notNull(),
-    status: text('status').notNull().default('pending'),
-    createdAt: text('created_at').notNull(),
-  },
-  (t) => [index('idx_proposals_owner_createdAt').on(t.owner, t.createdAt)],
-);
-export const events = sqliteTable(
+).enableRLS();
+export const events = pgTable(
   'sprint_events',
   {
     id: text('id').primaryKey(),
@@ -102,24 +97,24 @@ export const events = sqliteTable(
     revision: integer('revision').notNull(),
     action: text('action').notNull(),
     detail: text('detail').notNull(),
-    createdAt: text('created_at').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
   },
   (t) => [index('idx_events_owner_revision').on(t.owner, t.revision)],
-);
+).enableRLS();
 
 // sprints.owner remains the physical project key to preserve deployed v2 data.
-export const projectDetails = sqliteTable('project_details', {
+export const projectDetails = pgTable('project_details', {
   projectId: text('project_id')
     .primaryKey()
     .references(() => sprints.owner),
   createdBy: text('created_by').notNull(),
   goal: text('goal').notNull(),
-  deliverables: text('deliverables').notNull(),
+  deliverables: jsonb('deliverables').notNull(),
   completionCriteria: text('completion_criteria').notNull(),
-  legacy: integer('legacy').notNull().default(0),
-  createdAt: text('created_at').notNull(),
-});
-export const projectMembers = sqliteTable(
+  legacy: boolean('legacy').notNull().default(false),
+  createdAt: timestamp('created_at', tz).notNull(),
+}).enableRLS();
+export const projectMembers = pgTable(
   'project_members',
   {
     projectId: text('project_id')
@@ -129,11 +124,11 @@ export const projectMembers = sqliteTable(
     displayName: text('display_name').notNull(),
     role: text('role').notNull(),
     person: integer('person').notNull(),
-    agreedAt: text('agreed_at'),
-    joinedAt: text('joined_at').notNull(),
+    agreedAt: timestamp('agreed_at', tz),
+    joinedAt: timestamp('joined_at', tz).notNull(),
     agreedGoalVersion: integer('agreed_goal_version').notNull().default(0),
     email: text('email'),
-    leftAt: text('left_at'),
+    leftAt: timestamp('left_at', tz),
     leftNote: text('left_note').notNull().default(''),
   },
   (t) => [
@@ -141,8 +136,8 @@ export const projectMembers = sqliteTable(
     index('idx_members_user').on(t.userId),
     uniqueIndex('idx_members_project_person').on(t.projectId, t.person),
   ],
-);
-export const projectInvites = sqliteTable(
+).enableRLS();
+export const projectInvites = pgTable(
   'project_invites',
   {
     id: text('id').primaryKey(),
@@ -151,30 +146,30 @@ export const projectInvites = sqliteTable(
       .references(() => sprints.owner),
     tokenHash: text('token_hash').notNull().unique(),
     email: text('email').notNull(),
-    expiresAt: text('expires_at').notNull(),
+    expiresAt: timestamp('expires_at', tz).notNull(),
     createdBy: text('created_by').notNull(),
     status: text('status').notNull().default('pending'),
     acceptedBy: text('accepted_by'),
-    createdAt: text('created_at').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
   },
   (t) => [index('idx_invites_project').on(t.projectId)],
-);
+).enableRLS();
 
 // --- 2026-09-09 집중 스프린트 규칙 (마이그레이션 0005) ---
-export const projectPolicy = sqliteTable('project_policy', {
+export const projectPolicy = pgTable('project_policy', {
   projectId: text('project_id')
     .primaryKey()
     .references(() => sprints.owner),
   lifecycle: text('lifecycle').notNull().default('draft'),
   goalVersion: integer('goal_version').notNull().default(1),
   durationDays: integer('duration_days').notNull(),
-  dailyHours: real('daily_hours').notNull().default(8),
-  startedAt: text('started_at'),
-  deadlineAt: text('deadline_at'),
-  completedAt: text('completed_at'),
-  createdAt: text('created_at').notNull(),
-});
-export const projectAgreement = sqliteTable('project_agreement', {
+  dailyHours: doublePrecision('daily_hours').notNull().default(8),
+  startedAt: timestamp('started_at', tz),
+  deadlineAt: timestamp('deadline_at', tz),
+  completedAt: timestamp('completed_at', tz),
+  createdAt: timestamp('created_at', tz).notNull(),
+}).enableRLS();
+export const projectAgreement = pgTable('project_agreement', {
   projectId: text('project_id')
     .primaryKey()
     .references(() => sprints.owner),
@@ -183,9 +178,10 @@ export const projectAgreement = sqliteTable('project_agreement', {
   goal: text('goal').notNull(),
   scope: text('scope').notNull(),
   completionCriteria: text('completion_criteria').notNull(),
-  fixedAt: text('fixed_at').notNull(),
-});
-export const projectDeliverables = sqliteTable(
+  // 시작 전 합의는 아직 고정되지 않아 NULL.
+  fixedAt: timestamp('fixed_at', tz),
+}).enableRLS();
+export const projectDeliverables = pgTable(
   'project_deliverables',
   {
     projectId: text('project_id')
@@ -194,22 +190,22 @@ export const projectDeliverables = sqliteTable(
     deliverableId: text('deliverable_id').notNull(),
     position: integer('position').notNull(),
     title: text('title').notNull(),
-    fixedAt: text('fixed_at'),
+    fixedAt: timestamp('fixed_at', tz),
     evidence: text('evidence').notNull().default(''),
     evidenceBy: text('evidence_by'),
-    evidenceAt: text('evidence_at'),
-    confirmed: integer('confirmed').notNull().default(0),
+    evidenceAt: timestamp('evidence_at', tz),
+    confirmed: boolean('confirmed').notNull().default(false),
     confirmedBy: text('confirmed_by'),
-    confirmedAt: text('confirmed_at'),
+    confirmedAt: timestamp('confirmed_at', tz),
   },
   (t) => [
     primaryKey({ columns: [t.projectId, t.deliverableId] }),
     index('idx_deliverables_project_position').on(t.projectId, t.position),
   ],
-);
+).enableRLS();
 
 // --- 마감 독촉 (마이그레이션 0006) ---
-export const reminderItems = sqliteTable(
+export const reminderItems = pgTable(
   'reminder_items',
   {
     id: text('id').primaryKey(),
@@ -222,15 +218,15 @@ export const reminderItems = sqliteTable(
     userId: text('user_id').notNull(),
     deadlineVersion: integer('deadline_version').notNull(),
     stageMinutes: integer('stage_minutes').notNull(),
-    dueAt: text('due_at').notNull(),
-    scheduledAt: text('scheduled_at').notNull(),
+    dueAt: timestamp('due_at', tz).notNull(),
+    scheduledAt: timestamp('scheduled_at', tz).notNull(),
     status: text('status').notNull().default('pending'),
     batchId: text('batch_id'),
     claimOwner: text('claim_owner'),
-    claimedAt: text('claimed_at'),
-    resolvedAt: text('resolved_at'),
+    claimedAt: timestamp('claimed_at', tz),
+    resolvedAt: timestamp('resolved_at', tz),
     detail: text('detail').notNull().default(''),
-    createdAt: text('created_at').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
   },
   (t) => [
     uniqueIndex('idx_reminder_logical').on(
@@ -243,8 +239,8 @@ export const reminderItems = sqliteTable(
     ),
     index('idx_reminder_due').on(t.status, t.scheduledAt),
   ],
-);
-export const reminderBatches = sqliteTable(
+).enableRLS();
+export const reminderBatches = pgTable(
   'reminder_batches',
   {
     id: text('id').primaryKey(),
@@ -252,7 +248,7 @@ export const reminderBatches = sqliteTable(
       .notNull()
       .references(() => sprints.owner),
     userId: text('user_id').notNull(),
-    scheduledAt: text('scheduled_at').notNull(),
+    scheduledAt: timestamp('scheduled_at', tz).notNull(),
     email: text('email').notNull(),
     subject: text('subject').notNull().default(''),
     status: text('status').notNull(),
@@ -261,18 +257,18 @@ export const reminderBatches = sqliteTable(
     provider: text('provider').notNull().default(''),
     providerMessageId: text('provider_message_id'),
     error: text('error').notNull().default(''),
-    firstAttemptAt: text('first_attempt_at').notNull(),
-    lastAttemptAt: text('last_attempt_at').notNull(),
+    firstAttemptAt: timestamp('first_attempt_at', tz).notNull(),
+    lastAttemptAt: timestamp('last_attempt_at', tz).notNull(),
   },
   (t) => [
     // 메일은 같은 수신자·같은 예정 시각이면 프로젝트가 달라도 한 통으로 묶는다.
     uniqueIndex('idx_batch_slot').on(t.userId, t.scheduledAt),
     uniqueIndex('idx_batch_idempotency').on(t.idempotencyKey),
   ],
-);
+).enableRLS();
 
 // --- 원문과 AI 변경안 (마이그레이션 0007) ---
-export const sourceDocuments = sqliteTable(
+export const sourceDocuments = pgTable(
   'source_documents',
   {
     id: text('id').primaryKey(),
@@ -282,14 +278,14 @@ export const sourceDocuments = sqliteTable(
     authorId: text('author_id').notNull(),
     body: text('body').notNull(),
     origin: text('origin').notNull().default(''),
-    capturedAt: text('captured_at'),
+    capturedAt: timestamp('captured_at', tz),
     hash: text('hash').notNull(),
     supersedes: text('supersedes'),
-    createdAt: text('created_at').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
   },
   (t) => [index('idx_sources_project').on(t.projectId, t.createdAt)],
-);
-export const aiChangeProposals = sqliteTable(
+).enableRLS();
+export const aiChangeProposals = pgTable(
   'ai_change_proposals',
   {
     id: text('id').primaryKey(),
@@ -303,11 +299,11 @@ export const aiChangeProposals = sqliteTable(
     status: text('status').notNull().default('pending'),
     error: text('error').notNull().default(''),
     createdBy: text('created_by').notNull(),
-    createdAt: text('created_at').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
   },
   (t) => [index('idx_ai_proposals_project').on(t.projectId, t.createdAt)],
-);
-export const aiProposalChanges = sqliteTable(
+).enableRLS();
+export const aiProposalChanges = pgTable(
   'ai_proposal_changes',
   {
     proposalId: text('proposal_id').notNull(),
@@ -315,8 +311,8 @@ export const aiProposalChanges = sqliteTable(
     kind: text('kind').notNull(),
     taskId: integer('task_id'),
     newKey: text('new_key'),
-    before: text('before').notNull(),
-    after: text('after').notNull(),
+    before: jsonb('before').notNull(),
+    after: jsonb('after').notNull(),
     evidenceStart: integer('evidence_start'),
     evidenceEnd: integer('evidence_end'),
     evidenceQuote: text('evidence_quote').notNull().default(''),
@@ -326,8 +322,8 @@ export const aiProposalChanges = sqliteTable(
     blocked: text('blocked').notNull().default(''),
   },
   (t) => [primaryKey({ columns: [t.proposalId, t.changeId] })],
-);
-export const aiChangeApplications = sqliteTable(
+).enableRLS();
+export const aiChangeApplications = pgTable(
   'ai_change_applications',
   {
     id: text('id').primaryKey(),
@@ -338,9 +334,9 @@ export const aiChangeApplications = sqliteTable(
     sourceId: text('source_id'),
     reverts: text('reverts'),
     approvedBy: text('approved_by').notNull(),
-    approvedAt: text('approved_at').notNull(),
+    approvedAt: timestamp('approved_at', tz).notNull(),
     revision: integer('revision').notNull(),
-    entries: text('entries').notNull(),
+    entries: jsonb('entries').notNull(),
   },
   (t) => [index('idx_ai_applications_project').on(t.projectId, t.approvedAt)],
-);
+).enableRLS();

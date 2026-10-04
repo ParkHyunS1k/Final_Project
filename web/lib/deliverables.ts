@@ -6,13 +6,13 @@ export type Deliverable = {
   deliverableId: string;
   position: number;
   title: string;
-  fixedAt: string | null;
+  fixedAt: Date | null;
   evidence: string;
   evidenceBy: string | null;
-  evidenceAt: string | null;
+  evidenceAt: Date | null;
   confirmed: boolean;
   confirmedBy: string | null;
-  confirmedAt: string | null;
+  confirmedAt: Date | null;
 };
 
 export function deliverableRow(row: Record<string, unknown>): Deliverable {
@@ -20,13 +20,13 @@ export function deliverableRow(row: Record<string, unknown>): Deliverable {
     deliverableId: String(row.deliverable_id),
     position: Number(row.position),
     title: String(row.title),
-    fixedAt: (row.fixed_at as string | null) ?? null,
+    fixedAt: (row.fixed_at as Date | null) ?? null,
     evidence: typeof row.evidence === 'string' ? row.evidence : '',
     evidenceBy: (row.evidence_by as string | null) ?? null,
-    evidenceAt: (row.evidence_at as string | null) ?? null,
+    evidenceAt: (row.evidence_at as Date | null) ?? null,
     confirmed: Boolean(row.confirmed),
     confirmedBy: (row.confirmed_by as string | null) ?? null,
-    confirmedAt: (row.confirmed_at as string | null) ?? null,
+    confirmedAt: (row.confirmed_at as Date | null) ?? null,
   };
 }
 

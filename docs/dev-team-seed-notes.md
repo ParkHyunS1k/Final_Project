@@ -9,7 +9,7 @@ HTTP API로 프로젝트 생성, 이메일 지정 초대, 초대 수락, 목표 
 `web/`에서 로컬 DB 마이그레이션을 적용한 뒤 개발 서버를 실행한다.
 
 ```bash
-npm run db:migrate
+npm run db:migrate   # 개발 서버를 끈 상태에서(로컬 PGlite는 한 프로세스만 연다)
 npm run dev   # http://localhost:3000
 ```
 

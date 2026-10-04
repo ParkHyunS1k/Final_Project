@@ -20,7 +20,7 @@ function due(id: number, dueAt: string | null): Task {
     done: false,
     evidence: '',
     dependsOn: [],
-    dueAt,
+    dueAt: dueAt ? new Date(dueAt) : null,
   };
 }
 test('승인된 마감은 시작 시각부터 24시간 단위 Day 칸에 놓인다', () => {

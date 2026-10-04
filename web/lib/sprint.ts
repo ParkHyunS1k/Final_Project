@@ -1,3 +1,4 @@
+import { ms, type Instant } from './time.ts';
 export type Task = {
   id: number;
   title: string;
@@ -11,7 +12,7 @@ export type Task = {
   status?: 'todo' | 'in_progress';
   description?: string;
   // 승인된 개별 업무 마감. 계산기의 예상 종료(plan.finishes)와 별개다.
-  dueAt?: string | null;
+  dueAt?: Date | null;
   deadlineVersion?: number;
   changeVersion?: number;
 };
@@ -380,8 +381,8 @@ export function plan(
   };
 }
 
-export function seoulTime(iso: string) {
-  return new Date(Date.parse(iso) + 9 * 3600000)
+export function seoulTime(at: Instant) {
+  return new Date(ms(at) + 9 * 3600000)
     .toISOString()
     .slice(0, 16)
     .replace('T', ' ');
@@ -390,24 +391,29 @@ export function seoulTime(iso: string) {
 const DAY_MS = 86400000;
 // 시작 시각부터 24시간 단위 Day 칸에 승인된 마감을 둔다(최종 기한 계산과 같은 기준).
 // 구간이 끝나는 시각의 마감은 그날 마감이다. 마감이 없거나 기간 밖이면 undated.
-export function deadlineDays(startedAt: string, deadline: string, tasks: Task[]) {
-  const start = Date.parse(startedAt);
+// 서버(Date)와 화면(JSON으로 받은 ISO 문자열) 모두에서 쓴다.
+export function deadlineDays<T extends { dueAt?: Instant }>(
+  startedAt: Instant,
+  deadline: Instant,
+  tasks: T[],
+) {
+  const start = ms(startedAt);
   const days = Array.from(
-    { length: Math.round((Date.parse(deadline) - start) / DAY_MS) },
+    { length: Math.round((ms(deadline) - start) / DAY_MS) },
     (_, i) => ({
       day: i + 1,
       start: new Date(start + i * DAY_MS).toISOString(),
-      tasks: [] as Task[],
+      tasks: [] as T[],
     }),
   );
-  const undated: Task[] = [];
+  const undated: T[] = [];
   for (const t of tasks) {
-    const at = t.dueAt ? Date.parse(t.dueAt) : NaN;
+    const at = ms(t.dueAt);
     const slot = days[Math.max(1, Math.ceil((at - start) / DAY_MS)) - 1];
     if (slot) slot.tasks.push(t);
     else undated.push(t);
   }
   for (const d of days)
-    d.tasks.sort((a, b) => Date.parse(a.dueAt!) - Date.parse(b.dueAt!));
+    d.tasks.sort((a, b) => ms(a.dueAt) - ms(b.dueAt));
   return { days, undated };
 }

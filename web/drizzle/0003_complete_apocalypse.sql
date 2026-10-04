@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX `idx_members_project_person` ON `project_members` (`project_id`,`person`);

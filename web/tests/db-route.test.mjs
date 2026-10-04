@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
-import { mkdtempSync } from 'node:fs';
+import { mkdirSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -9,7 +9,10 @@ import { pathToFileURL } from 'node:url';
 // 다른 API 테스트는 ./db를 대역으로 바꾼다. 이 파일은 실제 lib/db.ts로 라우트의 503 계약을 확인한다.
 process.env.AUTH_DEV_HEADERS = '1';
 const dir = mkdtempSync(join(tmpdir(), 'projectmate-db-route-'));
-const outfile = join(dir, 'route.mjs');
+// 밖으로 뺀 pglite·postgres를 node_modules에서 찾도록 번들 결과는 web/ 아래에 둔다.
+const cache = join(process.cwd(), 'node_modules', '.cache');
+mkdirSync(cache, { recursive: true });
+const outfile = join(mkdtempSync(join(cache, 'pm-db-route-')), 'route.mjs');
 await build({
   stdin: {
     contents: "export { GET } from './app/api/projects/route';",
@@ -20,6 +23,8 @@ await build({
   bundle: true,
   platform: 'node',
   format: 'esm',
+  // PGlite의 wasm·데이터 파일은 번들하지 않고 node_modules에서 읽는다.
+  external: ['@electric-sql/pglite', 'postgres'],
 });
 const { GET } = await import(pathToFileURL(outfile).href);
 
@@ -46,10 +51,10 @@ async function request(path) {
 }
 
 test('마이그레이션하지 않은 DB는 503으로 숨기고 원인은 서버 로그에만 남긴다', async () => {
-  const r = await request(join(dir, 'fresh', 'x.sqlite'));
+  const r = await request(join(dir, 'fresh-pglite'));
   assert.equal(r.status, 503, r.body);
-  assert.doesNotMatch(r.body, /no such table|sqlite/i);
-  assert.match(r.log, /no such table/);
+  assert.doesNotMatch(r.body, /does not exist|relation/i);
+  assert.match(r.log, /does not exist/);
 });
 
 test('DB 파일을 열 수 없으면 503으로 숨기고 경로를 응답에 넣지 않는다', async () => {

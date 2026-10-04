@@ -1,72 +1,13 @@
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
 import { build } from 'esbuild';
-import { readFileSync, readdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-const db = new DatabaseSync(':memory:');
-db.exec('PRAGMA foreign_keys=ON');
-for (const name of readdirSync('drizzle')
-  .filter((n) => n.endsWith('.sql'))
-  .sort())
-  db.exec(readFileSync('drizzle/' + name, 'utf8'));
-function fireBeforeWrite(sqls) {
-  const hook = globalThis.__BEFORE_WRITE;
-  if (!hook) return;
-  const pattern = globalThis.__BEFORE_WRITE_SQL ?? 'UPDATE sprints SET revision';
-  if (!sqls.some((sql) => sql.includes(pattern))) return;
-  globalThis.__BEFORE_WRITE = null;
-  globalThis.__BEFORE_WRITE_SQL = null;
-  hook();
-}
-class Prepared {
-  constructor(sql, args = []) {
-    this.sql = sql;
-    this.args = args;
-  }
-  bind(...args) {
-    return new Prepared(this.sql, args);
-  }
-  async first() {
-    return db.prepare(this.sql).get(...this.args) ?? null;
-  }
-  async run() {
-    return this.execute();
-  }
-  async all() {
-    return this.execute();
-  }
-  execute() {
-    if (!/^\s*SELECT/.test(this.sql)) fireBeforeWrite([this.sql]);
-    const st = db.prepare(this.sql);
-    if (/^\s*SELECT/.test(this.sql))
-      return {
-        results: st.all(...this.args),
-        meta: { changes: 0 },
-        success: true,
-      };
-    const r = st.run(...this.args);
-    return { results: [], meta: { changes: Number(r.changes) }, success: true };
-  }
-}
-globalThis.__TEST_DB = {
-  prepare: (sql) => new Prepared(sql),
-  async batch(statements) {
-    fireBeforeWrite(statements.map((s) => s.sql));
-    db.exec('BEGIN');
-    try {
-      const rows = statements.map((s) => s.execute());
-      db.exec('COMMIT');
-      return rows;
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
-    }
-  },
-};
+import { setupTestDb } from './helpers/pg-db.mjs';
+const { run } = await setupTestDb();
 const dir = mkdtempSync(join(tmpdir(), 'projectmate-api-test-'));
 const outfile = join(dir, 'route.mjs');
 await build({
@@ -271,9 +212,6 @@ async function propose(user, projectId, sourceId) {
 
 let seq = 0;
 const mutation = (label) => `mut-${label}-${++seq}-${crypto.randomUUID()}`;
-function rows(sql, ...args) {
-  return db.prepare(sql).all(...args);
-}
 // 신규 업무 생성 변경안 하나를 만들어 승인까지 마친 상태를 돌려준다.
 async function createdByAi(owner, mate, title) {
   const { projectId, state } = await startedTeam(owner, mate);
@@ -546,7 +484,8 @@ test('이미 적용한 생성 항목은 제목이 달라도 승인 단계에서 
   const afterFirst = await read('dup3', projectId);
   // 두 번째 변경안의 baseRevision을 현재 값으로 맞춰도(제목만 바꿔 승인해도)
   // 같은 원문·같은 근거의 생성 항목이면 다시 만들지 않는다.
-  db.prepare('UPDATE ai_change_proposals SET base_revision=? WHERE id=?').run(
+  await run(
+    'UPDATE ai_change_proposals SET base_revision=? WHERE id=?',
     afterFirst.sprint.revision,
     second.proposalId,
   );
@@ -600,6 +539,6 @@ test('되돌린 생성 항목은 다시 승인할 수 있다', async () => {
 });
 
 process.on('exit', () => {
-  db.close();
+  globalThis.__TEST_DB.close();
   rmSync(dir, { recursive: true, force: true });
 });

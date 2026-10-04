@@ -1,74 +1,13 @@
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { setupTestDb } from './helpers/pg-db.mjs';
 import { build } from 'esbuild';
-import { readFileSync, readdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-const db = new DatabaseSync(':memory:');
-db.exec('PRAGMA foreign_keys=ON');
-for (const name of readdirSync('drizzle')
-  .filter((n) => n.endsWith('.sql'))
-  .sort())
-  db.exec(readFileSync('drizzle/' + name, 'utf8'));
-// 실제 쓰기 직전에 상태를 바꾸는 상황을 재현하기 위한 훅.
-// __BEFORE_WRITE_SQL로 어떤 문장 직전에 실행할지 지정한다(기본값: 버전 증가 UPDATE).
-function fireBeforeWrite(sqls) {
-  const hook = globalThis.__BEFORE_WRITE;
-  if (!hook) return;
-  const pattern = globalThis.__BEFORE_WRITE_SQL ?? 'UPDATE sprints SET revision';
-  if (!sqls.some((sql) => sql.includes(pattern))) return;
-  globalThis.__BEFORE_WRITE = null;
-  globalThis.__BEFORE_WRITE_SQL = null;
-  hook();
-}
-class Prepared {
-  constructor(sql, args = []) {
-    this.sql = sql;
-    this.args = args;
-  }
-  bind(...args) {
-    return new Prepared(this.sql, args);
-  }
-  async first() {
-    return db.prepare(this.sql).get(...this.args) ?? null;
-  }
-  async run() {
-    return this.execute();
-  }
-  async all() {
-    return this.execute();
-  }
-  execute() {
-    if (!/^\s*SELECT/.test(this.sql)) fireBeforeWrite([this.sql]);
-    const st = db.prepare(this.sql);
-    if (/^\s*SELECT/.test(this.sql))
-      return {
-        results: st.all(...this.args),
-        meta: { changes: 0 },
-        success: true,
-      };
-    const r = st.run(...this.args);
-    return { results: [], meta: { changes: Number(r.changes) }, success: true };
-  }
-}
-globalThis.__TEST_DB = {
-  prepare: (sql) => new Prepared(sql),
-  async batch(statements) {
-    fireBeforeWrite(statements.map((s) => s.sql));
-    db.exec('BEGIN');
-    try {
-      const rows = statements.map((s) => s.execute());
-      db.exec('COMMIT');
-      return rows;
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
-    }
-  },
-};
+const { rows, run } = await setupTestDb();
 const dir = mkdtempSync(join(tmpdir(), 'projectmate-api-test-'));
 const outfile = join(dir, 'route.mjs');
 await build({
@@ -224,9 +163,6 @@ function fakeSender(script = []) {
     },
   };
 }
-function rows(sql, ...args) {
-  return db.prepare(sql).all(...args);
-}
 // 7일 스프린트로 시작한 팀. 업무 마감은 시작 뒤에만 지정할 수 있다.
 async function reminderTeam(owner, mate) {
   const { projectId, state } = await startedTeam(owner, mate);
@@ -240,17 +176,17 @@ function dueIn(state, hours) {
 let seq = 0;
 const mutation = (label) => `mut-${label}-${++seq}-${crypto.randomUUID()}`;
 // 이 파일은 하나의 DB를 공유한다. 특정 프로젝트만 남겨 실행 결과를 결정적으로 만든다.
-function isolate(...projectIds) {
+async function isolate(...projectIds) {
   const list = projectIds.map((id) => `'${id}'`).join(',');
-  db.prepare(
+  await run(
     `UPDATE reminder_items SET status='cancelled' WHERE status='pending' AND project_id NOT IN (${list})`,
-  ).run();
+  );
 }
-function pending(projectId) {
-  return rows(
+async function pending(projectId) {
+  return (await rows(
     "SELECT kind,task_id,user_id,deadline_version,stage_minutes FROM reminder_items WHERE project_id=? AND kind='task' AND status='pending' ORDER BY stage_minutes DESC",
     projectId,
-  ).map((r) => ({ ...r }));
+  )).map((r) => ({ ...r }));
 }
 async function paste(user, projectId, body) {
   const r = await api.sourcesPOST(
@@ -336,7 +272,7 @@ test('AI로 담당자만 바꾸면 새 담당자에게 같은 마감 버전으�
   assert.equal(after.state.sprint.tasks[0].person, 1);
   // 마감이 그대로면 마감 버전은 올라가지 않는다.
   assert.equal(after.state.sprint.tasks[0].deadlineVersion, 1);
-  const items = pending(projectId);
+  const items = await pending(projectId);
   assert.deepEqual(
     items.map((i) => i.stage_minutes),
     [120, 60, 30],
@@ -375,7 +311,7 @@ test('AI로 마감만 바꾸면 마감 버전이 오르고 같은 담당자에�
   );
   assert.equal(after.state.sprint.tasks[0].dueAt, moved);
   assert.equal(after.state.sprint.tasks[0].deadlineVersion, 2);
-  const items = pending(projectId);
+  const items = await pending(projectId);
   assert.deepEqual(
     items.map((i) => i.stage_minutes),
     [120, 60, 30],
@@ -383,9 +319,11 @@ test('AI로 마감만 바꾸면 마감 버전이 오르고 같은 담당자에�
   assert.ok(items.every((i) => i.user_id === 'ai2mate'));
   assert.ok(items.every((i) => i.deadline_version === 2));
   assert.equal(
-    rows(
-      "SELECT count(*) AS n FROM reminder_items WHERE project_id=? AND kind='task' AND status='cancelled'",
-      projectId,
+    (
+      await rows(
+        "SELECT count(*) AS n FROM reminder_items WHERE project_id=? AND kind='task' AND status='cancelled'",
+        projectId,
+      )
     )[0].n,
     3,
   );
@@ -430,7 +368,7 @@ test('AI로 담당자와 마감을 동시에 바꾸면 최종 상태 하나만 �
   assert.equal(after.state.sprint.tasks[0].person, 1);
   assert.equal(after.state.sprint.tasks[0].dueAt, moved);
   assert.equal(after.state.sprint.tasks[0].deadlineVersion, 2);
-  const items = pending(projectId);
+  const items = await pending(projectId);
   // 최종 담당자·최종 마감·최종 버전의 3단계만 남아야 한다.
   assert.equal(items.length, 3, JSON.stringify(items));
   assert.ok(items.every((i) => i.user_id === 'ai3mate'));
@@ -438,11 +376,11 @@ test('AI로 담당자와 마감을 동시에 바꾸면 최종 상태 하나만 �
   assert.ok(
     items.every((i) => i.due_at === undefined || true),
   );
-  const dues = rows(
+  const dues = await rows(
     "SELECT DISTINCT due_at FROM reminder_items WHERE project_id=? AND kind='task' AND status='pending'",
     projectId,
   );
-  assert.deepEqual(dues.map((d) => d.due_at), [moved]);
+  assert.deepEqual(dues.map((d) => new Date(d.due_at).toISOString()), [moved]);
 });
 
 test('AI 완료를 되돌리면 남은 단계가 다시 예약된다', async () => {
@@ -491,7 +429,7 @@ test('AI 완료를 되돌리면 남은 단계가 다시 예약된다', async () 
   );
   let after = await read('ai4', projectId);
   assert.equal(after.sprint.tasks[0].done, true);
-  assert.equal(pending(projectId).length, 0);
+  assert.equal((await pending(projectId)).length, 0);
   const reverted = await proposalRequest('ai4mate', {
     action: 'revert',
     projectId,
@@ -503,7 +441,7 @@ test('AI 완료를 되돌리면 남은 단계가 다시 예약된다', async () 
   after = await read('ai4', projectId);
   assert.equal(after.sprint.tasks[0].done, false);
   // 되돌리기도 같은 처리를 거쳐 남은 단계가 살아나야 한다.
-  const items = pending(projectId);
+  const items = await pending(projectId);
   assert.equal(items.length, 3, JSON.stringify(items));
   assert.ok(items.every((i) => i.user_id === 'ai4mate'));
 });
@@ -530,18 +468,22 @@ test('두 프로젝트의 업무 번호가 같아도 알림이 서로를 지우�
     dueAt: when,
   });
   // 두 프로젝트에서 같은 사람이 같은 시각에 업무 알림을 받는 상황을 만든다.
-  isolate(a.projectId, b.projectId);
+  await isolate(a.projectId, b.projectId);
   // 프로젝트 알림은 이 검사와 무관하므로 정리한다.
-  db.prepare(
+  await run(
     "UPDATE reminder_items SET status='cancelled' WHERE kind='project' AND project_id IN (?,?)",
-  ).run(a.projectId, b.projectId);
-  db.prepare(
+    a.projectId,
+    b.projectId,
+  );
+  await run(
     "UPDATE project_members SET user_id='multi',email='multi@test.local' WHERE project_id=? AND person=0",
-  ).run(b.projectId);
-  db.prepare(
+    b.projectId,
+  );
+  await run(
     "UPDATE reminder_items SET user_id='multi' WHERE project_id=? AND kind='task'",
-  ).run(b.projectId);
-  const before = rows(
+    b.projectId,
+  );
+  const before = await rows(
     "SELECT project_id,task_id,stage_minutes FROM reminder_items WHERE status='pending' AND project_id IN (?,?)",
     a.projectId,
     b.projectId,
@@ -560,7 +502,7 @@ test('두 프로젝트의 업무 번호가 같아도 알림이 서로를 지우�
   assert.match(text, /^업무: B 프로젝트 업무$/m);
   // 두 프로젝트 모두 최신 단계 1건씩 발송되어야 한다.
   for (const id of [a.projectId, b.projectId]) {
-    const sentRows = rows(
+    const sentRows = await rows(
       "SELECT stage_minutes FROM reminder_items WHERE project_id=? AND kind='task' AND status='sent'",
       id,
     );
@@ -571,7 +513,7 @@ test('두 프로젝트의 업무 번호가 같아도 알림이 서로를 지우�
     );
   }
   // 건너뛴 항목은 같은 프로젝트의 앞선 단계뿐이어야 한다.
-  const skipped = rows(
+  const skipped = await rows(
     "SELECT project_id,stage_minutes,detail FROM reminder_items WHERE status='skipped' AND kind='task' AND project_id IN (?,?)",
     a.projectId,
     b.projectId,
@@ -598,10 +540,11 @@ test('처리 한도가 작아도 한 통에 들어갈 항목을 나눠 발송하
       dependsOn: [],
       dueAt: when,
     });
-  isolate(projectId);
-  db.prepare(
+  await isolate(projectId);
+  await run(
     "UPDATE reminder_items SET status='cancelled' WHERE kind='project' AND project_id=?",
-  ).run(projectId);
+    projectId,
+  );
   const runAt = new Date(Date.parse(when) - 29 * 60000);
   const sender = fakeSender();
   // 한 묶음에 들어갈 항목(3건)보다 작은 한도로 실행한다.
@@ -617,7 +560,7 @@ test('처리 한도가 작아도 한 통에 들어갈 항목을 나눠 발송하
   for (const title of ['한도 업무 1', '한도 업무 2', '한도 업무 3'])
     assert.match(mails[0].text, new RegExp(`^업무: ${title}$`, 'm'));
   // 보내지 않은 항목이 발송 완료로 기록되면 안 된다.
-  const sent = rows(
+  const sent = await rows(
     "SELECT task_id FROM reminder_items WHERE project_id=? AND kind='task' AND status='sent'",
     projectId,
   );
@@ -652,7 +595,7 @@ test('첫 메일을 보내는 사이 완료된 업무에는 독촉을 보내지 
     dependsOn: [],
     dueAt: when,
   });
-  isolate(projectId);
+  await isolate(projectId);
   const runAt = new Date(Date.parse(when) - 29 * 60000);
   const sender = {
     name: 'racy',
@@ -662,9 +605,7 @@ test('첫 메일을 보내는 사이 완료된 업무에는 독촉을 보내지 
       this.log.push(message);
       // 첫 메일을 보내는 동안 두 번째 업무가 완료된다.
       if (this.log.length === 1)
-        db.prepare('UPDATE sprint_tasks SET done=1 WHERE owner=? AND id=2').run(
-          projectId,
-        );
+        await run('UPDATE sprint_tasks SET done=true WHERE owner=? AND id=2', projectId);
       return { status: 'sent', provider: 'racy', messageId: 'm' + this.log.length };
     },
   };
@@ -676,15 +617,16 @@ test('첫 메일을 보내는 사이 완료된 업무에는 독촉을 보내지 
   const all = sender.log.map((m) => m.text).join('\n');
   assert.ok(!/^업무: 나중에 가는 업무$/m.test(all), all);
   assert.equal(
-    rows(
-      "SELECT count(*) AS n FROM reminder_items WHERE project_id=? AND kind='task' AND task_id=2 AND status='sent'",
-      projectId,
+    (
+      await rows(
+        "SELECT count(*) AS n FROM reminder_items WHERE project_id=? AND kind='task' AND task_id=2 AND status='sent'",
+        projectId,
+      )
     )[0].n,
     0,
   );
 });
 
 process.on('exit', () => {
-  db.close();
   rmSync(dir, { recursive: true, force: true });
 });
