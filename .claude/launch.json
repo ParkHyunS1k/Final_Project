@@ -47,6 +47,25 @@
         "3101"
       ],
       "port": 3101
+    },
+    {
+      "name": "workspace-ui",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DATABASE_URL=",
+        "DATABASE_PATH=.data/pglite-ui",
+        "NEXT_PUBLIC_SUPABASE_URL=",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY=",
+        "npm",
+        "--prefix",
+        "web",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3102"
+      ],
+      "port": 3102
     }
   ]
 }
