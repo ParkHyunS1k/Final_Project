@@ -43,6 +43,8 @@ async function fire(sqls) {
  * - exec(sql): 매개변수 없는 여러 문장
  */
 export async function setupTestDb() {
+  // 셸에 Gmail 설정(EMAIL_*)이 있어도 테스트가 실제 SMTP에 접속하지 않게 지운다.
+  for (const k of ['EMAIL_PROVIDER', 'EMAIL_FROM', 'EMAIL_API_KEY']) delete process.env[k];
   const real = openPglite();
   await migrate(real);
   const wrap = (sql, inner) => ({

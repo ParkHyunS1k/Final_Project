@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16, Postgres(PGlite 테스트), drizzle-kit, nodemailer, node:test + esbuild 번들 테스트.
 
-**Spec:** `docs/superpowers/specs/2026-10-04-invite-email-design.md`
+**Spec:** `docs/superpowers/specs/2026-10-04-invite-email-design.md` (구현 뒤 리뷰로 바뀐 점은 설계 9절이 우선한다: 수신자 1명, 사용자당 하루 20개, Vercel 주소, 15초 제한)
 
 ## Global Constraints
 
