@@ -104,8 +104,8 @@ void test('기준 마이그레이션: 두 번 실행해도 한 번만, 모든 �
   const tables = await db
     .prepare("SELECT c.relname AS name, c.relrowsecurity AS rls FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r'")
     .all<{ name: string; rls: boolean }>();
-  // 앱 테이블 18개 + _migrations. _migrations도 anon REST로 읽고 쓰지 못하게 RLS를 켠다.
-  assert.equal(tables.results.length, 19);
+  // 앱 테이블 19개(초대 한도 invite_quota 포함) + _migrations. _migrations도 anon REST로 읽고 쓰지 못하게 RLS를 켠다.
+  assert.equal(tables.results.length, 20);
   assert.deepEqual(tables.results.filter((t) => !t.rls).map((t) => t.name), []);
   assert.ok(!tables.results.some((t) => t.name === 'sprint_proposals'));
 });

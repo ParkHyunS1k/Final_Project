@@ -344,3 +344,14 @@ export const aiChangeApplications = pgTable(
   },
   (t) => [index('idx_ai_applications_project').on(t.projectId, t.approvedAt)],
 ).enableRLS();
+
+// 사용자별·날짜(KST)별 초대 생성 수. 한 문장의 upsert로 늘려 동시 요청에도 하루 한도를 넘지 않게 한다.
+export const inviteQuota = pgTable(
+  'invite_quota',
+  {
+    userId: text('user_id').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    n: integer('n').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })],
+).enableRLS();

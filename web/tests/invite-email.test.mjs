@@ -321,3 +321,24 @@ test('[I4] 전송기가 응답하지 않으면 제한 시간 뒤 failed로 끝�
     api.useInviteSender(undefined);
   }
 });
+
+test('[R1-I1] 하루 한도 직전에 서로 다른 프로젝트로 동시에 초대하면 한 건만 만들어지고 나머지는 429', async () => {
+  api.useInviteSender(null);
+  try {
+    const a = await project('lead10');
+    const b = await project('lead10');
+    for (let i = 0; i < 19; i++) {
+      const r = await invite('lead10', a, `q${i}@test.local`);
+      assert.equal(r.status, 201, await r.clone().text());
+      const { id } = await r.json();
+      const s = await read('lead10', a);
+      await projectRequest('lead10', { action: 'revoke', projectId: a, revision: s.sprint.revision, inviteId: id });
+    }
+    const both = await Promise.all([invite('lead10', a, 'last-a@test.local'), invite('lead10', b, 'last-b@test.local')]);
+    assert.deepEqual(both.map((r) => r.status).sort(), [201, 429]);
+    const n = await one("SELECT count(*)::int AS n FROM project_invites WHERE created_by='lead10'");
+    assert.equal(n.n, 20);
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});

@@ -15,6 +15,13 @@
       "when": 1791101147939,
       "tag": "0001_invite_email",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791128088664,
+      "tag": "0002_invite_quota",
+      "breakpoints": true
     }
   ]
 }

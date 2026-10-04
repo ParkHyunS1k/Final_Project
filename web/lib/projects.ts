@@ -337,16 +337,19 @@ export async function createInvite(
   )
     throw new Error('팀원의 로그인 이메일을 입력해주세요.');
   email = email.trim().toLowerCase();
-  // 공개 주소라 누구나 프로젝트를 만들 수 있다. 우리 Gmail이 스팸 발송에 쓰이지 않게 사용자당 하루 초대 수를 묶는다.
-  const recent = await database()
-    .prepare("SELECT count(*) AS n FROM project_invites WHERE created_by=? AND created_at > now() - interval '1 day'")
-    .bind(user.id)
-    .first<{ n: number }>();
-  if ((recent?.n ?? 0) >= DAILY_INVITE_LIMIT)
-    throw new AccessError(`초대는 하루 ${DAILY_INVITE_LIMIT}개까지 만들 수 있습니다.`, 429);
   const s = await readSprint(project);
   if (!s) throw new AccessError();
   if (s.revision !== revision) throw new Conflict();
+  // 공개 주소라 누구나 프로젝트를 만들 수 있다. 우리 Gmail이 스팸 발송에 쓰이지 않게 사용자당 하루(KST) 초대 수를 묶는다.
+  // 한 문장의 upsert는 행 잠금으로 동시 요청을 줄 세운다. 다른 검사를 다 통과한 뒤에 쓴다(저장이 충돌로 실패해도 한 칸은 쓴 것으로 남는다).
+  const quota = await database()
+    .prepare(
+      "INSERT INTO invite_quota(user_id,day,n) VALUES(?,(now() AT TIME ZONE 'Asia/Seoul')::date,1) ON CONFLICT (user_id,day) DO UPDATE SET n=invite_quota.n+1 WHERE invite_quota.n < ? RETURNING n",
+    )
+    .bind(user.id, DAILY_INVITE_LIMIT)
+    .first();
+  if (!quota)
+    throw new AccessError(`초대는 하루 ${DAILY_INVITE_LIMIT}개까지 만들 수 있습니다(한국 시간 0시에 초기화).`, 429);
   const token = crypto.randomUUID() + crypto.randomUUID();
   const hash = await tokenHash(token);
   const id = crypto.randomUUID();
@@ -373,10 +376,6 @@ export async function createInvite(
         ),
     ],
     ['draft', 'active'],
-    {
-      sql: "(SELECT count(*) FROM project_invites WHERE created_by=? AND created_at > now() - interval '1 day') < ?",
-      args: [user.id, DAILY_INVITE_LIMIT],
-    },
   );
   const mail = await deliverInvite({
     inviteId: id,

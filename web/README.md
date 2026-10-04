@@ -49,7 +49,7 @@ npm run build
 
 `GET /api/projects`: 내 프로젝트 목록. `?invite=token`은 로그인 이메일을 검사한 뒤 초대 프로젝트의 목표·결과물·기준 조회.
 
-`POST /api/projects`: create(title,goal,startDate,duration,deliverables:줄바꿈 문자열,completionCriteria,agreed), invite(projectId,revision,email), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능. 이메일 발송 없음.
+`POST /api/projects`: create(title,goal,startDate,duration,deliverables:줄바꿈 문자열,completionCriteria,agreed), invite(projectId,revision,email: 그 주소로 초대 링크 메일 발송, 응답 email=sent|failed|off, 사용자당 하루 20개), resend(projectId,revision,inviteId: 새 링크 발급·발송, 이전 링크 무효, 초대당 3회·1분 간격), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능. 이메일 발송 없음.
 
 `GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. 응답은 캐시하지 않는다.
 
