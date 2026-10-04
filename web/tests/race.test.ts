@@ -9,6 +9,7 @@ import {
   viewFrom,
   laneTask,
   reportChoices,
+  dueLabel,
   type RaceTask,
 } from '../lib/race.ts';
 
@@ -119,4 +120,10 @@ void test('reportChoices: 팀원은 자기 미완료 업무만, 팀장은 전체
   assert.equal(lead.first?.id, 1);
   const none = reportChoices(tasks, { person: 5 }, false);
   assert.deepEqual(none, { open: [], first: null });
+});
+
+void test('dueLabel: 승인된 마감은 KST 월/일 시:분, 없으면 마감 미정', () => {
+  assert.equal(dueLabel('2026-10-08T15:30:00.000Z'), '10/9 00:30 마감');
+  assert.equal(dueLabel(null), '마감 미정');
+  assert.equal(dueLabel(undefined), '마감 미정');
 });

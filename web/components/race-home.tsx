@@ -3,7 +3,7 @@ import { ArrowRight, TriangleAlert } from 'lucide-react';
 import { DeadlineCalendar } from '@/components/deadline-calendar';
 import type { ProjectMeta } from '@/components/project-workspace';
 import { useServerNow } from '@/hooks/use-server-now';
-import { laneTask, sprintPulse } from '@/lib/race';
+import { dueLabel, laneTask, sprintPulse } from '@/lib/race';
 import type { Plan, Task as ServerTask } from '@/lib/sprint';
 import type { Lifecycle } from '@/lib/sprint-policy';
 import type { Wire } from '@/lib/wire';
@@ -122,6 +122,7 @@ export function RaceHome({
                   </b>
                   <span className="race-lane-task">
                     {lane ? lane.title : '진행 중인 업무 없음'}
+                    {lane && <small className="race-due">{dueLabel(lane.dueAt)}</small>}
                     {lane && pulse.bottlenecks.includes(lane.id) && (
                       <span className="race-tag">병목</span>
                     )}

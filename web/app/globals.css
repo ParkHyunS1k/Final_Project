@@ -33,10 +33,10 @@
   --gray-100: #efefec;
   --gray-200: #e2e2de;
   --gray-300: #d0d0cb;
-  --gray-400: #a8a8a1;
-  --gray-500: #8a8a84;
-  --gray-600: #6f6f69;
-  --gray-700: #55554f;
+  --gray-400: #6f6f69;
+  --gray-500: #62625c;
+  --gray-600: #55554f;
+  --gray-700: #45453f;
   --gray-800: #2e2e2b;
   --gray-900: #121212;
   --heat-50: #fff3ec;
@@ -75,10 +75,10 @@
   --gray-100: #1c1c1f;
   --gray-200: #26262a;
   --gray-300: #34343a;
-  --gray-400: #55534e;
-  --gray-500: #77746d;
-  --gray-600: #9a978f;
-  --gray-700: #bdbab3;
+  --gray-400: #8a877f;
+  --gray-500: #9a978f;
+  --gray-600: #b0ada5;
+  --gray-700: #c8c5be;
   --gray-800: #dedbd4;
   --gray-900: #f4f2ee;
   --heat-50: #2b1a12;
@@ -216,7 +216,9 @@ a {
   border-radius: 50%;
   font-size: 14px;
   font-weight: 700;
-  background: var(--gray-200);
+  /* 담당자 색(밝은 파스텔)은 테마와 무관하므로 글자도 진하게 고정한다. */
+  background: #e2e2de;
+  color: var(--heat-ink);
   flex-shrink: 0;
 }
 .avatar.small {
@@ -828,7 +830,6 @@ hr {
 .criteria-check.ok {
   background: var(--heat-500);
   color: var(--heat-ink);
-  color: var(--gray-800);
 }
 .refund-criteria .btn {
   margin: 26px 0 12px;
@@ -2342,4 +2343,10 @@ textarea {
   60% {
     transform: translateX(-3px);
   }
+}
+.race-lane .race-due {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--gray-500);
+  white-space: nowrap;
 }

@@ -1,5 +1,5 @@
 // 작업 화면 레이스 표시용 순수 계산. 서버가 준 값(asOf·plan)만 읽고 저장하지 않는다.
-import type { Plan } from './sprint.ts';
+import { seoulTime, type Plan } from './sprint.ts';
 
 const DAY_MS = 86400000;
 const HOUR_S = 3600;
@@ -91,4 +91,11 @@ export function reportChoices<T extends RaceTask>(
 ) {
   const open = tasks.filter((t) => !t.done && (owner || t.person === me.person));
   return { open, first: laneTask(open, me.person) ?? open[0] ?? null };
+}
+
+/** 팀 레인에 붙이는 승인된 업무 마감(KST). 예상 완료가 아니라 팀장이 정한 마감이다. */
+export function dueLabel(dueAt: string | null | undefined) {
+  if (!dueAt) return '마감 미정';
+  const [, month, day] = seoulTime(dueAt).slice(0, 10).split('-');
+  return `${Number(month)}/${Number(day)} ${seoulTime(dueAt).slice(11)} 마감`;
 }

@@ -617,31 +617,35 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                 </div>
               </section>
             )}
-            {tab === 'tasks' && plan && (
+            {tab === 'tasks' && (
               <section>
                 <div className="tasks-bar">
-                  <span
-                    className={`status-dot ${plan.feasible ? 'status-done' : 'status-in_progress'}`}
-                  />
-                  <span className="tasks-health">
-                    {!tasks.length
-                      ? '업무와 담당자를 등록해 계획을 시작하세요.'
-                      : plan.feasible
-                        ? `마감 내 배치 가능 · 남은 ${plan.needed}h / 예산 ${Math.round(plan.available * 10) / 10}h`
-                        : `${plan.unscheduled.length}개 업무 배치 불가 · 담당 재배정과 선행 작업을 확인해주세요.`}
-                  </span>
-                  <button
-                    className="btn toggle-btn"
-                    aria-pressed={mine}
-                    onClick={() => setMine(!mine)}
-                  >
-                    내 것만
-                  </button>
+                  {plan && (
+                    <>
+                      <span
+                        className={`status-dot ${plan.feasible ? 'status-done' : 'status-in_progress'}`}
+                      />
+                      <span className="tasks-health">
+                        {!tasks.length
+                          ? '업무와 담당자를 등록해 계획을 시작하세요.'
+                          : plan.feasible
+                            ? `마감 내 배치 가능 · 남은 ${plan.needed}h / 예산 ${Math.round(plan.available * 10) / 10}h`
+                            : `${plan.unscheduled.length}개 업무 배치 불가 · 담당 재배정과 선행 작업을 확인해주세요.`}
+                      </span>
+                      <button
+                        className="btn toggle-btn"
+                        aria-pressed={mine}
+                        onClick={() => setMine(!mine)}
+                      >
+                        내 것만
+                      </button>
+                    </>
+                  )}
                   <button className="btn" onClick={() => setReviewing(!reviewing)}>
                     {reviewing ? '업무 목록으로' : '회의록으로 변경안 만들기'}
                   </button>
                 </div>
-                {reviewing ? (
+                {reviewing || !plan ? (
                 <ChangeReview
                   projectId={projectId}
                   revision={s.revision}
@@ -699,7 +703,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                         <span
                           className="avatar"
                           style={{
-                            background: people[m.person]?.color ?? 'var(--gray-200)',
+                            background: people[m.person]?.color ?? '#e2e2de',
                           }}
                         >
                           {m.display_name.slice(0, 1)}
