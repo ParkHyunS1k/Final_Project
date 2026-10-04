@@ -11,24 +11,24 @@ const workspaceSource = readFileSync(
   'utf8',
 );
 
-test('page.tsx가 meetingSuggestions를 import하고 today 탭 블록에서 사용한다', () => {
+test('page.tsx가 meetingSuggestions를 import하고 home 블록에서 사용한다', () => {
   assert.match(
     pageSource,
     /import \{ meetingSuggestions \} from '@\/lib\/meeting-suggestions';/,
   );
-  const todayBlockStart = pageSource.indexOf("tab === 'today'");
-  assert.ok(todayBlockStart !== -1, "tab === 'today' 블록을 찾지 못했다");
+  const todayBlockStart = pageSource.indexOf("tab === 'home'");
+  assert.ok(todayBlockStart !== -1, "tab === 'home' 블록을 찾지 못했다");
   const usageIndex = pageSource.indexOf('meetingSuggestions(');
   assert.ok(usageIndex !== -1, 'meetingSuggestions 호출을 찾지 못했다');
 });
 
-test('workspaceViews 탭 목록은 회의 제안 패널 추가로 바뀌지 않는다', () => {
+test('workspaceViews 메뉴는 홈·업무·프로젝트 3개다', () => {
   const match = workspaceSource.match(
     /export const workspaceViews = (\[[\s\S]*?\n\];)/,
   );
   assert.ok(match, 'workspaceViews 정의를 찾지 못했다');
   const ids = [...match[1].matchAll(/id: '([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(ids, ['plan', 'mine', 'today', 'docs', 'team', 'ai', 'result']);
+  assert.deepEqual(ids, ['home', 'tasks', 'project']);
 });
 
 test('page.tsx 소스에 사람이 읽는 담당자 표시용 숫자 fallback 패턴(담당자 ${...})이 남아 있지 않다', () => {

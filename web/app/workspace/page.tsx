@@ -10,8 +10,10 @@ import {
   ProjectDetails,
   TeamInvites,
   type ProjectMeta,
+  type WorkspaceNav,
   workspaceViews,
 } from '@/components/project-workspace';
+import type { View } from '@/lib/race';
 import {
   ArrowRight,
   Check,
@@ -115,13 +117,11 @@ type State = ProjectMeta & {
     created_at: string;
   }[];
 };
-type Modal = 'checkin' | 'stepBack' | 'evidence' | 'invite' | null;
+type Modal = 'checkin' | 'stepBack' | 'evidence' | null;
 export default function Home() {
   return (
     <ProjectWorkspace>
-      {(id, view, setView) => (
-        <Dashboard key={id} projectId={id} tab={view} setTab={setView} />
-      )}
+      {(id, nav) => <Dashboard key={id} projectId={id} nav={nav} />}
     </ProjectWorkspace>
   );
 }
@@ -144,15 +144,9 @@ const PHASE: Record<Lifecycle, { label: string; note: string }> = {
     note: '마감이 지나 모든 변경이 잠겼습니다. 열람과 내보내기는 계속할 수 있습니다.',
   },
 };
-function Dashboard({
-  projectId,
-  tab,
-  setTab,
-}: {
-  projectId: string;
-  tab: string;
-  setTab: (view: string) => void;
-}) {
+function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav }) {
+  const { view: tab, setView: setTab, mine, setMine } = nav;
+  const [reviewing, setReviewing] = useState(false);
   const [needsLogin, setNeedsLogin] = useState(false);
   const [editingRevision, setEditingRevision] = useState(0);
   const [state, setState] = useState<State | null>(null);
@@ -244,7 +238,7 @@ function Dashboard({
             async execute(input: { view: string }) {
               if (!workspaceViews.some((v) => v.id === input.view))
                 throw new Error('Invalid view');
-              setTab(input.view);
+              setTab(input.view as View);
               return { requestedView: input.view };
             },
           },
@@ -422,8 +416,7 @@ function Dashboard({
                       : `시작하면 그 시각부터 ${state?.policy?.durationDays ?? 7}일`}
                 </p>
                 <h1>
-                  {workspaceViews.find((v) => v.id === tab)?.label ??
-                    '프로젝트 업무'}
+                  {workspaceViews.find((v) => v.id === tab)?.label ?? '홈'}
                 </h1>
               </div>
               <div className="work-heading-actions">
@@ -442,11 +435,6 @@ function Dashboard({
                 >
                   <RefreshCw size={17} />
                 </button>
-                {isOwner && (
-                  <button className="btn" onClick={() => setDialog('invite')}>
-                    {writable ? '초대하기' : '초대 기록'}
-                  </button>
-                )}
                 <button className="btn" disabled={busy} onClick={exportProject}>
                   내보내기
                 </button>
@@ -509,7 +497,7 @@ function Dashboard({
                 </button>
               </section>
             )}
-            {lifecycle === 'draft' && state!.readiness && (
+            {tab === 'home' && lifecycle === 'draft' && state!.readiness && (
               <section className="project-panel">
                 <span className="eyebrow">시작 전 확인</span>
                 <h2>시작 준비</h2>
@@ -545,8 +533,7 @@ function Dashboard({
                 )}
               </section>
             )}
-            {tab === 'docs' && <ProjectDetails state={state!} />}
-            {tab === 'today' && (
+            {tab === 'home' && (
               <section className="work-section">
                 <DeadlineCalendar
                   startedAt={state!.policy?.startedAt ?? null}
@@ -554,7 +541,7 @@ function Dashboard({
                   asOf={state!.asOf}
                   tasks={tasks}
                   people={people}
-                  onPlan={() => setTab('plan')}
+                  onPlan={() => setTab('tasks')}
                 />
                 <div className="content-grid">
                   <section>
@@ -612,7 +599,7 @@ function Dashboard({
                           전원 하루 {plan?.dailyHours ?? 8}시간 공통 가정
                         </span>
                       </div>
-                      <button className="text-link" onClick={() => setTab('plan')}>
+                      <button className="text-link" onClick={() => setTab('tasks')}>
                         실행 계획 보기 <ArrowRight size={16} />
                       </button>
                     </div>
@@ -657,8 +644,8 @@ function Dashboard({
                             </div>
                           ))}
                           <p className="tiny muted">
-                            회의 후 회의록을 변경안 검토에 붙여넣으면 업무
-                            변경안을 만들 수 있습니다.
+                            회의 후 업무 메뉴의 &apos;회의록으로 변경안 만들기&apos;에
+                            회의록을 붙여넣으면 업무 변경안을 만들 수 있습니다.
                           </p>
                         </>
                       )}
@@ -747,43 +734,64 @@ function Dashboard({
                 </div>
               </section>
             )}
-            {(tab === 'plan' || tab === 'mine') && plan && (
+            {tab === 'tasks' && plan && (
               <section>
-                <div className="work-health">
+                <div className="tasks-bar">
                   <span
                     className={`status-dot ${plan.feasible ? 'status-done' : 'status-in_progress'}`}
                   />
-                  {!tasks.length
-                    ? '업무와 담당자를 등록해 계획을 시작하세요.'
-                    : plan.feasible
-                      ? `마감 내 배치 가능 · 남은 ${plan.needed}h / 예산 ${Math.round(plan.available * 10) / 10}h`
-                      : `${plan.unscheduled.length}개 업무 배치 불가 · 담당 재배정과 선행 작업을 확인해주세요.`}
-                  <button onClick={() => setTab('today')}>
-                    스프린트 현황 →
+                  <span className="tasks-health">
+                    {!tasks.length
+                      ? '업무와 담당자를 등록해 계획을 시작하세요.'
+                      : plan.feasible
+                        ? `마감 내 배치 가능 · 남은 ${plan.needed}h / 예산 ${Math.round(plan.available * 10) / 10}h`
+                        : `${plan.unscheduled.length}개 업무 배치 불가 · 담당 재배정과 선행 작업을 확인해주세요.`}
+                  </span>
+                  <button
+                    className="btn toggle-btn"
+                    aria-pressed={mine}
+                    onClick={() => setMine(!mine)}
+                  >
+                    내 것만
+                  </button>
+                  <button className="btn" onClick={() => setReviewing(!reviewing)}>
+                    {reviewing ? '업무 목록으로' : '회의록으로 변경안 만들기'}
                   </button>
                 </div>
-                <TaskCollection
-                  sprint={s}
-                  plan={plan}
-                  asOf={state!.asOf}
-                  me={state!.me}
+                {reviewing ? (
+                <ChangeReview
+                  projectId={projectId}
+                  revision={s.revision}
+                  tasks={s.tasks}
                   members={state!.members}
-                  checkins={state!.checkins}
-                  busy={busy || !writable || !agreedToGoal}
-                  error={error}
-                  mine={tab === 'mine'}
-                  mutate={mutate}
-                  onAdd={() => {
-                    setError('');
-                    setEditingRevision(s.revision);
-                    setEditingTask(null);
-                  }}
-                  onEdit={(t) => {
-                    setError('');
-                    setEditingRevision(s.revision);
-                    setEditingTask(t);
-                  }}
+                  me={state!.me}
+                  writable={writable && agreedToGoal && !state!.me.leftAt}
+                  onApplied={(next) => setState(next as State)}
                 />
+                ) : (
+                  <TaskCollection
+                    sprint={s}
+                    plan={plan}
+                    asOf={state!.asOf}
+                    me={state!.me}
+                    members={state!.members}
+                    checkins={state!.checkins}
+                    busy={busy || !writable || !agreedToGoal}
+                    error={error}
+                    mine={mine}
+                    mutate={mutate}
+                    onAdd={() => {
+                      setError('');
+                      setEditingRevision(s.revision);
+                      setEditingTask(null);
+                    }}
+                    onEdit={(t) => {
+                      setError('');
+                      setEditingRevision(s.revision);
+                      setEditingTask(t);
+                    }}
+                  />
+                )}
                 <details className="workspace-history">
                   <summary>변경 기록</summary>
                   {state!.events.map((e) => (
@@ -795,224 +803,198 @@ function Dashboard({
                 </details>
               </section>
             )}
-            {tab === 'team' && (
-              <section className="work-section">
-                <div className="section-heading">
-                  <h2>공통 공수 계산</h2>
-                  <span className="pill">
-                    전원 하루 {plan?.dailyHours ?? 8}시간 가정
-                  </span>
-                </div>
-                <p className="hint">
-                  개인별 가용시간 입력은 없습니다. 하루{' '}
-                  {plan?.dailyHours ?? 8}시간은 남은 기간과 남은 공수를 비교하기
-                  위한 내부 계산 가정이며, 실제 근무 시간대나 출퇴근 시각을
-                  뜻하지 않습니다.
-                </p>
-                <div className="people-grid">
-                  {(plan?.perPerson ?? []).map((p) => (
-                    <div className="person-card" key={p.person}>
-                      <span
-                        className="avatar large"
-                        style={{
-                          background: people[p.person]?.color ?? 'var(--gray-200)',
-                        }}
-                      >
-                        {people[p.person]?.initial ?? '?'}
-                      </span>
-                      <h3>{people[p.person]?.name ?? '팀원'}</h3>
-                      <p>{people[p.person]?.role ?? '팀원'}</p>
-                      <div className="person-hours">
-                        {Math.round(p.available * 10) / 10}
-                        <small>시간 남은 예산</small>
-                      </div>
-                      <p className="tiny muted">
-                        필요 {p.needed}h ·{' '}
-                        {p.finish
-                          ? `예상 종료 ${seoulTime(p.finish)} KST`
-                          : '배정된 업무 없음'}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="section-heading">
-                  <h2>팀 상태</h2>
-                </div>
-                <div className="team-card">
-                  {state!.members.map((m) => (
-                    <div className="member" key={m.person}>
-                      <span
-                        className="avatar"
-                        style={{
-                          background: people[m.person]?.color ?? 'var(--gray-200)',
-                        }}
-                      >
-                        {m.display_name.slice(0, 1)}
-                      </span>
-                      <div>
-                        <b>{m.display_name}</b>
-                        <span>
-                          {m.role === 'owner' ? '팀장' : '팀원'} ·{' '}
-                          {m.left_at
-                            ? '참여 중단 보고'
-                            : m.agreed_goal_version ===
-                                state!.policy?.goalVersion
-                              ? `목표 v${m.agreed_goal_version} 동의`
-                              : '재동의 필요'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="team-note">
-                    참여 중단은 당사자가 보고하고, 남은 팀 기준의 변경안은
-                    팀장이 검토합니다. 자동 재배정은 하지 않습니다.
+            {tab === 'project' && (
+              <section className="work-section project-stack">
+                <ProjectDetails state={state!} />
+                <section className="project-block">
+                  <div className="section-heading">
+                    <h2>팀원 · {state!.members.length}/4명</h2>
                   </div>
-                </div>
-                {writable && agreedToGoal && !state!.me.leftAt && (
-                  <button
-                    className="btn"
-                    disabled={busy}
-                    onClick={() => {
-                      setNote('');
-                      setDialog('stepBack');
-                    }}
-                  >
-                    참여 중단 보고
-                  </button>
-                )}
-              </section>
-            )}
-            {tab === 'ai' && (
-              <ChangeReview
-                projectId={projectId}
-                revision={s.revision}
-                tasks={s.tasks}
-                members={state!.members}
-                me={state!.me}
-                writable={writable && agreedToGoal && !state!.me.leftAt}
-                onApplied={(next) => setState(next as State)}
-              />
-            )}
-            {tab === 'result' && (
-              <section className="work-section">
-                <div className="refund-grid">
-                  <div className="refund-main">
-                    <ShieldCheck size={30} />
-                    <h2>
-                      완주는 처음 약속한 결과물로,
-                      <br />
-                      보고 횟수로 판정하지 않아요.
-                    </h2>
-                    <p>
-                      체크리스트를 모두 끝냈는지와 합의한 결과물을 달성했는지는
-                      다릅니다. 업무 {done}/{tasks.length}개가 완료되어도 필수
-                      결과물이 미확인이면 완주할 수 없습니다.
-                    </p>
-                    <div className="receipt">
-                      <div>
-                        <span>이용료 예시</span>
-                        <b>100,000원</b>
-                      </div>
-                      <div>
-                        <span>보증금 예시</span>
-                        <b>200,000원</b>
-                      </div>
-                      <div className="receipt-total">
-                        <span>실제 결제·환급</span>
-                        <b>연결 안 됨</b>
-                      </div>
-                    </div>
-                    <p>
-                      결과물 근거 확인과 금전 환급 판정은 별개입니다. AI가
-                      증빙의 진실성을 자동으로 보증하지 않습니다.
-                    </p>
-                  </div>
-                  <div className="refund-criteria">
-                    <span className="eyebrow">완주 기준</span>
-                    <h3>합의한 결과물</h3>
-                    {state!.deliverables.map((d) => (
-                      <div className="criterion" key={d.deliverableId}>
+                  <div className="team-card">
+                    {state!.members.map((m) => (
+                      <div className="member" key={m.person}>
                         <span
-                          className={
-                            d.confirmed ? 'criteria-check ok' : 'criteria-check'
-                          }
+                          className="avatar"
+                          style={{
+                            background: people[m.person]?.color ?? 'var(--gray-200)',
+                          }}
                         >
-                          {d.confirmed ? (
-                            <Check size={16} />
-                          ) : (
-                            <Clock3 size={16} />
-                          )}
+                          {m.display_name.slice(0, 1)}
                         </span>
                         <div>
-                          <b>{d.title}</b>
-                          <p>{d.evidence || '근거가 아직 없습니다.'}</p>
-                          {writable && agreedToGoal && (
-                            <>
-                              <button
-                                className="text-link"
-                                disabled={busy}
-                                onClick={() => {
-                                  setEvidenceId(d.deliverableId);
-                                  setEvidence(d.evidence);
-                                  setDialog('evidence');
-                                }}
-                              >
-                                근거 기록·수정
-                              </button>
-                              {isOwner && (
-                                <button
-                                  className="text-link"
-                                  disabled={busy || !d.evidence}
-                                  onClick={() =>
-                                    mutate(
-                                      'deliverableConfirm',
-                                      {
-                                        deliverableId: d.deliverableId,
-                                        confirmed: !d.confirmed,
-                                      },
-                                      d.confirmed
-                                        ? '확인을 취소했습니다.'
-                                        : '팀장 확인을 저장했습니다.',
-                                    )
-                                  }
-                                >
-                                  {d.confirmed
-                                    ? '확인 취소'
-                                    : '팀장이 직접 확인'}
-                                </button>
-                              )}
-                            </>
-                          )}
+                          <b>{m.display_name}</b>
+                          <span>
+                            {m.role === 'owner' ? '팀장' : '팀원'} ·{' '}
+                            {m.left_at
+                              ? '참여 중단 보고'
+                              : m.agreed_goal_version ===
+                                  state!.policy?.goalVersion
+                                ? `목표 v${m.agreed_goal_version} 동의`
+                                : '재동의 필요'}
+                          </span>
                         </div>
                       </div>
                     ))}
-                    <button
-                      className="btn primary wide"
-                      disabled={
-                        busy ||
-                        !isOwner ||
-                        lifecycle !== 'active' ||
-                        !state!.completion.ready
-                      }
-                      onClick={() =>
-                        mutate(
-                          'finish',
-                          {},
-                          '완주 확인을 저장했습니다. 실제 환급은 발생하지 않습니다.',
-                        )
-                      }
-                    >
-                      {lifecycle === 'completed'
-                        ? '완주 기록 저장됨'
-                        : '기한 내 완주 확인'}
-                    </button>
-                    <p className="tiny muted">
-                      확인 자료는 코드 저장소와 실행 방법, 핵심 기능 데모 또는
-                      영상, 팀원별 기여 내용입니다. 배포 URL은 프로젝트에서 별도
-                      합의한 경우에만 필요합니다.
-                    </p>
+                    <div className="team-note">
+                      참여 중단은 당사자가 보고하고, 남은 팀 기준의 변경안은
+                      팀장이 검토합니다. 자동 재배정은 하지 않습니다.
+                    </div>
                   </div>
-                </div>
+                  <TeamInvites
+                    state={state!}
+                    refresh={load}
+                    link={inviteLink}
+                    setLink={setInviteLink}
+                    writable={writable}
+                  />
+                </section>
+                <section className="project-block">
+                  <div className="section-heading">
+                    <h2>
+                      완주 확인 · 결과물 {state!.completion.confirmed}/{state!.completion.total}
+                    </h2>
+                  </div>
+                  <div className="refund-grid">
+                    <div className="refund-main">
+                      <ShieldCheck size={30} />
+                      <h2>
+                        완주는 처음 약속한 결과물로,
+                        <br />
+                        보고 횟수로 판정하지 않아요.
+                      </h2>
+                      <p>
+                        체크리스트를 모두 끝냈는지와 합의한 결과물을 달성했는지는
+                        다릅니다. 업무 {done}/{tasks.length}개가 완료되어도 필수
+                        결과물이 미확인이면 완주할 수 없습니다.
+                      </p>
+                      <div className="receipt">
+                        <div>
+                          <span>이용료 예시</span>
+                          <b>100,000원</b>
+                        </div>
+                        <div>
+                          <span>보증금 예시</span>
+                          <b>200,000원</b>
+                        </div>
+                        <div className="receipt-total">
+                          <span>실제 결제·환급</span>
+                          <b>연결 안 됨</b>
+                        </div>
+                      </div>
+                      <p>
+                        결과물 근거 확인과 금전 환급 판정은 별개입니다. AI가
+                        증빙의 진실성을 자동으로 보증하지 않습니다.
+                      </p>
+                    </div>
+                    <div className="refund-criteria">
+                      <span className="eyebrow">완주 기준</span>
+                      <h3>합의한 결과물</h3>
+                      {state!.deliverables.map((d) => (
+                        <div className="criterion" key={d.deliverableId}>
+                          <span
+                            className={
+                              d.confirmed ? 'criteria-check ok' : 'criteria-check'
+                            }
+                          >
+                            {d.confirmed ? (
+                              <Check size={16} />
+                            ) : (
+                              <Clock3 size={16} />
+                            )}
+                          </span>
+                          <div>
+                            <b>{d.title}</b>
+                            <p>{d.evidence || '근거가 아직 없습니다.'}</p>
+                            {writable && agreedToGoal && (
+                              <>
+                                <button
+                                  className="text-link"
+                                  disabled={busy}
+                                  onClick={() => {
+                                    setEvidenceId(d.deliverableId);
+                                    setEvidence(d.evidence);
+                                    setDialog('evidence');
+                                  }}
+                                >
+                                  근거 기록·수정
+                                </button>
+                                {isOwner && (
+                                  <button
+                                    className="text-link"
+                                    disabled={busy || !d.evidence}
+                                    onClick={() =>
+                                      mutate(
+                                        'deliverableConfirm',
+                                        {
+                                          deliverableId: d.deliverableId,
+                                          confirmed: !d.confirmed,
+                                        },
+                                        d.confirmed
+                                          ? '확인을 취소했습니다.'
+                                          : '팀장 확인을 저장했습니다.',
+                                      )
+                                    }
+                                  >
+                                    {d.confirmed
+                                      ? '확인 취소'
+                                      : '팀장이 직접 확인'}
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        className="btn primary wide"
+                        disabled={
+                          busy ||
+                          !isOwner ||
+                          lifecycle !== 'active' ||
+                          !state!.completion.ready
+                        }
+                        onClick={() =>
+                          mutate(
+                            'finish',
+                            {},
+                            '완주 확인을 저장했습니다. 실제 환급은 발생하지 않습니다.',
+                          )
+                        }
+                      >
+                        {lifecycle === 'completed'
+                          ? '완주 기록 저장됨'
+                          : '기한 내 완주 확인'}
+                      </button>
+                      <p className="tiny muted">
+                        확인 자료는 코드 저장소와 실행 방법, 핵심 기능 데모 또는
+                        영상, 팀원별 기여 내용입니다. 배포 URL은 프로젝트에서 별도
+                        합의한 경우에만 필요합니다.
+                      </p>
+                    </div>
+                  </div>
+                </section>
+                <section className="project-block">
+                  <div className="section-heading">
+                    <h2>기타</h2>
+                  </div>
+                  <div className="project-actions">
+                    <button className="btn" disabled={busy} onClick={exportProject}>
+                      내보내기
+                    </button>
+                    {writable && agreedToGoal && !state!.me.leftAt && (
+                      <button
+                        className="btn"
+                        disabled={busy}
+                        onClick={() => {
+                          setNote('');
+                          setDialog('stepBack');
+                        }}
+                      >
+                        참여 중단 보고
+                      </button>
+                    )}
+                  </div>
+                </section>
               </section>
             )}
           </>
@@ -1059,18 +1041,14 @@ function Dashboard({
               ? '지금 남은 일을 알려주세요.'
               : dialog === 'stepBack'
                 ? '참여 중단을 팀에 알립니다.'
-                : dialog === 'invite'
-                  ? `팀원 초대 · ${state?.members.length ?? 0}/4명`
-                  : '결과물 근거 기록'}
+                : '결과물 근거 기록'}
           </DialogTitle>
           <DialogDescription>
             {dialog === 'checkin'
               ? '막힌 점과 남은 공수를 저장하면 예상 종료를 다시 계산합니다. 보고가 없어도 완주 판정은 결과물 기준입니다.'
               : dialog === 'stepBack'
                 ? '보고만으로 담당이나 기한이 바뀌지 않습니다. 남은 팀 기준의 변경은 팀장이 검토합니다.'
-                : dialog === 'invite'
-                  ? '팀원의 Google 계정 이메일로 초대 링크를 만들어 그 주소로 보냅니다. 메일이 가지 않으면 링크를 직접 전달해주세요.'
-                  : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
+                : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
           </DialogDescription>
           {dialog === 'checkin' ? (
             <form
@@ -1206,14 +1184,6 @@ function Dashboard({
                 근거 저장
               </button>
             </form>
-          ) : dialog === 'invite' && state ? (
-            <TeamInvites
-              state={state}
-              refresh={load}
-              link={inviteLink}
-              setLink={setInviteLink}
-              writable={writable}
-            />
           ) : null}
           {busy && <p className="tiny muted">서버에 저장하는 중입니다…</p>}
           {error && (
