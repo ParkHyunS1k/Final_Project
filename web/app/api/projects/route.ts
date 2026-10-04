@@ -4,6 +4,7 @@ import {
   listProjects,
   createProject,
   createInvite,
+  resendInvite,
   inspectInvite,
   acceptInvite,
   member,
@@ -98,8 +99,12 @@ export async function POST(request: Request) {
       throw new Error('프로젝트와 최신 버전을 선택해주세요.');
     if (b.action === 'invite')
       return reply(
-        await createInvite(b.projectId, user, b.revision, b.email),
+        await createInvite(b.projectId, user, b.revision, b.email, new URL(request.url).origin),
         201,
+      );
+    if (b.action === 'resend')
+      return reply(
+        await resendInvite(b.projectId, user, b.revision, b.inviteId, new URL(request.url).origin),
       );
     if (b.action === 'revoke') {
       const me = await member(b.projectId, user);

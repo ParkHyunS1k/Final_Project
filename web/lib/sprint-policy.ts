@@ -90,6 +90,7 @@ export const RULES: Record<string, Rule> = {
   // 초대와 멤버십
   invite: { scope: 'owner', states: ['draft', 'active'] },
   revokeInvite: { scope: 'owner', states: ['draft', 'active'] },
+  resendInvite: { scope: 'owner', states: ['draft', 'active'] },
   acceptInvite: { scope: 'member', states: ['draft', 'active'] },
   stepBack: { scope: 'self', states: ['draft', 'active'] },
   // 업무

@@ -94,3 +94,160 @@ test('발송 결과 기록이 실패해도 보낸 결과를 돌려준다', async
     api.useInviteSender(undefined);
   }
 });
+
+function headers(user) {
+  return {
+    'oai-authenticated-user-id': user,
+    'oai-authenticated-user-email': user + '@test.local',
+    'content-type': 'application/json',
+    origin: 'https://test.local',
+  };
+}
+const projectRequest = (user, body) =>
+  api.projectsPOST(new Request('https://test.local/api/projects', { method: 'POST', headers: headers(user), body: JSON.stringify(body) }));
+const inviteGet = (user, token) =>
+  api.projectsGET(new Request('https://test.local/api/projects?invite=' + encodeURIComponent(token), { headers: headers(user) }));
+async function read(user, id) {
+  const r = await api.sprintGET(new Request('https://test.local/api/sprint?project=' + encodeURIComponent(id), { headers: headers(user) }));
+  assert.equal(r.status, 200, await r.clone().text());
+  return r.json();
+}
+const goal = {
+  action: 'create',
+  title: '포트폴리오 스프린트',
+  goal: '공고문을 실행 계획으로 바꾸는 서비스를 출시한다',
+  scope: '공고 붙여넣기, 마감일 추출, 결과 화면',
+  completionCriteria: '핵심 흐름을 실제로 실행해 보인다',
+  deliverables: '동작하는 서비스',
+  duration: 7,
+  agreed: true,
+};
+async function project(owner) {
+  const r = await projectRequest(owner, goal);
+  assert.equal(r.status, 201, await r.clone().text());
+  return (await r.json()).projectId;
+}
+async function invite(owner, projectId, email, extra = {}) {
+  const s = await read(owner, projectId);
+  return projectRequest(owner, { action: 'invite', projectId, revision: s.sprint.revision, email, ...extra });
+}
+async function resend(user, projectId, inviteId, revision) {
+  const r = revision ?? (await read(user, projectId)).sprint.revision;
+  return projectRequest(user, { action: 'resend', projectId, revision: r, inviteId });
+}
+const row = (id) => one('SELECT email_status,email_sends,email_sent_at,expires_at FROM project_invites WHERE id=?', id);
+const age = (id) => run("UPDATE project_invites SET email_sent_at=now()-interval '2 minutes' WHERE id=?", id);
+
+test('초대를 만들면 초대 이메일로 링크 메일 1통, 링크 주소는 요청 origin(본문 값 무시)', async () => {
+  const fake = fakeSender();
+  api.useInviteSender(fake.sender);
+  try {
+    const pid = await project('lead1');
+    const r = await invite('lead1', pid, 'Mate1@Test.local', { origin: 'https://evil.example' });
+    assert.equal(r.status, 201, await r.clone().text());
+    const body = await r.json();
+    assert.equal(body.email, 'sent');
+    assert.equal(fake.log.length, 1);
+    assert.equal(fake.log[0].to, 'mate1@test.local');
+    assert.ok(fake.log[0].text.includes('https://test.local/workspace?invite=' + body.token));
+    assert.doesNotMatch(fake.log[0].text, /evil\.example/);
+    const saved = await row(body.id);
+    assert.equal(saved.email_status, 'sent');
+    assert.equal(saved.email_sends, 1);
+    // 팀장 화면의 초대 목록에도 상태가 보인다.
+    const listed = (await read('lead1', pid)).invites.find((i) => i.id === body.id);
+    assert.equal(listed.email_status, 'sent');
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});
+
+test('메일이 실패하거나 설정이 없어도 초대는 201이고 링크(토큰)를 돌려준다', async () => {
+  const pid = await project('lead2');
+  api.useInviteSender(fakeSender({ status: 'failed', provider: 'fake', error: 'EAUTH' }).sender);
+  try {
+    const r = await invite('lead2', pid, 'mate2@test.local');
+    assert.equal(r.status, 201);
+    const body = await r.json();
+    assert.equal(body.email, 'failed');
+    assert.match(body.token, /^[a-f0-9-]{72}$/);
+    assert.equal((await row(body.id)).email_status, 'failed');
+    api.useInviteSender(null);
+    const off = await (await invite('lead2', pid, 'mate3@test.local')).json();
+    assert.equal(off.email, 'off');
+    assert.equal((await row(off.id)).email_status, 'off');
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});
+
+test('다시 보내기: 새 링크로 메일을 보내고 이전 링크는 막히며 만료가 새로 정해진다', async () => {
+  const fake = fakeSender();
+  api.useInviteSender(fake.sender);
+  try {
+    const pid = await project('lead3');
+    const first = await (await invite('lead3', pid, 'mate4@test.local')).json();
+    const before = await row(first.id);
+    await age(first.id);
+    const r = await resend('lead3', pid, first.id);
+    assert.equal(r.status, 200, await r.clone().text());
+    const again = await r.json();
+    assert.notEqual(again.token, first.token);
+    assert.equal(again.email, 'sent');
+    assert.equal(fake.log.length, 2);
+    assert.ok(fake.log[1].text.includes(again.token));
+    assert.equal((await inviteGet('mate4', first.token)).status, 403);
+    assert.equal((await inviteGet('mate4', again.token)).status, 200);
+    const after = await row(first.id);
+    assert.equal(after.email_sends, 2);
+    assert.ok(after.expires_at.getTime() >= before.expires_at.getTime());
+    const events = (await read('lead3', pid)).events.map((e) => e.action);
+    assert.ok(events.includes('resend_invite'));
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});
+
+test('다시 보내기 한도: 1분 안 재발송과 4번째 발송은 429, 동시 2건은 한 번만 반영', async () => {
+  api.useInviteSender(fakeSender().sender);
+  try {
+    const pid = await project('lead4');
+    const inv = await (await invite('lead4', pid, 'mate5@test.local')).json();
+    assert.equal((await resend('lead4', pid, inv.id)).status, 429);
+    await age(inv.id);
+    const s = await read('lead4', pid);
+    const both = await Promise.all([resend('lead4', pid, inv.id, s.sprint.revision), resend('lead4', pid, inv.id, s.sprint.revision)]);
+    assert.deepEqual(both.map((r) => r.status).sort(), [200, 409]);
+    assert.equal((await row(inv.id)).email_sends, 2);
+    await age(inv.id);
+    assert.equal((await resend('lead4', pid, inv.id)).status, 200);
+    await age(inv.id);
+    const fourth = await resend('lead4', pid, inv.id);
+    assert.equal(fourth.status, 429);
+    assert.match((await fourth.json()).error, /3번/);
+    assert.equal((await row(inv.id)).email_sends, 3);
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});
+
+test('다시 보내기 권한·상태: 팀원은 403, 취소된 초대는 400, 오래된 버전은 409', async () => {
+  api.useInviteSender(null);
+  try {
+    const pid = await project('lead5');
+    const s0 = await read('lead5', pid);
+    const mateInvite = await (await invite('lead5', pid, 'mate6@test.local')).json();
+    const accepted = await projectRequest('mate6', { action: 'accept', token: mateInvite.token, agreed: true, goalVersion: s0.policy.goalVersion });
+    assert.equal(accepted.status, 200, await accepted.clone().text());
+    const other = await (await invite('lead5', pid, 'mate7@test.local')).json();
+    await age(other.id);
+    assert.equal((await resend('mate6', pid, other.id)).status, 403);
+    const stale = (await read('lead5', pid)).sprint.revision - 1;
+    assert.equal((await resend('lead5', pid, other.id, stale)).status, 409);
+    const s = await read('lead5', pid);
+    assert.equal((await projectRequest('lead5', { action: 'revoke', projectId: pid, revision: s.sprint.revision, inviteId: other.id })).status, 200);
+    assert.equal((await resend('lead5', pid, other.id)).status, 400);
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});
