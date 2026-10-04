@@ -145,6 +145,8 @@ export function ChangeReview({
   const [replay, setReplay] = useState<ReplayReview | null>(null);
   const [replayBusy, setReplayBusy] = useState(false);
   const [replayError, setReplayError] = useState('');
+  // 서버가 운영 모델이 없다고 알리면(false) 붙여넣기·변경안 만들기 대신 준비 중 안내를 보여준다.
+  const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
   // 늦게 도착한 재생 응답이 더 최근 선택이나 모드 전환을 덮지 않게 한다.
   const replaySeq = useRef(0);
 
@@ -155,9 +157,10 @@ export function ChangeReview({
     setSources(list.sources);
     const history = (await call(
       '/api/change-proposals?project=' + encodeURIComponent(projectId),
-    )) as { applications: Application[]; replayCases?: ReplayListItem[] };
+    )) as { applications: Application[]; replayCases?: ReplayListItem[]; aiAvailable?: boolean };
     setApplications(history.applications);
     setReplayCases(history.replayCases ?? []);
+    setAiAvailable(history.aiAvailable === true);
   }, [projectId]);
 
   useEffect(() => {
@@ -548,6 +551,16 @@ export function ChangeReview({
             </>
           )}
         </section>
+      ) : aiAvailable === null ? (
+        // 서버가 사용 가능하다고 알리기 전(로딩·조회 실패)에는 입력을 열지 않는다.
+        <output className="empty-copy" aria-live="polite">
+          AI 변경안 사용 가능 여부를 불러오는 중입니다.
+        </output>
+      ) : aiAvailable === false ? (
+        <p className="empty-copy" role="note">
+          AI 변경안은 준비 중입니다. 계획서를 붙여넣어 업무 변경안을 받는 기능은 아직
+          열리지 않았습니다. 저장된 실제 AI 응답은 위 보기 모드에서 재생할 수 있습니다.
+        </p>
       ) : (
         <>
           <div className="content-grid">

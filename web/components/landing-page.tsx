@@ -459,7 +459,9 @@ export function LandingPage() {
         <section className="feat alarm" id="setup">
           <div className="stage">
             <div className="feat-copy">
-              <p className="kicker">출발 전 설계</p>
+              <p className="kicker">
+                출발 전 설계 <span className="soon">준비 중인 기능</span>
+              </p>
               <h2>
                 계획서를 붙여넣으면,
                 <br />
@@ -694,7 +696,7 @@ export function LandingPage() {
           <div className="pin-stage radio-stage">
             <div className="cine-copy">
               <p className="kicker">
-                회의 정리 <span className="pilot">파일럿</span>
+                회의 정리 <span className="soon">준비 중인 기능</span>
               </p>
               <p className="cine-line">
                 <span data-on="0.02">회의는 끝났습니다.</span>
@@ -733,8 +735,8 @@ export function LandingPage() {
                 </p>
               </div>
               <p className="radio-note" data-on="0.72">
-                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안합니다. 적용은 사람이
-                승인해야만 됩니다.
+                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안하는 기능을 준비하고
+                있습니다. 적용은 사람이 승인해야만 됩니다.
               </p>
             </div>
           </div>
@@ -851,7 +853,7 @@ export function LandingPage() {
       <footer className="rl-foot">
         <span>ProjectMate · 2–4인 팀의 7일 스프린트</span>
         <span>
-          화면 속 팀·업무·시간은 예시입니다. AI 변경안은 파일럿 단계입니다.
+          화면 속 팀·업무·시간은 예시입니다. AI 변경안은 준비 중입니다.
         </span>
       </footer>
     </div>

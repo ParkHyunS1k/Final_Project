@@ -31,6 +31,22 @@
         "3100"
       ],
       "port": 3100
+    },
+    {
+      "name": "projectmate-ai-off",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "AI_FAKE_MODEL=0",
+        "npm",
+        "--prefix",
+        "web",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3101"
+      ],
+      "port": 3101
     }
   ]
 }

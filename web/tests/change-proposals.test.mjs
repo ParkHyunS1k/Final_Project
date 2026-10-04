@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
+process.env.AI_FAKE_MODEL = '1';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -13,7 +14,7 @@ const outfile = join(dir, 'route.mjs');
 await build({
   stdin: {
     contents:
-      "export * from './app/api/sprint/route'; export { initialize } from './lib/sprint-store'; export { GET as projectsGET,POST as projectsPOST } from './app/api/projects/route'; export { GET as sourcesGET,POST as sourcesPOST } from './app/api/sources/route'; export { GET as proposalsGET,POST as proposalsPOST,useModel } from './app/api/change-proposals/route'; export { fakeModel,validateChanges } from './lib/ai-extraction'; export { replayReview,readReplay,replayCases } from './lib/change-review-replay';",
+      "export * from './app/api/sprint/route'; export { initialize } from './lib/sprint-store'; export { GET as projectsGET,POST as projectsPOST } from './app/api/projects/route'; export { GET as sourcesGET,POST as sourcesPOST } from './app/api/sources/route'; export { GET as proposalsGET,POST as proposalsPOST,useModel } from './app/api/change-proposals/route'; export { fakeModel,validateChanges,aiAvailable } from './lib/ai-extraction'; export { replayReview,readReplay,replayCases } from './lib/change-review-replay';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -1281,4 +1282,43 @@ test('AI 승인으로 바뀐 마감은 알림 예약을 같은 저장에서 갱�
 
 process.on('exit', () => {
   rmSync(dir, { recursive: true, force: true });
+});
+
+test('AI 변경안은 실제 모델이거나 개발에서 가짜 모델을 명시적으로 켰을 때만 쓸 수 있다', () => {
+  assert.equal(api.aiAvailable({ live: true }, {}), true);
+  assert.equal(api.aiAvailable({ live: false }, {}), false);
+  assert.equal(api.aiAvailable({ live: false }, { AI_FAKE_MODEL: '1' }), true);
+  assert.equal(api.aiAvailable({ live: false }, { AI_FAKE_MODEL: '1', NODE_ENV: 'production' }), false);
+  assert.equal(api.aiAvailable({ live: false }, { AI_FAKE_MODEL: 'true' }), false);
+});
+
+test('AI를 쓸 수 없으면 변경안 생성은 503이고 모델·DB를 건드리지 않으며 목록은 aiAvailable=false를 알린다', async () => {
+  const { projectId } = await startedTeam('aioff', 'aioffmate');
+  const sourceId = await paste('aioff', projectId, '추출 화면 연결 완료했습니다.');
+  let called = 0;
+  api.useModel({
+    name: 'spy',
+    live: false,
+    async run() {
+      called++;
+      return { changes: [] };
+    },
+  });
+  delete process.env.AI_FAKE_MODEL;
+  try {
+    const r = await proposalRequest('aioff', { action: 'create', projectId, sourceId });
+    assert.equal(r.status, 503, await r.clone().text());
+    assert.match((await r.json()).error, /준비 중/);
+    assert.equal(called, 0);
+    assert.equal((await rows('SELECT id FROM ai_change_proposals WHERE project_id=?', projectId)).length, 0);
+    const off = await proposalGet('aioff', 'project=' + encodeURIComponent(projectId));
+    assert.equal((await off.json()).aiAvailable, false);
+    // 비회원은 준비 중 여부보다 먼저 권한에서 막힌다.
+    const outsider = await proposalRequest('aioff-stranger', { action: 'create', projectId, sourceId });
+    assert.equal(outsider.status, 403);
+  } finally {
+    process.env.AI_FAKE_MODEL = '1';
+  }
+  const on = await proposalGet('aioff', 'project=' + encodeURIComponent(projectId));
+  assert.equal((await on.json()).aiAvailable, true);
 });

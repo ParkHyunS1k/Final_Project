@@ -267,6 +267,17 @@ const START_HINT = /(시작했|착수|진행 중|진행중|하는 중)/;
 const NEW_HINT = /^(?:[-*·]\s*)?(?:할 일|새 업무|추가)\s*[:：]\s*(.+)$/;
 const HOURS = /(\d+(?:\.5)?)\s*시간/;
 
+/**
+ * 변경안을 만들 수 있는가. 운영 모델이 연결됐거나, 개발에서 가짜 모델을 명시적으로 켰을 때만.
+ * 운영(NODE_ENV=production)에서는 AI_FAKE_MODEL을 무시해 가짜 결과가 사용자에게 보이지 않게 한다.
+ */
+export function aiAvailable(
+  model: Pick<Model, 'live'>,
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return model.live || (env.AI_FAKE_MODEL === '1' && env.NODE_ENV !== 'production');
+}
+
 export function fakeModel(): Model {
   return {
     name: 'fake-heuristic',

@@ -184,6 +184,8 @@ export function openPostgres(url: string): Db {
   const sql = postgres(url, {
     prepare: false,
     max: 5,
+    // 서버리스 함수가 쉬는 동안 연결을 붙잡지 않는다(초).
+    idle_timeout: 20,
     types: {
       bigint: { to: 20, from: [20], serialize: (x: number) => String(x), parse: (x: string) => Number(x) },
       date: { to: 1082, from: [1082], serialize: (x: string) => x, parse: (x: string) => x },
@@ -211,6 +213,9 @@ const shared = globalThis as typeof globalThis & { projectmateDb?: Db };
 export function database(): Db {
   if (shared.projectmateDb) return shared.projectmateDb;
   const url = process.env.DATABASE_URL;
+  // 운영(Vercel)에서는 로컬 파일 DB로 넘어가지 않는다. 파일 시스템이 읽기 전용이고 데이터가 남지 않는다.
+  if (!url && process.env.NODE_ENV === 'production')
+    throw new DatabaseError('DATABASE_URL이 설정되지 않았습니다.');
   return (shared.projectmateDb = url
     ? openPostgres(url)
     : openPglite(/*turbopackIgnore: true*/ process.env.DATABASE_PATH || '.data/pglite'));

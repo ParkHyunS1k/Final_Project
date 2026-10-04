@@ -34,7 +34,7 @@ npm run db:migrate   # 처음 한 번, 그리고 db/migrations/에 새 파일이
 npm run dev
 ```
 
-DB는 Postgres다. `DATABASE_URL`이 없으면 로컬 PGlite(`web/.data/pglite`, `DATABASE_PATH`로 바꿀 수 있다)를 쓰고, 있으면 그 Postgres(Supabase 연결 풀러)를 쓴다. PGlite 파일은 한 프로세스만 열 수 있어 개발 서버가 켜져 있으면 `db:migrate`가 안내와 함께 멈춘다. 모든 테이블은 RLS가 켜져 있고(정책 없음) 서버만 접근한다. 로그인은 Supabase Auth(Google)다. `.env.example`을 참고해 `web/.env.local`에 `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 넣고, Supabase Redirect URLs에 `http://localhost:*/**`를 등록한다. 토큰 없이 `oai-authenticated-*` 개발 헤더로 요청하는 방식은 `next dev`(`.env.development`의 `AUTH_DEV_HEADERS=1`)에서만 허용된다(`docs/dev-team-seed-notes.md`).
+DB는 Postgres다. `DATABASE_URL`이 없으면 로컬 PGlite(`web/.data/pglite`, `DATABASE_PATH`로 바꿀 수 있다)를 쓰고, 있으면 그 Postgres(Supabase 연결 풀러)를 쓴다. PGlite 파일은 한 프로세스만 열 수 있어 개발 서버가 켜져 있으면 `db:migrate`가 안내와 함께 멈춘다. 모든 테이블은 RLS가 켜져 있고(정책 없음) 서버만 접근한다. 로그인은 Supabase Auth(Google)다. `.env.example`을 참고해 `web/.env.local`에 `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 넣고, Supabase Redirect URLs에 `http://localhost:*/**`를 등록한다. 토큰 없이 `oai-authenticated-*` 개발 헤더로 요청하는 방식은 `next dev`(`.env.development`의 `AUTH_DEV_HEADERS=1`)에서만 허용된다(`docs/dev-team-seed-notes.md`). 운영 모드(`next build && next start`, Vercel)에서는 `DATABASE_URL`이 꼭 있어야 한다. 없으면 로컬 파일로 넘어가지 않고 API가 503을 돌려준다.
 
 ```sh
 npm test
@@ -110,4 +110,11 @@ npm run build
 
 ## 소스와 배포
 
-`Final_Project` 저장소의 `web/`이 서비스 소스다. 운영 배포는 아직 없다. 이전의 OpenAI Sites 배포는 쓰지 않으며, Vercel + Supabase(Postgres·Auth)로 옮기는 중이다(`docs/superpowers/specs/2026-10-03-nextjs-migration-design.md`).
+`Final_Project` 저장소의 `web/`이 서비스 소스다. 배포는 Vercel 팀 내부용이다(`docs/superpowers/specs/2026-10-04-vercel-deploy-design.md`). `main` 머지는 운영, PR·브랜치 푸시는 미리보기로 배포되며 모든 환경이 같은 Supabase DB를 쓴다.
+
+- Vercel 프로젝트: Root Directory `web`, 지역은 `vercel.json`의 `icn1`(Supabase 서울과 같은 곳). Vercel의 Supabase 연동(Add)은 쓰지 않는다.
+- 환경변수(Production·Preview 같은 값): `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`(트랜잭션 풀러 6543). `AUTH_DEV_HEADERS`·`AI_FAKE_MODEL`은 넣지 않는다(넣어도 운영에서는 무시된다). `NEXT_PUBLIC_*`는 빌드 때 박히므로 바꾸면 다시 배포한다.
+- 미리보기 접근: Deployment Protection의 Vercel Authentication을 끈다. 접근 제어는 앱의 Google 로그인과 프로젝트 멤버 확인이다.
+- Supabase Auth: Site URL은 운영 주소, Redirect URLs에 `https://<운영주소>/**`, `https://*-<vercel계정>.vercel.app/**`, `http://localhost:*/**`.
+- 마이그레이션은 자동으로 돌지 않는다. `db/migrations/`에 새 파일이 생기는 PR은 머지 전에 `.env.local`의 `DATABASE_URL`로 `npm run db:migrate`를 실행한다. 미리보기도 같은 DB를 쓰므로 컬럼 삭제·이름 변경은 하지 않는다.
+- AI 변경안은 운영 모델이 연결되지 않아 배포 환경에서 '준비 중'이다(`lib/ai-extraction.ts` `aiAvailable`).
