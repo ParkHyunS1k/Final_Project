@@ -1,5 +1,6 @@
-// 이메일 전송 경계. 제공자는 아직 선정하지 않았다(B4 대기).
-// 운영 자격 정보가 없으면 기록만 남기는 전송기를 쓰고 운영 발송으로 표시하지 않는다.
+// 이메일 전송 경계. 마감 독촉(senderFrom)은 Resend 전용으로 남아 있으나 제품에서 쓰지 않는다(2026-10-04).
+// 초대 링크 메일은 inviteSender(Gmail SMTP)로 보낸다. 자격 정보가 없으면 보내지 않는다.
+import nodemailer from 'nodemailer';
 export type Message = {
   to: string;
   subject: string;
@@ -91,6 +92,41 @@ export function senderFrom(env: EmailEnv): Sender {
           provider: 'resend',
           error: e instanceof Error ? e.message : 'network error',
         };
+      }
+    },
+  };
+}
+
+/**
+ * 초대 링크 메일 전송기(Gmail SMTP). 제공자·발신 주소·앱 비밀번호가 모두 있을 때만 만들고,
+ * 없으면 null(보내지 않음). 마감 독촉의 senderFrom과 분리해 Gmail 설정이 독촉 발송을 켜지 않게 한다.
+ */
+export function inviteSender(env: EmailEnv): Sender | null {
+  const provider = (env.EMAIL_PROVIDER ?? '').trim().toLowerCase();
+  const from = (env.EMAIL_FROM ?? '').trim();
+  // Google은 앱 비밀번호를 4자리씩 띄워 보여준다.
+  const key = (env.EMAIL_API_KEY ?? '').replace(/\s+/g, '');
+  if (provider !== 'gmail' || !from || !key) return null;
+  const transport = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: { user: from, pass: key },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 10_000,
+  });
+  return {
+    name: 'gmail',
+    live: true,
+    async send(m) {
+      try {
+        const info = await transport.sendMail({ from, to: m.to, subject: m.subject, text: m.text });
+        return { status: 'sent', provider: 'gmail', messageId: info.messageId ?? null };
+      } catch (e) {
+        // 비밀번호·본문이 섞일 수 있는 원문 대신 오류 코드만 남긴다.
+        const code = (e as { code?: unknown }).code;
+        return { status: 'failed', provider: 'gmail', error: typeof code === 'string' ? code : 'error' };
       }
     },
   };
