@@ -1405,7 +1405,9 @@ textarea {
   width: auto;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 30px 36px;
+  --pad-y: 30px;
+  --pad-x: 36px;
+  padding: var(--pad-y) var(--pad-x);
 }
 .loading-skeleton {
   display: grid;
@@ -1453,7 +1455,8 @@ textarea {
 }
 @media (max-width: 1000px) {
   .workspace-body .app-shell > .work-main {
-    padding: 24px 20px;
+    --pad-y: 24px;
+    --pad-x: 20px;
   }
   .work-heading {
     flex-wrap: wrap;
@@ -1473,7 +1476,8 @@ textarea {
     flex-wrap: wrap;
   }
   .workspace-body .app-shell > .work-main {
-    padding: 20px 14px;
+    --pad-y: 20px;
+    --pad-x: 14px;
   }
 }
 .work-health {
@@ -2020,4 +2024,111 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+/* 레이스 작업 화면. 라이트에서는 상단 바만 검정, 다크에서는 바탕과 같은 톤. */
+.race-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: calc(-1 * var(--pad-y)) calc(-1 * var(--pad-x)) 24px;
+  padding: 12px var(--pad-x);
+  background: var(--gray-900);
+  color: var(--gray-0);
+}
+.dark .race-bar {
+  background: var(--gray-0);
+  color: var(--gray-900);
+  border-bottom: 1px solid var(--border);
+}
+.race-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.race-title b {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.race-title span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+}
+.race-clock {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.race-clock.heat {
+  color: var(--heat-500);
+}
+.race-clock.critical {
+  color: var(--red-500);
+  animation: race-blink 2s ease-in-out infinite;
+}
+.race-clock.idle {
+  font-size: 16px;
+  opacity: 0.6;
+}
+.race-clock.done {
+  font-size: 16px;
+  color: var(--good);
+}
+.race-cta {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--heat-500);
+  color: var(--heat-ink);
+  font-weight: 800;
+  white-space: nowrap;
+  animation: race-ping 2.4s ease-out infinite;
+}
+.race-cta:hover:not(:disabled) {
+  background: var(--heat-400);
+}
+.race-cta[aria-disabled='true'] {
+  opacity: 0.55;
+  animation: none;
+}
+@keyframes race-ping {
+  0% {
+    box-shadow: 0 0 0 0 rgb(255 90 31 / 0.55);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 10px rgb(255 90 31 / 0);
+  }
+}
+@keyframes race-blink {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (max-width: 600px) {
+  .race-bar {
+    gap: 8px;
+  }
+  .race-title span {
+    display: none;
+  }
+  .race-clock {
+    font-size: 18px;
+  }
+  .race-cta {
+    padding: 0 14px;
+  }
 }

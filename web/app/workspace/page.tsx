@@ -13,7 +13,9 @@ import {
   type WorkspaceNav,
   workspaceViews,
 } from '@/components/project-workspace';
-import type { View } from '@/lib/race';
+import { reportChoices, sprintDay, type View } from '@/lib/race';
+import { RaceClock } from '@/components/race-clock';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
   ArrowRight,
   Check,
@@ -21,7 +23,6 @@ import {
   Zap,
   Sparkles,
   ShieldCheck,
-  RefreshCw,
 } from 'lucide-react';
 import {
   Dialog,
@@ -335,11 +336,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
     }
   }
   function openCheckin() {
-    if (!state) return;
-    const t = state.sprint.tasks.find(
-      (t) =>
-        !t.done && (state.me.role === 'owner' || t.person === state.me.person),
-    );
+    const t = reportable.first;
     if (!t) {
       setNotice('본인에게 배정된 진행 중인 업무가 없습니다.');
       return;
@@ -371,12 +368,13 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
         )
       : [];
   const deadline = state?.policy?.deadlineAt ?? null;
-  const remainingHours = deadline
-    ? (Date.parse(deadline) - Date.parse(state?.asOf ?? '1970-01-01')) / 3600000
-    : null;
-  const remainingDays =
-    remainingHours === null ? null : Math.max(0, Math.ceil(remainingHours / 24));
   const phase = PHASE[lifecycle];
+  const reportable = state
+    ? reportChoices(tasks, state.me, isOwner)
+    : { open: [] as Task[], first: null };
+  const onClockZero = useCallback(() => {
+    void load().catch(() => {});
+  }, [load]);
   return (
     <div className="app-shell">
       <div className="work-main">
@@ -406,44 +404,34 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
           </section>
         ) : (
           <>
-            <header className="work-heading">
-              <div>
-                <p className="work-kicker">
-                  {lifecycle === 'legacy'
-                    ? '이전 규칙으로 만든 기록'
-                    : deadline
-                      ? `시작 ${seoulTime(state!.policy!.startedAt!)} · 마감 ${seoulTime(deadline)} KST`
-                      : `시작하면 그 시각부터 ${state?.policy?.durationDays ?? 7}일`}
-                </p>
-                <h1>
-                  {workspaceViews.find((v) => v.id === tab)?.label ?? '홈'}
-                </h1>
-              </div>
-              <div className="work-heading-actions">
-                <span className="pill">
-                  {lifecycle === 'active'
-                    ? `D−${remainingDays}`
-                    : phase.label}{' '}
-                  · 결과물 {state!.completion.confirmed}/
-                  {state!.completion.total} 확인
+            <header className="race-bar">
+              <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
+              <div className="race-title">
+                <b>{state!.agreement?.title ?? s.title}</b>
+                <span>
+                  {lifecycle === 'active' && state!.policy?.startedAt
+                    ? `DAY ${sprintDay(state!.policy.startedAt, Date.parse(state!.asOf), state!.policy.durationDays)} / ${state!.policy.durationDays} · `
+                    : ''}
+                  {phase.label}
                 </span>
-                <button
-                  className="icon-btn"
-                  disabled={busy}
-                  onClick={refresh}
-                  aria-label="최신 상태 불러오기"
-                >
-                  <RefreshCw size={17} />
-                </button>
-                <button className="btn" disabled={busy} onClick={exportProject}>
-                  내보내기
-                </button>
-                {writable && agreedToGoal && (
-                  <button className="btn" disabled={busy} onClick={openCheckin}>
-                    체크인
-                  </button>
-                )}
               </div>
+              <RaceClock
+                lifecycle={lifecycle}
+                deadline={deadline}
+                asOf={state!.asOf}
+                durationDays={state!.policy?.durationDays ?? 7}
+                onZero={onClockZero}
+              />
+              {writable && agreedToGoal && (
+                <button
+                  className="race-cta"
+                  disabled={busy}
+                  aria-disabled={!reportable.open.length}
+                  onClick={openCheckin}
+                >
+                  진행 보고
+                </button>
+              )}
             </header>
             {phase.note && (
               <output className="work-health">
@@ -1038,7 +1026,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
         <DialogContent className="demo-dialog">
           <DialogTitle>
             {dialog === 'checkin'
-              ? '지금 남은 일을 알려주세요.'
+              ? '진행 보고'
               : dialog === 'stepBack'
                 ? '참여 중단을 팀에 알립니다.'
                 : '결과물 근거 기록'}
@@ -1058,14 +1046,14 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                   await mutate(
                     'checkin',
                     { taskId, note, remaining },
-                    '체크인을 저장하고 예상 일정을 재계산했습니다.',
+                    '진행 보고를 저장하고 예상 일정을 재계산했습니다.',
                   )
                 )
                   setDialog(null);
               }}
             >
               <label className="input-label" htmlFor="checkin-task">
-                진행 중인 업무
+                보고할 업무
               </label>
               <NativeSelect
                 id="checkin-task"
@@ -1078,12 +1066,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                   );
                 }}
               >
-                {tasks
-                  .filter(
-                    (t) =>
-                      !t.done && (isOwner || t.person === state?.me.person),
-                  )
-                  .map((t) => (
+                {reportable.open.map((t) => (
                     <NativeSelectOption key={t.id} value={t.id}>
                       {t.title}
                     </NativeSelectOption>
