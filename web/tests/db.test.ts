@@ -167,3 +167,21 @@ void test('운영(NODE_ENV=production)에서 DATABASE_URL이 없으면 로컬 PG
     if (cached !== undefined) shared.projectmateDb = cached;
   }
 });
+
+void test('초대 메일 상태 열: email_status·email_sent_at은 비워둘 수 있고 email_sends 기본값은 0', async () => {
+  const db = openPglite();
+  await migrate(db);
+  const cols = await db
+    .prepare(
+      "SELECT column_name AS c, is_nullable AS n, column_default AS d FROM information_schema.columns WHERE table_name='project_invites' AND column_name IN ('email_status','email_sent_at','email_sends') ORDER BY column_name",
+    )
+    .all<{ c: string; n: string; d: string | null }>();
+  assert.deepEqual(
+    cols.results.map((r) => [r.c, r.n, r.d]),
+    [
+      ['email_sends', 'NO', '0'],
+      ['email_sent_at', 'YES', null],
+      ['email_status', 'YES', null],
+    ],
+  );
+});

@@ -151,6 +151,10 @@ export const projectInvites = pgTable(
     status: text('status').notNull().default('pending'),
     acceptedBy: text('accepted_by'),
     createdAt: timestamp('created_at', tz).notNull(),
+    // 초대 메일 발송 결과('sent'|'failed'|'off'), 마지막 시도 시각, 시도 횟수(다시 보내기 한도).
+    emailStatus: text('email_status'),
+    emailSentAt: timestamp('email_sent_at', tz),
+    emailSends: integer('email_sends').notNull().default(0),
   },
   (t) => [index('idx_invites_project').on(t.projectId)],
 ).enableRLS();
