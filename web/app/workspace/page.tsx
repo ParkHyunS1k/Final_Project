@@ -701,7 +701,7 @@ function Dashboard({
                           <span
                             className="avatar"
                             style={{
-                              background: people[p.person]?.color ?? '#eee',
+                              background: people[p.person]?.color ?? 'var(--gray-200)',
                             }}
                           >
                             {people[p.person]?.initial ?? '?'}
@@ -815,7 +815,7 @@ function Dashboard({
                       <span
                         className="avatar large"
                         style={{
-                          background: people[p.person]?.color ?? '#eee',
+                          background: people[p.person]?.color ?? 'var(--gray-200)',
                         }}
                       >
                         {people[p.person]?.initial ?? '?'}
@@ -844,7 +844,7 @@ function Dashboard({
                       <span
                         className="avatar"
                         style={{
-                          background: people[m.person]?.color ?? '#eee',
+                          background: people[m.person]?.color ?? 'var(--gray-200)',
                         }}
                       >
                         {m.display_name.slice(0, 1)}

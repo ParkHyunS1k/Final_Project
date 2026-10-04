@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, signInWithGoogle, signOut } from '@/lib/supabase-browser';
 import { workspaceEntry } from '@/lib/workspace-entry';
+import { ThemeToggle } from '@/components/theme-toggle';
 export const workspaceViews = [
   { id: 'plan', label: '프로젝트 업무', icon: ListTodo },
   { id: 'mine', label: '내 할 일', icon: UserRound },
@@ -299,10 +300,13 @@ export function ProjectWorkspace({
           )}
         </SidebarContent>
         <SidebarFooter>
-          <WorkspaceButton onClick={() => void signOut()}>
-            <LogOut size={16} />
-            로그아웃
-          </WorkspaceButton>
+          <div className="sidebar-actions">
+            <WorkspaceButton onClick={() => void signOut()}>
+              <LogOut size={16} />
+              로그아웃
+            </WorkspaceButton>
+            <ThemeToggle />
+          </div>
           <p className="sidebar-note">
             작게 시작하고, 함께 완성하기.
             <br />
