@@ -38,7 +38,7 @@ export class AccessError extends Error {
   }
 }
 import type { Identity } from './auth';
-import { deliverInvite, INVITE_SEND_LIMIT } from './invite-email';
+import { DAILY_INVITE_LIMIT, deliverInvite, INVITE_SEND_LIMIT } from './invite-email';
 export { identity, AuthUnavailable, type Identity } from './auth';
 export async function adoptLegacy(user: Identity) {
   // Only the identity that owns a v2 row can import it. Never copy another user's data.
@@ -331,11 +331,19 @@ export async function createInvite(
   });
   if (
     typeof email !== 'string' ||
-    !/^\S+@\S+\.\S+$/.test(email) ||
+    // 주소 하나만. 쉼표·세미콜론·꺾쇠·공백이 있으면 메일 라이브러리가 여러 수신자로 읽는다.
+    !/^[^\s@,;<>"'()[\]\\]+@[^\s@,;<>"'()[\]\\]+\.[^\s@,;<>"'()[\]\\]+$/.test(email.trim()) ||
     email.length > 254
   )
     throw new Error('팀원의 로그인 이메일을 입력해주세요.');
   email = email.trim().toLowerCase();
+  // 공개 주소라 누구나 프로젝트를 만들 수 있다. 우리 Gmail이 스팸 발송에 쓰이지 않게 사용자당 하루 초대 수를 묶는다.
+  const recent = await database()
+    .prepare("SELECT count(*) AS n FROM project_invites WHERE created_by=? AND created_at > now() - interval '1 day'")
+    .bind(user.id)
+    .first<{ n: number }>();
+  if ((recent?.n ?? 0) >= DAILY_INVITE_LIMIT)
+    throw new AccessError(`초대는 하루 ${DAILY_INVITE_LIMIT}개까지 만들 수 있습니다.`, 429);
   const s = await readSprint(project);
   if (!s) throw new AccessError();
   if (s.revision !== revision) throw new Conflict();
@@ -365,6 +373,10 @@ export async function createInvite(
         ),
     ],
     ['draft', 'active'],
+    {
+      sql: "(SELECT count(*) FROM project_invites WHERE created_by=? AND created_at > now() - interval '1 day') < ?",
+      args: [user.id, DAILY_INVITE_LIMIT],
+    },
   );
   const mail = await deliverInvite({
     inviteId: id,

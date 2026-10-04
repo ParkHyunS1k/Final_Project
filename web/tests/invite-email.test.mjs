@@ -12,7 +12,7 @@ const outfile = join(mkdtempSync(join(tmpdir(), 'projectmate-invite-')), 'route.
 await build({
   stdin: {
     contents:
-      "export { GET as projectsGET, POST as projectsPOST } from './app/api/projects/route'; export { GET as sprintGET } from './app/api/sprint/route'; export { useInviteSender, inviteMessage, deliverInvite } from './lib/invite-email'; export { inviteSender } from './lib/email';",
+      "export { GET as projectsGET, POST as projectsPOST } from './app/api/projects/route'; export { GET as sprintGET } from './app/api/sprint/route'; export { useInviteSender, inviteMessage, deliverInvite, inviteOrigin } from './lib/invite-email'; export { inviteSender } from './lib/email';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -247,6 +247,76 @@ test('다시 보내기 권한·상태: 팀원은 403, 취소된 초대는 400, �
     const s = await read('lead5', pid);
     assert.equal((await projectRequest('lead5', { action: 'revoke', projectId: pid, revision: s.sprint.revision, inviteId: other.id })).status, 200);
     assert.equal((await resend('lead5', pid, other.id)).status, 400);
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});
+
+test('[I1] 이메일 칸에 주소 목록·이름 표기를 넣으면 거절하고 메일을 보내지 않는다', async () => {
+  const fake = fakeSender();
+  api.useInviteSender(fake.sender);
+  try {
+    const pid = await project('lead6');
+    for (const bad of ['victim@test.local,attacker@evil.example', 'a@test.local;b@evil.example', 'Name <a@test.local>', 'a@test.local b@evil.example']) {
+      const r = await invite('lead6', pid, bad);
+      assert.equal(r.status, 400, bad);
+    }
+    assert.equal(fake.log.length, 0);
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});
+
+test('[I2] 한 사용자가 하루에 만들 수 있는 초대는 20개까지(초대→취소 반복으로 메일 한도를 넘지 못함)', async () => {
+  const fake = fakeSender();
+  api.useInviteSender(fake.sender);
+  try {
+    const pid = await project('lead7');
+    for (let i = 0; i < 20; i++) {
+      const r = await invite('lead7', pid, `spam${i}@test.local`);
+      assert.equal(r.status, 201, await r.clone().text());
+      const { id } = await r.json();
+      const s = await read('lead7', pid);
+      assert.equal((await projectRequest('lead7', { action: 'revoke', projectId: pid, revision: s.sprint.revision, inviteId: id })).status, 200);
+    }
+    const over = await invite('lead7', pid, 'spam20@test.local');
+    assert.equal(over.status, 429);
+    assert.equal(fake.log.length, 20);
+  } finally {
+    api.useInviteSender(undefined);
+  }
+});
+
+test('[I3] 링크 주소는 Vercel이 알려 준 운영·브랜치 주소를 쓰고, 로컬에서만 요청 주소를 쓴다', async () => {
+  assert.equal(api.inviteOrigin('https://evil.example/api/projects', { VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: 'projectmate-x.vercel.app', VERCEL_URL: 'projectmate-abc.vercel.app' }), 'https://projectmate-x.vercel.app');
+  assert.equal(api.inviteOrigin('https://evil.example/api/projects', { VERCEL_ENV: 'preview', VERCEL_BRANCH_URL: 'projectmate-git-b-x.vercel.app', VERCEL_URL: 'projectmate-abc.vercel.app' }), 'https://projectmate-git-b-x.vercel.app');
+  assert.equal(api.inviteOrigin('https://evil.example/api/projects', { VERCEL_ENV: 'preview', VERCEL_URL: 'projectmate-abc.vercel.app' }), 'https://projectmate-abc.vercel.app');
+  assert.equal(api.inviteOrigin('http://localhost:3100/api/projects', {}), 'http://localhost:3100');
+  const fake = fakeSender();
+  api.useInviteSender(fake.sender);
+  const saved = { ...process.env };
+  try {
+    process.env.VERCEL_ENV = 'production';
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'projectmate-x.vercel.app';
+    const pid = await project('lead8');
+    const r = await invite('lead8', pid, 'mate8@test.local');
+    assert.equal(r.status, 201);
+    assert.ok(fake.log[0].text.includes('https://projectmate-x.vercel.app/workspace?invite='));
+  } finally {
+    for (const k of ['VERCEL_ENV', 'VERCEL_PROJECT_PRODUCTION_URL']) if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k];
+    api.useInviteSender(undefined);
+  }
+});
+
+test('[I4] 전송기가 응답하지 않으면 제한 시간 뒤 failed로 끝나고 초대는 남는다', async () => {
+  api.useInviteSender({ name: 'hang', live: true, send: () => new Promise(() => {}) }, 50);
+  try {
+    const pid = await project('lead9');
+    const started = Date.now();
+    const r = await invite('lead9', pid, 'mate9@test.local');
+    assert.equal(r.status, 201);
+    assert.equal((await r.json()).email, 'failed');
+    assert.ok(Date.now() - started < 5000);
   } finally {
     api.useInviteSender(undefined);
   }

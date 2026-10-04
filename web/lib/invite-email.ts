@@ -1,9 +1,10 @@
 // 초대 링크 메일. 초대 저장(트랜잭션)이 끝난 뒤 보내고 결과만 초대 행에 기록한다.
 // 발송·기록이 실패해도 초대는 그대로이며 링크는 화면에서 직접 전달할 수 있다.
 import { database } from './db';
-import { inviteSender, type EmailEnv, type Message, type Sender } from './email';
+import { inviteSender, type EmailEnv, type Message, type Sender, type SendResult } from './email';
 
 export const INVITE_SEND_LIMIT = 3;
+export const DAILY_INVITE_LIMIT = 20;
 export type InviteEmailStatus = 'sent' | 'failed' | 'off';
 export type InviteMail = {
   inviteId: string;
@@ -17,9 +18,26 @@ export type InviteMail = {
 };
 
 let override: Sender | null | undefined;
-/** 테스트용 전송기(null = 설정 없음). undefined면 환경변수로 만든다. */
-export function useInviteSender(next: Sender | null | undefined) {
+let timeoutMs = 15_000;
+/** 테스트용 전송기(null = 설정 없음)와 제한 시간. undefined면 환경변수로 만든다. */
+export function useInviteSender(next: Sender | null | undefined, timeout = 15_000) {
   override = next;
+  timeoutMs = timeout;
+}
+
+/**
+ * 메일 속 링크의 주소. Vercel에서는 Vercel이 알려 준 운영·브랜치 주소를 쓴다(요청의 Host를 믿지 않는다).
+ * 로컬(next dev, 127.0.0.1에만 열림)에서만 요청 주소를 쓴다.
+ */
+export function inviteOrigin(
+  requestUrl: string,
+  env: Record<string, string | undefined> = process.env,
+): string {
+  if (env.VERCEL_ENV === 'production' && env.VERCEL_PROJECT_PRODUCTION_URL)
+    return `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  const deployed = env.VERCEL_ENV && (env.VERCEL_BRANCH_URL || env.VERCEL_URL);
+  if (deployed) return `https://${deployed}`;
+  return new URL(requestUrl).origin;
 }
 
 const oneLine = (s: string) => s.replace(/[\r\n]+/g, ' ').trim();
@@ -49,7 +67,13 @@ export async function deliverInvite(i: InviteMail): Promise<InviteEmailStatus> {
   const sender = override === undefined ? inviteSender(process.env as EmailEnv) : override;
   let status: InviteEmailStatus = 'off';
   if (sender) {
-    const r = await sender.send(inviteMessage(i));
+    // 메일 서버가 응답하지 않아도 초대 요청은 제한 시간 안에 끝낸다.
+    const r = await Promise.race([
+      sender.send(inviteMessage(i)),
+      new Promise<SendResult>((done) =>
+        setTimeout(() => done({ status: 'failed', provider: sender.name, error: 'timeout' }), timeoutMs).unref(),
+      ),
+    ]);
     status = r.status === 'sent' ? 'sent' : 'failed';
     if (r.status !== 'sent') console.error('invite email failed', r.provider, r.error);
   }

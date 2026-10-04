@@ -112,6 +112,7 @@ export function inviteSender(env: EmailEnv): Sender | null {
     port: 465,
     secure: true,
     auth: { user: from, pass: key },
+    dnsTimeout: 10_000,
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 10_000,
