@@ -93,6 +93,8 @@ export function TaskCollection({
     Boolean(me.agreedAt) &&
     (owner || t.person === me.person);
   const task = sprint.tasks.find((t) => t.id === selected);
+  // 병목 = 마감 안에 배치되지 않은 미완료 업무. 홈의 '병목 n건'과 같은 기준(plan.unscheduled).
+  const blocked = (t: Task) => !t.done && plan.unscheduled.includes(t.id);
   function statusControl(t: Task) {
     return (
       <NativeSelect
@@ -182,7 +184,7 @@ export function TaskCollection({
               </TableHeader>
               <TableBody>
                 {tasks.map((t) => (
-                  <TableRow key={t.id}>
+                  <TableRow key={t.id} className={blocked(t) ? 'is-blocked' : undefined}>
                     <TableCell>
                       <button
                         className="task-title-button"
@@ -190,6 +192,7 @@ export function TaskCollection({
                       >
                         <FileText size={16} />
                         <span>{t.title}</span>
+                        {blocked(t) && <span className="race-tag">병목</span>}
                       </button>
                       <span className="task-subline">
                         업무
@@ -258,15 +261,15 @@ export function TaskCollection({
                     <TableCell>
                       <span
                         className={
-                          !t.done && !plan.finishes[t.id]
-                            ? 'schedule-warning'
-                            : ''
+                          blocked(t) ? 'schedule-warning' : ''
                         }
                       >
                         {t.done
                           ? '결과 확인 완료'
                           : plan.finishes[t.id]
-                            ? seoulTime(plan.finishes[t.id]) + ' KST'
+                            ? seoulTime(plan.finishes[t.id]) +
+                              ' KST' +
+                              (blocked(t) ? ' · 마감 초과' : '')
                             : '배치 불가'}
                       </span>
                     </TableCell>
@@ -298,12 +301,16 @@ export function TaskCollection({
                   {tasks
                     .filter((t) => statusOf(t) === s.id)
                     .map((t) => (
-                      <article className="board-card" key={t.id}>
+                      <article
+                        className={'board-card' + (blocked(t) ? ' is-blocked' : '')}
+                        key={t.id}
+                      >
                         <button
                           className="task-title-button"
                           onClick={() => setSelected(t.id)}
                         >
                           {t.title}
+                          {blocked(t) && <span className="race-tag">병목</span>}
                         </button>
                         <p>
                           {people[t.person]?.name ?? '미배정'} ·{' '}

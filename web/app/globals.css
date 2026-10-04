@@ -2013,6 +2013,12 @@ textarea {
   flex: 1 1 260px;
   min-width: 0;
 }
+.tasks-bar .btn {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
 .toggle-btn[aria-pressed='true'] {
   background: var(--gray-900);
   color: var(--gray-0);
@@ -2316,5 +2322,24 @@ textarea {
   }
   .race-lane > :last-child {
     grid-column: 1 / -1;
+  }
+}
+/* 병목: 띠와 태그는 계속, 밀림은 클래스가 처음 붙을 때 한 번만(반복 없음). */
+.task-table tr.is-blocked td:first-child {
+  box-shadow: inset 3px 0 var(--red-500);
+}
+.task-table tr.is-blocked,
+.board-card.is-blocked {
+  animation: race-nudge 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 1;
+}
+.board-card.is-blocked {
+  box-shadow: inset 3px 0 var(--red-500);
+}
+@keyframes race-nudge {
+  30% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-3px);
   }
 }

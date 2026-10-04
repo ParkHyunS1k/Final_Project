@@ -1,5 +1,6 @@
 // 로컬 화면 확인용. 브라우저 요청에 개발 신원 헤더를 붙여 next dev(AUTH_DEV_HEADERS=1)로 넘긴다.
-// 운영(NODE_ENV=production)에서는 서버가 이 헤더를 무시한다(lib/auth.ts). Host·Origin은 그대로 둬 출처 검사를 통과한다.
+// 운영(NODE_ENV=production)에서는 서버가 이 헤더를 무시한다(lib/auth.ts).
+// next dev는 request.url을 http://localhost:<대상 포트>로 만든다. 출처 검사를 통과하도록 Origin을 그 주소로 바꾼다.
 // 사용: node scripts/dev-as.mjs <포트> <사용자 id> <표시 이름> [대상 포트=3102]
 import http from 'node:http';
 import net from 'node:net';
@@ -9,6 +10,7 @@ http
   .createServer((req, res) => {
     const headers = {
       ...req.headers,
+      ...(req.headers.origin ? { origin: `http://localhost:${target}` } : {}),
       'oai-authenticated-user-id': user,
       'oai-authenticated-user-email': `${user}@test.local`,
       'oai-authenticated-user-full-name': encodeURIComponent(name),
