@@ -1894,6 +1894,7 @@ textarea {
   overflow: hidden;
 }
 .calendar-day {
+  position: relative;
   min-height: 132px;
   min-width: 0;
   padding: 10px;
@@ -1918,11 +1919,11 @@ textarea {
   white-space: nowrap;
 }
 .calendar-day.today {
-  background: var(--heat-50);
-  box-shadow: inset 0 3px 0 var(--heat-500);
+  background: color-mix(in srgb, var(--heat-500) 18%, var(--gray-0));
+  box-shadow: inset 0 4px 0 var(--heat-500);
 }
 .calendar-day.past {
-  background: var(--muted);
+  background: color-mix(in srgb, var(--heat-500) 7%, var(--gray-0));
 }
 .calendar-day.past .deadline-card {
   opacity: 0.7;
@@ -2130,5 +2131,190 @@ textarea {
   }
   .race-cta {
     padding: 0 14px;
+  }
+}
+.calendar-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--heat-500);
+  pointer-events: none;
+  animation: race-blink 1.2s ease-in-out infinite;
+}
+.deadline-card.blocked {
+  box-shadow: inset 3px 0 var(--red-500);
+}
+.deadline-card.blocked svg {
+  color: var(--red-500);
+}
+.race-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.race-stat {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+  animation: race-rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.race-stat:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.race-stat:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.race-stat b {
+  display: block;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.race-stat span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-600);
+}
+.race-stat.bad b {
+  color: var(--red-500);
+}
+.race-stat.good b {
+  color: var(--good);
+}
+@keyframes race-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.race-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 20px 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--red-50);
+  box-shadow: inset 3px 0 var(--red-500);
+  font-size: 14px;
+}
+.race-alert.calm {
+  background: var(--gray-50);
+  box-shadow: inset 3px 0 var(--heat-500);
+}
+.race-alert > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--red-500);
+}
+.race-alert b {
+  color: var(--red-700);
+}
+.race-alert.calm b {
+  color: var(--gray-900);
+}
+.race-alert p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--gray-700);
+}
+.race-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-600);
+}
+.race-lanes {
+  margin: 24px 0 32px;
+}
+.race-lane {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 140px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+.race-lane.me {
+  margin: 0 -10px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: var(--heat-50);
+}
+.race-lane small {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--heat-700);
+}
+.race-lane-task {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.race-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--gray-200);
+}
+.race-meter i {
+  display: block;
+  height: 100%;
+  background: var(--gray-900);
+}
+.race-meter.over i {
+  background: var(--red-500);
+}
+.race-hours {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--gray-600);
+}
+.race-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--red-500);
+  color: var(--gray-0);
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: 1px;
+}
+.race-below {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .race-below {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .race-stats {
+    gap: 6px;
+  }
+  .race-stat {
+    padding: 10px;
+  }
+  .race-stat b {
+    font-size: 22px;
+  }
+  .race-lane {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .race-lane > :last-child {
+    grid-column: 1 / -1;
   }
 }

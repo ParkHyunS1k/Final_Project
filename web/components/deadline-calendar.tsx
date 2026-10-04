@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarDays, Check, Flag } from 'lucide-react';
 import { deadlineDays, seoulTime, type Task as ServerTask } from '@/lib/sprint';
 import type { Wire } from '@/lib/wire';
+import { dayProgress } from '@/lib/race';
 // 화면은 JSON으로 받은 값을 다룬다(시각은 ISO 문자열).
 type Task = Wire<ServerTask>;
 
@@ -18,22 +19,23 @@ function dayLabel(iso: string) {
 export function DeadlineCalendar({
   startedAt,
   deadline,
-  asOf,
+  now,
   tasks,
   people,
+  bottlenecks,
   onPlan,
 }: {
   startedAt: string | null;
   deadline: string | null;
-  /** 서버가 알려준 현재 시각. 렌더 중 Date.now()를 쓰지 않는다. */
-  asOf: string;
+  /** 서버 기준 현재 시각(ms). useServerNow로 흐른다. 렌더 중 Date.now()를 쓰지 않는다. */
+  now: number;
+  bottlenecks: number[];
   tasks: Task[];
   people: { name: string }[];
   onPlan: () => void;
 }) {
   const calendar =
     startedAt && deadline ? deadlineDays(startedAt, deadline, tasks) : null;
-  const now = Date.parse(asOf);
   return (
     <section className="deadline-calendar">
       <div className="section-heading">
@@ -56,22 +58,32 @@ export function DeadlineCalendar({
                 now >= start + DAY_MS ? ' past' : now >= start ? ' today' : '';
               return (
                 <li key={d.day} className={'calendar-day' + when}>
+                  {when === ' today' && (
+                    <span
+                      className="calendar-now"
+                      style={{ left: `${dayProgress(d.start, now) * 100}%` }}
+                      aria-hidden="true"
+                    />
+                  )}
                   <div className="calendar-head">
                     <b>Day {d.day}</b>
                     <span>{dayLabel(d.start)}</span>
                   </div>
                   {d.tasks.map((t) => {
                     const late = !t.done && Date.parse(t.dueAt!) < now;
+                    const blocked = !t.done && bottlenecks.includes(t.id);
                     return (
                       <div
                         key={t.id}
                         className={
                           'deadline-card' +
-                          (t.done ? ' done' : late ? ' late' : '')
+                          (t.done ? ' done' : late ? ' late' : '') +
+                          (blocked ? ' blocked' : '')
                         }
                       >
                         <span className="deadline-title">
                           {t.done && <Check size={13} />}
+                          {blocked && <Flag size={13} aria-label="병목" />}
                           {t.title}
                         </span>
                         <span className="deadline-meta">
@@ -98,7 +110,7 @@ export function DeadlineCalendar({
           </ol>
           {calendar.undated.length > 0 && (
             <button className="text-link calendar-undated" onClick={onPlan}>
-              마감 미정 {calendar.undated.length}개 · 프로젝트 업무에서 정하기{' '}
+              마감 미정 {calendar.undated.length}개 · 업무에서 정하기{' '}
               <ArrowRight size={15} />
             </button>
           )}

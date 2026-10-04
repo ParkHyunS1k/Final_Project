@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
 import { ChangeReview } from '@/components/change-review';
-import { DeadlineCalendar } from '@/components/deadline-calendar';
+import { RaceHome } from '@/components/race-home';
 import {
   ProjectWorkspace,
   ProjectDetails,
@@ -17,10 +17,8 @@ import { reportChoices, sprintDay, type View } from '@/lib/race';
 import { RaceClock } from '@/components/race-clock';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
-  ArrowRight,
   Check,
   Clock3,
-  Zap,
   Sparkles,
   ShieldCheck,
 } from 'lucide-react';
@@ -523,202 +521,99 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
             )}
             {tab === 'home' && (
               <section className="work-section">
-                <DeadlineCalendar
-                  startedAt={state!.policy?.startedAt ?? null}
-                  deadline={deadline}
-                  asOf={state!.asOf}
-                  tasks={tasks}
-                  people={people}
-                  onPlan={() => setTab('tasks')}
-                />
-                <div className="content-grid">
+                {lifecycle !== 'draft' && (
+                  <RaceHome
+                    lifecycle={lifecycle}
+                    asOf={state!.asOf}
+                    startedAt={state!.policy?.startedAt ?? null}
+                    deadline={deadline}
+                    tasks={tasks}
+                    plan={plan ?? null}
+                    members={state!.members}
+                    me={state!.me}
+                    people={people}
+                    onTasks={() => setTab('tasks')}
+                  />
+                )}
+                <div className="race-below">
                   <section>
-                    <div className="section-heading">
-                      <h2>
-                        <Sparkles size={19} /> 메이트의 다음 한 수
-                      </h2>
-                      <span className="tiny muted">
-                        공통 공수 · 의존관계 기반 계산
-                      </span>
-                    </div>
-                    <div
-                      className={`agent-card ${plan && !plan.feasible ? 'at-risk' : ''}`}
-                    >
-                      <div className="agent-top">
-                        <span className="agent-mark">
-                          <Zap size={20} />
-                        </span>
-                        <span
-                          className={`pill ${plan?.feasible ? 'green' : 'orange'}`}
-                        >
-                          {lifecycle === 'completed'
-                            ? '완주 확인'
-                            : !tasks.length
-                              ? '업무 계획 전'
-                              : plan?.feasible
-                                ? '진행 가능'
-                                : '계획 조정 필요'}
-                        </span>
-                      </div>
-                      <h3>
-                        {lifecycle === 'completed'
-                          ? '약속한 결과물을 확인했어요.'
-                          : !tasks.length
-                            ? '업무를 나누고 담당자를 정해요.'
-                            : plan?.feasible
-                              ? '핵심 흐름을 하나씩 연결해요.'
-                              : '현재 계획으로는 마감을 넘기는 작업이 있어요.'}
-                      </h3>
-                      <p>
-                        {lifecycle === 'completed'
-                          ? '결과물과 변경 내역이 저장되었습니다. 보증금은 자동 환급되지 않습니다.'
-                          : !tasks.length
-                            ? '실행 계획에서 업무와 담당자를 추가해주세요. 담당자별 가용시간 입력은 없고, 전원 하루 8시간을 공통 가정으로 계산합니다.'
-                            : plan?.feasible
-                              ? '체크인으로 남은 공수를 갱신하면 예상 종료를 다시 계산합니다. 예상치는 승인된 업무 마감과 다릅니다.'
-                              : '담당자별 남은 공수가 남은 기간을 넘습니다. 목표를 줄이거나 기한을 미루는 대신 담당 재배정·진행 순서·구현 방법을 바꿔주세요.'}
-                      </p>
-                      <div className="agent-impact">
-                        <span>
-                          <Clock3 size={15} /> 필요 {plan?.needed ?? 0}h / 남은
-                          예산 {Math.round((plan?.available ?? 0) * 10) / 10}h
-                        </span>
-                        <span>
-                          전원 하루 {plan?.dailyHours ?? 8}시간 공통 가정
-                        </span>
-                      </div>
-                      <button className="text-link" onClick={() => setTab('tasks')}>
-                        실행 계획 보기 <ArrowRight size={16} />
-                      </button>
-                    </div>
-                    <div className="section-heading task-heading">
-                      <h2>회의 제안</h2>
-                      <span className="tiny muted">
-                        공통 공수 · 의존관계 기반 계산
-                      </span>
-                    </div>
-                    <div className="task-list">
-                      {meetingProposals.length === 0 ? (
-                        <p className="empty-copy">지금은 따로 모일 일이 없습니다.</p>
-                      ) : (
-                        <>
-                          {meetingProposals.map((sug) => (
-                            <div className="task-row" key={sug.id}>
-                              <Sparkles size={18} />
-                              <div>
-                                <b>{sug.title}</b>
-                                <span>
-                                  {sug.suggestedAt
-                                    ? seoulTime(sug.suggestedAt) + ' KST'
-                                    : '시점 미정'}{' '}
-                                  · {sug.reason}
-                                </span>
-                                <ul className="tiny muted">
-                                  {sug.agenda.map((item, i) => (
-                                    <li key={i}>{item}</li>
-                                  ))}
-                                </ul>
-                                <span className="tiny muted">
-                                  관련 담당자:{' '}
-                                  {sug.people
-                                    .map(
-                                      (p) =>
-                                        state!.members.find((m) => m.person === p)
-                                          ?.display_name ?? '담당자 미정',
-                                    )
-                                    .join(', ')}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                          <p className="tiny muted">
-                            회의 후 업무 메뉴의 &apos;회의록으로 변경안 만들기&apos;에
-                            회의록을 붙여넣으면 업무 변경안을 만들 수 있습니다.
-                          </p>
-                        </>
-                      )}
-                    </div>
-                    <div className="section-heading task-heading">
-                      <h2>최근 체크인</h2>
-                    </div>
-                    <div className="task-list">
-                      {state!.checkins.length ? (
-                        state!.checkins.slice(0, 3).map((c) => (
-                          <div className="task-row" key={c.id}>
-                            <Check size={18} />
+                  <div className="section-heading task-heading">
+                    <h2>회의 제안</h2>
+                    <span className="tiny muted">
+                      공통 공수 · 의존관계 기반 계산
+                    </span>
+                  </div>
+                  <div className="task-list">
+                    {meetingProposals.length === 0 ? (
+                      <p className="empty-copy">지금은 따로 모일 일이 없습니다.</p>
+                    ) : (
+                      <>
+                        {meetingProposals.map((sug) => (
+                          <div className="task-row" key={sug.id}>
+                            <Sparkles size={18} />
                             <div>
-                              <b>{c.note}</b>
+                              <b>{sug.title}</b>
                               <span>
-                                {tasks.find((t) => t.id === c.task_id)?.title} ·
-                                남은 {c.remaining}h ·{' '}
-                                {new Date(c.created_at).toLocaleString('ko-KR', {
-                                  timeZone: 'Asia/Seoul',
-                                })}
+                                {sug.suggestedAt
+                                  ? seoulTime(sug.suggestedAt) + ' KST'
+                                  : '시점 미정'}{' '}
+                                · {sug.reason}
+                              </span>
+                              <ul className="tiny muted">
+                                {sug.agenda.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                              <span className="tiny muted">
+                                관련 담당자:{' '}
+                                {sug.people
+                                  .map(
+                                    (p) =>
+                                      state!.members.find((m) => m.person === p)
+                                        ?.display_name ?? '담당자 미정',
+                                  )
+                                  .join(', ')}
                               </span>
                             </div>
                           </div>
-                        ))
-                      ) : (
-                        <p className="empty-copy">
-                          하루 한 번 완료·남은 일·막힘을 남겨주세요. 보고가
-                          없어도 완주 판정에는 영향을 주지 않습니다.
+                        ))}
+                        <p className="tiny muted">
+                          회의 후 업무 메뉴의 &apos;회의록으로 변경안 만들기&apos;에
+                          회의록을 붙여넣으면 업무 변경안을 만들 수 있습니다.
                         </p>
-                      )}
-                    </div>
+                      </>
+                    )}
+                  </div>
                   </section>
-                  <aside>
-                    <div className="section-heading">
-                      <h2>담당자별 남은 공수</h2>
-                    </div>
-                    <div className="team-card">
-                      {(plan?.perPerson ?? []).map((p) => (
-                        <div className="member" key={p.person}>
-                          <span
-                            className="avatar"
-                            style={{
-                              background: people[p.person]?.color ?? 'var(--gray-200)',
-                            }}
-                          >
-                            {people[p.person]?.initial ?? '?'}
-                          </span>
+                  <section>
+                  <div className="section-heading task-heading">
+                    <h2>최근 진행 보고</h2>
+                  </div>
+                  <div className="task-list">
+                    {state!.checkins.length ? (
+                      state!.checkins.slice(0, 3).map((c) => (
+                        <div className="task-row" key={c.id}>
+                          <Check size={18} />
                           <div>
-                            <b>{people[p.person]?.name ?? '팀원'}</b>
+                            <b>{c.note}</b>
                             <span>
-                              필요 {p.needed}h / 남은 예산{' '}
-                              {Math.round(p.available * 10) / 10}h
+                              {tasks.find((t) => t.id === c.task_id)?.title} ·
+                              남은 {c.remaining}h ·{' '}
+                              {new Date(c.created_at).toLocaleString('ko-KR', {
+                                timeZone: 'Asia/Seoul',
+                              })}
                             </span>
                           </div>
-                          <span
-                            className={`pill ${p.needed > p.available ? 'orange' : 'green'}`}
-                          >
-                            {p.needed > p.available ? '초과' : '여유'}
-                          </span>
                         </div>
-                      ))}
-                      <div className="team-note">
-                        합계가 충분해도 의존 작업 때문에 늦어질 수 있어요.
-                      </div>
-                    </div>
-                    <div className="goal-card">
-                      <span className="eyebrow">
-                        {state!.agreement?.fixed_at
-                          ? '고정한 약속'
-                          : '우리의 약속'}
-                      </span>
-                      <h3>
-                        크게 벌이지 않고,
-                        <br />
-                        작게 완성하기.
-                      </h3>
-                      <p>{state!.agreement?.goal ?? state!.details?.goal}</p>
-                      <div>
-                        <Check size={15} /> 시작 시 합의한 결과물은 줄이지 않음
-                      </div>
-                      <div>
-                        <Check size={15} /> 변경 사유와 승인 이력 저장
-                      </div>
-                    </div>
-                  </aside>
+                      ))
+                    ) : (
+                      <p className="empty-copy">
+                        하루 한 번 진행 보고로 완료·남은 일·막힘을 남겨주세요. 보고가
+                        없어도 완주 판정에는 영향을 주지 않습니다.
+                      </p>
+                    )}
+                  </div>
+                  </section>
                 </div>
               </section>
             )}
