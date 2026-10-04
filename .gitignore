@@ -16,3 +16,6 @@ venv/
 # 에디터
 .vscode/
 .idea/
+
+# 브레인스토밍 시안
+.superpowers/brainstorm/

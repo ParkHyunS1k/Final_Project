@@ -20,7 +20,7 @@
 
 기존 샘플은 원래 소유자에게 보존한다. 새 계정에는 샘플을 자동 생성하지 않는다. 신규 프로젝트는 업무 없음·가용시간 0으로 시작한다. LLM, Python 서버 호출, 외부 업로드, 실제 결제·환급은 미연결이다.
 
-초대 링크는 이메일을 보내지 않으며 초대받은 이메일의 Google 계정으로 로그인해야 수락한다. 실제 두 계정 초대·수락은 로컬 개발 서버에서만 검증했다. 운영 배포(Vercel)는 아직 없다.
+초대 링크는 초대받은 이메일로 발송되며(Gmail SMTP, 설정이 없으면 보내지 않고 링크만 보여준다) 그 이메일의 Google 계정으로 로그인해야 수락한다. 메일 설정: Vercel·`.env.local`에 `EMAIL_PROVIDER=gmail`, `EMAIL_FROM`(Gmail 주소), `EMAIL_API_KEY`(Google 앱 비밀번호, 비밀값). 배포는 Vercel 팀 내부용이다(아래 '소스와 배포').
 
 가용시간은 오전 9시부터 30분 단위의 연속 슬롯으로 배치한다. 임의 시작 시각이나 분할 시간대는 아직 지원하지 않는다. 알고리즘은 탐욕적이며 최적 일정을 보장하지 않는다. 결과물은 팀이 직접 검증한 근거를 입력하며 시스템이 자동 확인하지 않는다.
 
@@ -49,7 +49,7 @@ npm run build
 
 `GET /api/projects`: 내 프로젝트 목록. `?invite=token`은 로그인 이메일을 검사한 뒤 초대 프로젝트의 목표·결과물·기준 조회.
 
-`POST /api/projects`: create(title,goal,startDate,duration,deliverables:줄바꿈 문자열,completionCriteria,agreed), invite(projectId,revision,email), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능. 이메일 발송 없음.
+`POST /api/projects`: create(title,goal,startDate,duration,deliverables:줄바꿈 문자열,completionCriteria,agreed), invite(projectId,revision,email: 그 주소로 초대 링크 메일 발송, 응답 email=sent|failed|off, 사용자당 하루 20개), resend(projectId,revision,inviteId: 새 링크 발급·발송, 이전 링크 무효, 초대당 3회·1분 간격), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능.
 
 `GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. 응답은 캐시하지 않는다.
 

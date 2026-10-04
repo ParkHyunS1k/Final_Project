@@ -38,6 +38,7 @@ export class AccessError extends Error {
   }
 }
 import type { Identity } from './auth';
+import { DAILY_INVITE_LIMIT, deliverInvite, INVITE_SEND_LIMIT } from './invite-email';
 export { identity, AuthUnavailable, type Identity } from './auth';
 export async function adoptLegacy(user: Identity) {
   // Only the identity that owns a v2 row can import it. Never copy another user's data.
@@ -161,7 +162,7 @@ export async function projectState(project: string, user: Identity) {
       .bind(project),
     db
       .prepare(
-        "SELECT id,email,expires_at,status FROM project_invites WHERE project_id=? AND ?='owner' ORDER BY created_at DESC LIMIT 20",
+        "SELECT id,email,expires_at,status,email_status,email_sent_at,email_sends FROM project_invites WHERE project_id=? AND ?='owner' ORDER BY created_at DESC LIMIT 20",
       )
       .bind(project, me.role),
   ]);
@@ -318,6 +319,7 @@ export async function createInvite(
   user: Identity,
   revision: number,
   email: unknown,
+  origin: string,
 ) {
   const me = await member(project, user);
   const policy = await readPolicy(project);
@@ -329,7 +331,8 @@ export async function createInvite(
   });
   if (
     typeof email !== 'string' ||
-    !/^\S+@\S+\.\S+$/.test(email) ||
+    // 주소 하나만. 쉼표·세미콜론·꺾쇠·공백이 있으면 메일 라이브러리가 여러 수신자로 읽는다.
+    !/^[^\s@,;<>"'()[\]\\]+@[^\s@,;<>"'()[\]\\]+\.[^\s@,;<>"'()[\]\\]+$/.test(email.trim()) ||
     email.length > 254
   )
     throw new Error('팀원의 로그인 이메일을 입력해주세요.');
@@ -337,6 +340,16 @@ export async function createInvite(
   const s = await readSprint(project);
   if (!s) throw new AccessError();
   if (s.revision !== revision) throw new Conflict();
+  // 공개 주소라 누구나 프로젝트를 만들 수 있다. 우리 Gmail이 스팸 발송에 쓰이지 않게 사용자당 하루(KST) 초대 수를 묶는다.
+  // 한 문장의 upsert는 행 잠금으로 동시 요청을 줄 세운다. 다른 검사를 다 통과한 뒤에 쓴다(저장이 충돌로 실패해도 한 칸은 쓴 것으로 남는다).
+  const quota = await database()
+    .prepare(
+      "INSERT INTO invite_quota(user_id,day,n) VALUES(?,(now() AT TIME ZONE 'Asia/Seoul')::date,1) ON CONFLICT (user_id,day) DO UPDATE SET n=invite_quota.n+1 WHERE invite_quota.n < ? RETURNING n",
+    )
+    .bind(user.id, DAILY_INVITE_LIMIT)
+    .first();
+  if (!quota)
+    throw new AccessError(`초대는 하루 ${DAILY_INVITE_LIMIT}개까지 만들 수 있습니다(한국 시간 0시에 초기화).`, 429);
   const token = crypto.randomUUID() + crypto.randomUUID();
   const hash = await tokenHash(token);
   const id = crypto.randomUUID();
@@ -349,7 +362,7 @@ export async function createInvite(
     (m) => [
       database()
         .prepare(
-          'INSERT INTO project_invites(id,project_id,token_hash,email,expires_at,created_by,created_at) SELECT ?,owner,?,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
+          'INSERT INTO project_invites(id,project_id,token_hash,email,expires_at,created_by,created_at,email_sends,email_sent_at) SELECT ?,owner,?,?,?,?,?,1,now() FROM sprints WHERE owner=? AND mutation=?',
         )
         .bind(
           id,
@@ -364,7 +377,80 @@ export async function createInvite(
     ],
     ['draft', 'active'],
   );
-  return { token, expiresAt: expires, id };
+  const mail = await deliverInvite({
+    inviteId: id,
+    sends: 1,
+    to: email as string,
+    token,
+    origin,
+    projectTitle: s.title,
+    inviter: me.display_name,
+    expiresAt: new Date(expires),
+  });
+  return { token, expiresAt: expires, id, email: mail };
+}
+/** 같은 초대에 새 링크를 발급해 다시 보낸다. 이전 링크는 즉시 무효. 한도는 저장 트랜잭션의 조건으로 지킨다. */
+export async function resendInvite(
+  project: string,
+  user: Identity,
+  revision: number,
+  inviteId: unknown,
+  origin: string,
+) {
+  const me = await member(project, user);
+  assertProjectMutationAllowed({
+    policy: await readPolicy(project),
+    actor: actorOf(me),
+    action: 'resendInvite',
+    now: new Date(),
+  });
+  if (typeof inviteId !== 'string') throw new Error('다시 보낼 초대를 선택해주세요.');
+  const invite = await database()
+    .prepare('SELECT email,status,email_sends,email_sent_at FROM project_invites WHERE project_id=? AND id=?')
+    .bind(project, inviteId)
+    .first<{ email: string; status: string; email_sends: number; email_sent_at: Date | null }>();
+  if (!invite) throw new AccessError('초대를 찾을 수 없습니다.', 404);
+  if (invite.status !== 'pending') throw new Error('대기 중인 초대만 다시 보낼 수 있습니다.');
+  if (invite.email_sends >= INVITE_SEND_LIMIT)
+    throw new AccessError(`초대 메일은 ${INVITE_SEND_LIMIT}번까지 보낼 수 있습니다. 링크를 직접 전달해주세요.`, 429);
+  if (invite.email_sent_at && Date.now() - invite.email_sent_at.getTime() < 60_000)
+    throw new AccessError('1분 뒤에 다시 보낼 수 있습니다.', 429);
+  const s = await readSprint(project);
+  if (!s) throw new AccessError();
+  if (s.revision !== revision) throw new Conflict();
+  const token = crypto.randomUUID() + crypto.randomUUID();
+  const hash = await tokenHash(token);
+  const expires = new Date(Date.now() + 7 * 86400000).toISOString();
+  await save(
+    project,
+    s,
+    'resend_invite',
+    `${me.display_name} · 초대 링크 다시 발급`,
+    (m) => [
+      database()
+        .prepare(
+          "UPDATE project_invites SET token_hash=?,expires_at=?,email_sends=email_sends+1,email_sent_at=now(),email_status=NULL WHERE project_id=? AND id=? AND status='pending' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)",
+        )
+        .bind(hash, expires, project, inviteId, project, m),
+    ],
+    ['draft', 'active'],
+    // 읽은 뒤 저장 사이에 한도가 바뀌었으면 아무것도 쓰지 않는다(409).
+    {
+      sql: "EXISTS(SELECT 1 FROM project_invites i WHERE i.project_id=sprints.owner AND i.id=? AND i.status='pending' AND i.email_sends<? AND (i.email_sent_at IS NULL OR i.email_sent_at < now() - interval '1 minute'))",
+      args: [inviteId, INVITE_SEND_LIMIT],
+    },
+  );
+  const mail = await deliverInvite({
+    inviteId,
+    sends: invite.email_sends + 1,
+    to: invite.email,
+    token,
+    origin,
+    projectTitle: s.title,
+    inviter: me.display_name,
+    expiresAt: new Date(expires),
+  });
+  return { token, expiresAt: expires, id: inviteId, email: mail };
 }
 export async function inspectInvite(user: Identity, token: string) {
   if (!/^[a-f0-9-]{72}$/.test(token))
