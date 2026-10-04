@@ -119,7 +119,15 @@ export type ProjectMeta = {
     left_at: string | null;
     left_note: string;
   }[];
-  invites: { id: string; email: string; expires_at: string; status: string }[];
+  invites: {
+    id: string;
+    email: string;
+    expires_at: string;
+    status: string;
+    email_status: 'sent' | 'failed' | 'off' | null;
+    email_sent_at: string | null;
+    email_sends: number;
+  }[];
 };
 export type InvitePreview = {
   title: string;
@@ -148,6 +156,7 @@ async function api(path: string, body?: Record<string, unknown>) {
     projects: { id: string; title: string; role: string; lifecycle: string }[];
     projectId: string;
     token?: string;
+    email?: 'sent' | 'failed' | 'off';
     details: InvitePreview;
   };
   if (!res.ok) {
@@ -508,6 +517,16 @@ export function ProjectDetails({
   );
 }
 
+function inviteNotice(mail: unknown, to: string, resent: boolean) {
+  const head =
+    mail === 'sent'
+      ? `${to}로 초대 메일을 보냈습니다. 아래 링크도 직접 전달할 수 있습니다.`
+      : mail === 'failed'
+        ? '메일을 보내지 못했습니다. 아래 링크를 직접 전달해 주세요.'
+        : '메일 발송이 설정되지 않아 보내지 않았습니다. 아래 링크를 직접 전달해 주세요.';
+  return resent ? `${head} 이전 링크는 더 이상 쓸 수 없습니다.` : head;
+}
+const MAIL_LABEL = { sent: '메일 보냄', failed: '메일 실패', off: '메일 꺼짐' } as const;
 // 팀장 전용 초대 관리. 헤더의 초대하기 대화상자에서 연다. 팀원 목록은 팀 · 공수의 팀 상태가 보여준다.
 export function TeamInvites({
   state,
@@ -545,9 +564,15 @@ export function TeamInvites({
         );
       await refresh();
       setMessage(
-        action === 'invite'
-          ? '초대 링크를 만들었습니다. 이메일은 발송하지 않았습니다.'
-          : '초대를 취소했습니다.',
+        action === 'revoke'
+          ? '초대를 취소했습니다.'
+          : inviteNotice(
+              result.email,
+              action === 'invite'
+                ? email
+                : (state.invites.find((i) => i.id === extra.inviteId)?.email ?? ''),
+              action === 'resend',
+            ),
       );
     } catch (e) {
       setMessage((e as Error).message);
@@ -584,8 +609,8 @@ export function TeamInvites({
         </button>
       </form>
       <p className="hint">
-        초대 링크는 지정된 이메일의 Google 계정으로만 수락할 수 있으며 7일 뒤
-        만료됩니다.
+        초대 링크를 그 이메일로 보내며, 그 이메일의 Google 계정으로만 수락할 수
+        있습니다. 링크는 7일 뒤 만료됩니다.
       </p>
       {link && (
         <label className="project-form">
@@ -626,6 +651,28 @@ export function TeamInvites({
             {new Date(i.expires_at).toLocaleString('ko-KR', {
               timeZone: 'Asia/Seoul',
             })}{' '}
+            {i.email_status && (
+              <>
+                · {MAIL_LABEL[i.email_status]}
+                {i.email_status === 'sent' && i.email_sent_at
+                  ? ' ' +
+                    new Date(i.email_sent_at).toLocaleTimeString('ko-KR', {
+                      timeZone: 'Asia/Seoul',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : ''}{' '}
+              </>
+            )}
+            {i.status === 'pending' && i.email_sends < 3 && (
+              <button
+                className="btn"
+                disabled={busy || !writable}
+                onClick={() => void runAction('resend', { inviteId: i.id })}
+              >
+                다시 보내기
+              </button>
+            )}
             {i.status === 'pending' && (
               <button
                 className="btn"

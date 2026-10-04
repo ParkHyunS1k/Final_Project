@@ -96,6 +96,15 @@ test('화면 문구는 보내지 않는 알림 메일을 약속하지 않는다'
   }
 });
 
+test('초대 화면은 메일을 보내지 않는다고 안내하지 않는다(초대 링크 메일 발송)', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['components/project-workspace.tsx', 'app/workspace/page.tsx']) {
+    const text = readFileSync(f, 'utf8');
+    assert.doesNotMatch(text, /이메일은 발송하지 않/, f);
+  }
+  assert.match(readFileSync('components/project-workspace.tsx', 'utf8'), /다시 보내기/);
+});
+
 test('출발 전 설계 장면은 연결되지 않은 AI 배정을 약속하지 않는다', async () => {
   const { readFileSync } = await import('node:fs');
   const page = readFileSync('components/landing-page.tsx', 'utf8');
