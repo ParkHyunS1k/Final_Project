@@ -74,6 +74,8 @@ test('초대 메일: 제목·본문에 줄바꿈이 섞이지 않고 링크·만
   const m = api.inviteMessage(mail);
   assert.equal(m.to, 'mate@test.local');
   assert.doesNotMatch(m.subject, /[\r\n]/);
+  assert.equal(m.text.split('\n')[0], "김리드 (팀장)님이 ProjectMate의 '포트폴리오 스프린트' 팀에 초대했습니다.");
+  assert.doesNotMatch(m.text, /\r/);
   assert.match(m.subject, /^\[ProjectMate\] 김리드 \(팀장\)님이 '포트폴리오 스프린트' 팀에 초대했습니다$/);
   assert.ok(m.text.includes('https://test.local/workspace?invite=' + 'a'.repeat(72)));
   assert.match(m.text, /2026\. 10\. 11\. .*12:00:00/);
