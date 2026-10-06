@@ -179,6 +179,21 @@ export function openPglite(dataDir?: string): Db {
   );
 }
 
+/**
+ * postgres.js 값 변환. json/jsonb 자리는 postgres.js가 JSON.stringify를 한 번 더 하므로,
+ * param()이 이미 JSON 문자열로 바꾼 값은 그대로 보낸다(두 번 감싸면 jsonb 문자열로 저장된다).
+ */
+export const postgresTypes = {
+  bigint: { to: 20, from: [20], serialize: (x: number) => String(x), parse: (x: string) => Number(x) },
+  date: { to: 1082, from: [1082], serialize: (x: string) => x, parse: (x: string) => x },
+  json: {
+    to: 3802,
+    from: [114, 3802],
+    serialize: (x: unknown) => (typeof x === 'string' ? x : JSON.stringify(x)),
+    parse: (x: string) => JSON.parse(x) as unknown,
+  },
+};
+
 export function openPostgres(url: string): Db {
   // Supabase 연결 풀러(트랜잭션 모드)는 prepared statement를 쓸 수 없다.
   const sql = postgres(url, {
@@ -186,10 +201,7 @@ export function openPostgres(url: string): Db {
     max: 5,
     // 서버리스 함수가 쉬는 동안 연결을 붙잡지 않는다(초).
     idle_timeout: 20,
-    types: {
-      bigint: { to: 20, from: [20], serialize: (x: number) => String(x), parse: (x: string) => Number(x) },
-      date: { to: 1082, from: [1082], serialize: (x: string) => x, parse: (x: string) => x },
-    },
+    types: postgresTypes,
   });
   type Unsafe = { unsafe: (q: string, a: unknown[]) => Promise<Record<string, unknown>[] & { count: number }> };
   const viaUnsafe =

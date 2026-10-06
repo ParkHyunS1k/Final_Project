@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseError, database, openPglite, toPositional, type Db } from '../lib/db.ts';
@@ -184,4 +184,33 @@ void test('초대 메일 상태 열: email_status·email_sent_at은 비워둘 �
       ['email_status', 'YES', null],
     ],
   );
+});
+
+// 운영(postgres.js)은 jsonb 자리의 값을 다시 JSON.stringify한다. param()이 이미 문자열로 바꾼 배열이
+// 두 번 감싸져 jsonb 문자열로 저장됐다(2026-10-06, 프로젝트 메뉴에서 deliverables.map 오류).
+void test('postgres.js jsonb 직렬화: 이미 JSON인 문자열은 그대로, 객체·배열은 한 번만 JSON으로', async () => {
+  const { postgresTypes } = await import('../lib/db.ts');
+  const serialize = postgresTypes.json.serialize;
+  assert.equal(serialize('["a","b"]'), '["a","b"]');
+  assert.equal(serialize(['a', 'b']), '["a","b"]');
+  assert.equal(serialize({ k: 1 }), '{"k":1}');
+  assert.deepEqual(postgresTypes.json.from, [114, 3802]);
+});
+
+void test('0003 마이그레이션은 문자열로 감싸진 jsonb 배열·객체를 풀고, 정상 값은 그대로 둔다', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pm-mig-'));
+  const all = readdirSync('db/migrations').filter((n) => n.endsWith('.sql')).sort();
+  const before = all.filter((n) => n < '0003');
+  for (const n of before) writeFileSync(join(dir, n), readFileSync(join('db/migrations', n), 'utf8'));
+  const db = openPglite();
+  await migrate(db, dir);
+  await db.exec(`
+    INSERT INTO sprints(owner,title,updated_at) VALUES ('p1','t',now()),('p2','t',now());
+    INSERT INTO project_details(project_id,created_by,goal,deliverables,completion_criteria,created_at)
+      VALUES ('p1','u','g', to_jsonb('["서비스","데모"]'::text),'c',now()),
+             ('p2','u','g', '["정상"]'::jsonb,'c',now());
+  `);
+  await migrate(db);
+  const rows = (await db.prepare('SELECT project_id, deliverables FROM project_details ORDER BY 1').all()).results;
+  assert.deepEqual(rows.map((r) => r.deliverables), [['서비스', '데모'], ['정상']]);
 });
