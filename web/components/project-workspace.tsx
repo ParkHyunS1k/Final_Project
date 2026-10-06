@@ -17,36 +17,29 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import {
-  Zap,
-  Plus,
-  ListTodo,
-  UserRound,
-  FileText,
-  Users,
-  ChartNoAxesCombined,
-  Flag,
-  Folder,
-  Sparkles,
-  LogOut,
-} from 'lucide-react';
+import { Zap, ListTodo, FileText, Gauge, LogOut } from 'lucide-react';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { viewFrom, type View } from '@/lib/race';
 import { apiFetch, signInWithGoogle, signOut } from '@/lib/supabase-browser';
 import { workspaceEntry } from '@/lib/workspace-entry';
+import { ThemeToggle } from '@/components/theme-toggle';
 export const workspaceViews = [
-  { id: 'plan', label: '프로젝트 업무', icon: ListTodo },
-  { id: 'mine', label: '내 할 일', icon: UserRound },
-  { id: 'today', label: '스프린트 현황', icon: ChartNoAxesCombined },
-  { id: 'docs', label: '프로젝트 문서', icon: FileText },
-  { id: 'team', label: '팀 · 공수', icon: Users },
-  { id: 'ai', label: '변경안 검토', icon: Sparkles },
-  { id: 'result', label: '완주 확인', icon: Flag },
+  { id: 'home' as View, label: '홈', icon: Gauge },
+  { id: 'tasks' as View, label: '업무', icon: ListTodo },
+  { id: 'project' as View, label: '프로젝트', icon: FileText },
 ];
-function WorkspaceNav({
+export type WorkspaceNav = {
+  view: View;
+  setView: (view: View) => void;
+  mine: boolean;
+  setMine: (mine: boolean) => void;
+};
+function WorkspaceMenu({
   view,
   onChange,
 }: {
-  view: string;
-  onChange: (view: string) => void;
+  view: View;
+  onChange: (view: View) => void;
 }) {
   const { setOpenMobile } = useSidebar();
   return (
@@ -92,6 +85,44 @@ function WorkspaceButton({
     >
       {children}
     </SidebarMenuButton>
+  );
+}
+// 프로젝트 목록과 새 프로젝트를 한 곳에. 모바일에서는 고른 뒤 사이드바를 닫는다.
+function ProjectSwitcher({
+  projects,
+  value,
+  onSelect,
+  onCreate,
+}: {
+  projects: { id: string; title: string }[];
+  value: string;
+  onSelect: (id: string) => void;
+  onCreate: () => void;
+}) {
+  const { setOpenMobile } = useSidebar();
+  return (
+    <NativeSelect
+      aria-label="프로젝트 선택"
+      className="project-switcher"
+      value={value}
+      onChange={(e) => {
+        if (e.target.value === '__new') onCreate();
+        else onSelect(e.target.value);
+        setOpenMobile(false);
+      }}
+    >
+      {!value && (
+        <NativeSelectOption value="" disabled>
+          프로젝트 선택
+        </NativeSelectOption>
+      )}
+      {projects.map((p) => (
+        <NativeSelectOption key={p.id} value={p.id}>
+          {p.title}
+        </NativeSelectOption>
+      ))}
+      <NativeSelectOption value="__new">+ 새 프로젝트</NativeSelectOption>
+    </NativeSelect>
   );
 }
 export type ProjectMeta = {
@@ -173,17 +204,14 @@ async function api(path: string, body?: Record<string, unknown>) {
 export function ProjectWorkspace({
   children,
 }: {
-  children: (
-    id: string,
-    view: string,
-    setView: (view: string) => void,
-  ) => ReactNode;
+  children: (id: string, nav: WorkspaceNav) => ReactNode;
 }) {
   const [projects, setProjects] = useState<
     { id: string; title: string; role: string; lifecycle: string }[]
   >([]);
   const [selected, setSelected] = useState('');
-  const [view, setView] = useState('today');
+  const [view, setView] = useState<View>('home');
+  const [mine, setMine] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -199,8 +227,9 @@ export function ProjectWorkspace({
 
     api('/api/projects')
       .then(async (data) => {
-        if (workspaceViews.some((v) => v.id === params.get('view')))
-          setView(params.get('view')!);
+        const start = viewFrom(params.get('view'));
+        setView(start.view);
+        setMine(start.mine);
         const entry = workspaceEntry(location.search, data.projects);
         setInvite(entry.invite);
         setCreating(entry.creating);
@@ -250,45 +279,24 @@ export function ProjectWorkspace({
             </span>{' '}
             projectmate.
           </div>
-          <WorkspaceButton
-            className="workspace-new"
-            onClick={() => setCreating(!creating)}
-          >
-            <Plus size={16} />
-            {creating ? '만들기 닫기' : '새 프로젝트'}
-          </WorkspaceButton>
+          <ProjectSwitcher
+            projects={projects}
+            value={creating ? '__new' : selected}
+            onCreate={() => setCreating(true)}
+            onSelect={(id) => {
+              setSelected(id);
+              setCreating(false);
+              setView('home');
+              setMine(false);
+              history.replaceState(null, '', '/workspace?project=' + encodeURIComponent(id));
+            }}
+          />
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>프로젝트</SidebarGroupLabel>
-            <SidebarMenu>
-              {projects.map((p) => (
-                <SidebarMenuItem key={p.id}>
-                  <WorkspaceButton
-                    isActive={p.id === selected}
-                    title={p.title}
-                    onClick={() => {
-                      setSelected(p.id);
-                      setCreating(false);
-                      setView('today');
-                      history.replaceState(
-                        null,
-                        '',
-                        '/workspace?project=' + encodeURIComponent(p.id),
-                      );
-                    }}
-                  >
-                    <Folder size={16} />
-                    <span>{p.title}</span>
-                  </WorkspaceButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
           {selected && (
             <SidebarGroup>
-              <SidebarGroupLabel>작업 공간</SidebarGroupLabel>
-              <WorkspaceNav
+              <SidebarGroupLabel>메뉴</SidebarGroupLabel>
+              <WorkspaceMenu
                 view={view}
                 onChange={(v) => {
                   setView(v);
@@ -299,10 +307,13 @@ export function ProjectWorkspace({
           )}
         </SidebarContent>
         <SidebarFooter>
-          <WorkspaceButton onClick={() => void signOut()}>
-            <LogOut size={16} />
-            로그아웃
-          </WorkspaceButton>
+          <div className="sidebar-actions">
+            <WorkspaceButton onClick={() => void signOut()}>
+              <LogOut size={16} />
+              로그아웃
+            </WorkspaceButton>
+            <ThemeToggle />
+          </div>
           <p className="sidebar-note">
             작게 시작하고, 함께 완성하기.
             <br />
@@ -311,14 +322,12 @@ export function ProjectWorkspace({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="workspace-body">
-        <header className="workspace-bar">
-          <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
-          <span>프로젝트</span>
-          <span>/</span>
-          <b>
-            {projects.find((p) => p.id === selected)?.title ?? '새 작업 공간'}
-          </b>
-        </header>
+        {!(selected && !creating && !invite) && (
+          <header className="workspace-bar">
+            <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
+            <b>{creating ? '새 프로젝트' : '프로젝트'}</b>
+          </header>
+        )}
         {error && (
           <div className="project-panel" role="alert">
             <p>{error}</p>
@@ -464,7 +473,7 @@ export function ProjectWorkspace({
             </a>
           </section>
         ) : selected && !creating ? (
-          children(selected, view, setView)
+          children(selected, { view, setView, mine, setMine })
         ) : loaded && !creating ? (
           <section className="project-panel">
             <h1>첫 스프린트를 만들어보세요.</h1>
@@ -507,9 +516,9 @@ export function ProjectDetails({
       </p>
       {!state.sprint.tasks.length && (
         <p>
-          프로젝트 생성이 완료됐습니다. 실행 계획에서 업무와 담당자를
+          프로젝트 생성이 완료됐습니다. 업무 메뉴에서 업무와 담당자를
           {state.me.role === 'owner'
-            ? ' 등록하고, 오른쪽 위 초대하기에서 팀원을 초대해주세요.'
+            ? ' 등록하고, 아래 팀원 구역에서 팀원을 초대해주세요.'
             : ' 확인해주세요.'}
         </p>
       )}
@@ -527,7 +536,7 @@ function inviteNotice(mail: unknown, to: string, resent: boolean) {
   return resent ? `${head} 이전 링크는 더 이상 쓸 수 없습니다.` : head;
 }
 const MAIL_LABEL = { sent: '메일 보냄', failed: '메일 실패', off: '메일 꺼짐' } as const;
-// 팀장 전용 초대 관리. 헤더의 초대하기 대화상자에서 연다. 팀원 목록은 팀 · 공수의 팀 상태가 보여준다.
+// 팀장 전용 초대 관리. 프로젝트 메뉴의 팀원 구역에 그대로 둔다.
 export function TeamInvites({
   state,
   refresh,

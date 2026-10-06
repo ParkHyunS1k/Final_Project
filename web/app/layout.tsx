@@ -24,13 +24,20 @@ export const metadata: Metadata = {
   description: '작은 팀의 7일 프로젝트 완주를 돕는 스프린트 에이전트 데모',
 };
 
+// 그리기 전에 테마를 정해 깜빡임을 막는다. 저장값이 'light'일 때만 라이트, 읽기 실패도 다크.
+const THEME_SCRIPT =
+  "try{if(localStorage.getItem('pm-theme')!=='light')document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoSansKr.variable} antialiased`}
       >
