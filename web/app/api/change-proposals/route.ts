@@ -37,7 +37,7 @@ export const dynamic = 'force-dynamic';
 // 실제 모델 호출(최대 60초, lib/dev-live-model.ts)에 저장 시간을 더한 여유.
 export const maxDuration = 90;
 // 사용자당 하루(KST) AI 변경안 만들기 수. 운영 모델 호출 비용을 묶는다(사용자 결정 2026-10-06).
-const DAILY_AI_LIMIT = 20;
+const DAILY_AI_LIMIT = 10;
 
 // PROJECTMATE_LIVE_MODEL과 OPENAI_API_KEY가 있으면 실제 모델(lib/dev-live-model.ts)을 쓴다
 // (사용자 결정 2026-10-06: 운영에서도 사용). 없으면 가짜 모델이며, 운영에서는 '준비 중'으로 막힌다.
