@@ -17,7 +17,7 @@ const outfile = join(dir, 'adapter.mjs');
 await build({
   stdin: {
     contents:
-      "export { devLiveModel } from './lib/dev-live-model'; export { fakeModel, validateChanges } from './lib/ai-extraction';",
+      "export { devLiveModel, liveModelFromEnv } from './lib/dev-live-model'; export { fakeModel, validateChanges } from './lib/ai-extraction';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -112,18 +112,14 @@ function liveCreate(over = {}) {
 
 test('route는 live-model 값을 process.env에서 읽고 저장소에 키를 두지 않는다', () => {
   const route = readFileSync('app/api/change-proposals/route.ts', 'utf8');
-  assert.match(route, /const devBindings = process\.env as DevModelBindings;/);
+  assert.match(route, /liveModelFromEnv\(process\.env\)/);
   assert.doesNotMatch(route, /cloudflare:workers/);
   assert.doesNotMatch(route, /sk-[A-Za-z0-9_-]{10,}/);
 });
 
 test('live-model binding이 없을 때 route 기본 모델은 기존 fakeModel이다', async () => {
   const route = readFileSync('app/api/change-proposals/route.ts', 'utf8');
-  assert.match(route, /let model: Model = fakeModel\(\);/);
-  assert.match(
-    route,
-    /if \(devBindings\.PROJECTMATE_LIVE_MODEL\) \{[\s\S]*apiKey: devBindings\.OPENAI_API_KEY/,
-  );
+  assert.match(route, /let model: Model = liveModelFromEnv\(process\.env\) \?\? fakeModel\(\);/);
   const adapter = readFileSync('lib/dev-live-model.ts', 'utf8');
   assert.doesNotMatch(adapter, /node:(fs|path|url)/);
   const model = api.fakeModel();
@@ -188,9 +184,10 @@ test('개발 어댑터 호출 실패는 예외를 던져 기존 proposal 실패 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response('bad request', { status: 400 });
   try {
+    // 외부 오류 본문은 화면·DB로 보내지 않는다. 고정 문구만.
     await assert.rejects(
       () => api.devLiveModel({ apiKey: 'test-only-key' }).run(input),
-      /실제 모델 호출 실패\(400\)/,
+      (e) => /AI 변경안을 만들지 못했습니다/.test(e.message) && !/bad request/.test(e.message),
     );
   } finally {
     globalThis.fetch = originalFetch;
@@ -271,4 +268,48 @@ test('실제 모델 응답이 제한 시간 안에 오지 않으면 재시도하
 
 test('기본 모델은 gpt-6.1-sol이다', () => {
   assert.match(api.devLiveModel({ apiKey: 'k' }).name, /^live:gpt-6\.1-sol\//);
+});
+
+test('플래그와 공백 아닌 키가 모두 있어야 실제 모델을 만든다(아니면 null → 준비 중)', () => {
+  assert.equal(api.liveModelFromEnv({}), null);
+  assert.equal(api.liveModelFromEnv({ PROJECTMATE_LIVE_MODEL: '1' }), null);
+  assert.equal(api.liveModelFromEnv({ PROJECTMATE_LIVE_MODEL: '1', OPENAI_API_KEY: '   ' }), null);
+  assert.equal(api.liveModelFromEnv({ OPENAI_API_KEY: 'k' }), null);
+  const m = api.liveModelFromEnv({ PROJECTMATE_LIVE_MODEL: '1', OPENAI_API_KEY: 'k', PROJECTMATE_MODEL: 'gpt-x' });
+  assert.equal(m.live, true);
+  assert.match(m.name, /^live:gpt-x\//);
+});
+
+test('응답 헤더 뒤 본문이 멈춰도 제한 시간에서 다시 시도 안내로 실패한다', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (_url, options) =>
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          options.signal.addEventListener('abort', () => controller.error(options.signal.reason));
+        },
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+  try {
+    await assert.rejects(
+      () => api.devLiveModel({ apiKey: 'test-only-key', timeoutMs: 50 }).run(input),
+      /다시 시도해주세요/,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('429·5xx가 끝까지 이어지면 원문 오류 없이 다시 시도 안내로 실패한다', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('rate limited: org-secret-detail', { status: 429 });
+  try {
+    await assert.rejects(
+      () => api.devLiveModel({ apiKey: 'test-only-key', timeoutMs: 200 }).run(input),
+      (e) => /다시 시도해주세요/.test(e.message) && !/org-secret-detail/.test(e.message),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

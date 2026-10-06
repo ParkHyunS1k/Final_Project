@@ -13,6 +13,9 @@ const DEFAULT_MODEL = 'gpt-6.1-sol';
 // 한 번의 변경안 만들기에 쓰는 전체 시간(재시도 포함). Vercel 함수 제한(route maxDuration)보다 짧게 둔다.
 const DEFAULT_TIMEOUT_MS = 60_000;
 const TIMEOUT_MESSAGE = 'AI 응답이 늦어 중단했습니다. 잠시 후 다시 시도해주세요.';
+// 외부 오류 본문은 화면·DB로 보내지 않는다(키·조직 정보가 섞일 수 있다). 서버 로그에는 상태와 요청 id만.
+const BUSY_MESSAGE = 'AI 서비스가 바빠 변경안을 만들지 못했습니다. 잠시 후 다시 시도해주세요.';
+const FAILED_MESSAGE = 'AI 변경안을 만들지 못했습니다. 설정 문제일 수 있으니 팀장에게 알려주세요.';
 const DEFAULT_EFFORT = 'low';
 
 // 이 모델이 낼 수 있는 항목 형태. RawChange보다 좁게 강제해서 모델이
@@ -147,13 +150,13 @@ async function callResponsesApi(
   // 429·5xx·네트워크 오류는 지수 백오프로 재시도한다. 다른 오류는 바로 던진다.
   // 전체 시간은 timeoutMs로 묶는다. 시간을 다 쓰면 재시도하지 않고 다시 시도 안내로 실패한다.
   const deadline = Date.now() + timeoutMs;
-  let lastError: string = 'unknown error';
   for (let attempt = 0; attempt < 5; attempt++) {
     const left = deadline - Date.now();
     if (left <= 0) throw new Error(TIMEOUT_MESSAGE);
-    let response: Response;
+    let status = 0;
     try {
-      response = await fetch(API_URL, {
+      // 본문 읽기까지 같은 제한 시간 안에 둔다(헤더만 오고 본문이 멈추는 경우).
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${key}`,
@@ -162,21 +165,21 @@ async function callResponsesApi(
         body,
         signal: AbortSignal.timeout(left),
       });
+      status = response.status;
+      if (response.ok) return (await response.json()) as Record<string, unknown>;
+      console.error('openai responses failed', status, response.headers.get('x-request-id'));
+      await response.body?.cancel().catch(() => {});
+      if (status !== 429 && status < 500) throw new Error(FAILED_MESSAGE);
     } catch (e) {
       if (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError'))
         throw new Error(TIMEOUT_MESSAGE);
-      lastError = e instanceof Error ? e.message : '네트워크 오류';
-      await sleep(Math.min(2 ** attempt * 1000, Math.max(0, deadline - Date.now())));
-      continue;
+      if (e instanceof Error && e.message === FAILED_MESSAGE) throw e;
+      if (!status) console.error('openai responses network error', e instanceof Error ? e.name : 'unknown');
     }
-    if (response.ok) return response.json();
-    const detail = await response.text().catch(() => '');
-    if (response.status !== 429 && response.status < 500)
-      throw new Error(`실제 모델 호출 실패(${response.status}): ${detail.slice(0, 300)}`);
-    lastError = `${response.status} ${detail.slice(0, 300)}`;
+    // 429·5xx·네트워크 오류는 남은 시간 안에서 지수 백오프로 재시도한다.
     await sleep(Math.min(2 ** attempt * 1000, Math.max(0, deadline - Date.now())));
   }
-  throw new Error(`실제 모델 호출이 재시도 후에도 실패했습니다: ${lastError}`);
+  throw new Error(BUSY_MESSAGE);
 }
 
 function sleep(ms: number) {
@@ -239,6 +242,17 @@ export type LiveModelOptions = {
 
 /** 실제 모델 어댑터. route.ts가 서버 환경값의 secret을
  * 명시적으로 주입한다. 이 모듈은 호스트 파일시스템이나 process.env를 읽지 않는다. */
+/** 플래그(PROJECTMATE_LIVE_MODEL)와 공백 아닌 OPENAI_API_KEY가 모두 있을 때만 실제 모델. 아니면 null(→ 준비 중). */
+export function liveModelFromEnv(env: Record<string, string | undefined>): Model | null {
+  const apiKey = env.OPENAI_API_KEY?.trim();
+  if (!env.PROJECTMATE_LIVE_MODEL || !apiKey) return null;
+  return devLiveModel({
+    apiKey,
+    model: env.PROJECTMATE_MODEL,
+    reasoningEffort: env.PROJECTMATE_REASONING_EFFORT,
+  });
+}
+
 export function devLiveModel(options: LiveModelOptions = {}): Model {
   const apiKey = options.apiKey?.trim() ?? '';
   const modelName = options.model || DEFAULT_MODEL;

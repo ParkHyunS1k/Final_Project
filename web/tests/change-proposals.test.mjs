@@ -1342,3 +1342,19 @@ test('AI 변경안 만들기는 사용자당 하루(KST) 20회까지, 21번째�
     api.useModel(api.fakeModel());
   }
 });
+
+test('모델 호출이 실패하면 하루 한도를 쓰지 않는다', async () => {
+  const { projectId } = await startedTeam('quota2', 'quota2mate');
+  const sourceId = await paste('quota2', projectId, '추출 화면 연결 완료했습니다.');
+  api.useModel({ name: 'broken', live: true, run: async () => { throw new Error('AI 응답이 늦어 중단했습니다. 잠시 후 다시 시도해주세요.'); } });
+  try {
+    for (let i = 0; i < 21; i++) {
+      const r = await proposalRequest('quota2', { action: 'create', projectId, sourceId });
+      assert.equal(r.status, 201, await r.clone().text());
+      assert.match((await r.json()).error, /다시 시도해주세요/);
+    }
+    assert.equal((await one("SELECT n FROM ai_quota WHERE user_id='quota2'"))?.n ?? 0, 0);
+  } finally {
+    api.useModel(api.fakeModel());
+  }
+});

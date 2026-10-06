@@ -18,7 +18,7 @@
 - 오래된 제안, 중복 승인, 동시 수정 충돌을 차단한다.
 - 결과물 근거와 변경 기록은 다시 접속해도 유지된다.
 
-기존 샘플은 원래 소유자에게 보존한다. 새 계정에는 샘플을 자동 생성하지 않는다. 신규 프로젝트는 업무 없음·가용시간 0으로 시작한다. LLM, Python 서버 호출, 외부 업로드, 실제 결제·환급은 미연결이다.
+기존 샘플은 원래 소유자에게 보존한다. 새 계정에는 샘플을 자동 생성하지 않는다. 신규 프로젝트는 업무 없음·가용시간 0으로 시작한다. LLM은 AI 변경안에만 쓰며 서버 환경변수(`PROJECTMATE_LIVE_MODEL`, `OPENAI_API_KEY`)가 있을 때만 연결된다. Python 서버 호출, 외부 업로드, 실제 결제·환급은 미연결이다.
 
 초대 링크는 초대받은 이메일로 발송되며(Gmail SMTP, 설정이 없으면 보내지 않고 링크만 보여준다) 그 이메일의 Google 계정으로 로그인해야 수락한다. 메일 설정: Vercel·`.env.local`에 `EMAIL_PROVIDER=gmail`, `EMAIL_FROM`(Gmail 주소), `EMAIL_API_KEY`(Google 앱 비밀번호, 비밀값). 배포는 Vercel 팀 내부용이다(아래 '소스와 배포').
 
@@ -126,5 +126,5 @@ npm run build
 - 환경변수(Production·Preview 같은 값): `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`(트랜잭션 풀러 6543). `AUTH_DEV_HEADERS`·`AI_FAKE_MODEL`은 넣지 않는다(넣어도 운영에서는 무시된다). `NEXT_PUBLIC_*`는 빌드 때 박히므로 바꾸면 다시 배포한다.
 - 미리보기 접근: Deployment Protection의 Vercel Authentication을 끈다. 접근 제어는 앱의 Google 로그인과 프로젝트 멤버 확인이다.
 - Supabase Auth: Site URL은 운영 주소, Redirect URLs에 `https://<운영주소>/**`, `https://*-<vercel계정>.vercel.app/**`, `http://localhost:*/**`.
-- 마이그레이션은 자동으로 돌지 않는다. `db/migrations/`에 새 파일이 생기는 PR은 머지 전에 운영 DB에 적용한다: `node --env-file=.env.local --experimental-strip-types scripts/migrate.ts`(`npm run db:migrate`는 `.env.local`을 읽지 않아 로컬 PGlite에 적용된다). 미리보기도 같은 DB를 쓰므로 컬럼 삭제·이름 변경은 하지 않는다.
+- 마이그레이션은 자동으로 돌지 않는다. `db/migrations/`에 새 파일이 생기는 PR은 미리보기·운영이 같은 DB를 쓰므로, 테이블 추가 같은 호환 마이그레이션은 PR을 올리기 전에 운영 DB에 먼저 적용한다: `node --env-file=.env.local --experimental-strip-types scripts/migrate.ts`. `npm run db:migrate`는 `.env.local`을 자동으로 읽지 않으며, 셸에 `DATABASE_URL`도 없으면 로컬 PGlite에 적용된다. 미리보기도 같은 DB를 쓰므로 컬럼 삭제·이름 변경은 하지 않는다.
 - AI 변경안: Vercel 환경변수 `PROJECTMATE_LIVE_MODEL=1`과 `OPENAI_API_KEY`(Production·Preview)를 넣으면 실제 모델(`gpt-6.1-sol`, `PROJECTMATE_MODEL`로 바꿀 수 있음)을 쓴다. 없으면 '준비 중'이다(`lib/ai-extraction.ts` `aiAvailable`). 사용자당 하루 20회(`ai_quota`).
