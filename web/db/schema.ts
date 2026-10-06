@@ -355,3 +355,14 @@ export const inviteQuota = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.day] })],
 ).enableRLS();
+
+// 사용자별·날짜(KST)별 AI 변경안 만들기 수. 운영 모델 호출 비용을 묶는다. 초대 한도와 같은 upsert 방식.
+export const aiQuota = pgTable(
+  'ai_quota',
+  {
+    userId: text('user_id').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    n: integer('n').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })],
+).enableRLS();

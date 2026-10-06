@@ -32,28 +32,17 @@ import {
 } from '@/lib/change-proposals';
 import { cancelStatements, scheduleStatements } from '@/lib/reminder-store';
 import { readReplay, replayCases } from '@/lib/change-review-replay';
+import { liveModelFromEnv } from '@/lib/dev-live-model';
 export const dynamic = 'force-dynamic';
+// 실제 모델 호출(최대 60초, lib/dev-live-model.ts)에 저장 시간을 더한 여유.
+export const maxDuration = 90;
+// 사용자당 하루(KST) AI 변경안 만들기 수. 운영 모델 호출 비용을 묶는다(사용자 결정 2026-10-06).
+const DAILY_AI_LIMIT = 10;
 
-// 운영 모델은 아직 연결하지 않았다(사용자 결정 2026-09-09). 가짜 모델로 흐름만 잇는다.
-// PROJECTMATE_LIVE_MODEL binding이 명시된 경우에만 개발 전용 실제 모델
-// 어댑터로 바꾼다(사용자 결정 2026-09-14: 담당자 배정 확인용 개발·검증 도구).
+// PROJECTMATE_LIVE_MODEL과 OPENAI_API_KEY가 있으면 실제 모델(lib/dev-live-model.ts)을 쓴다
+// (사용자 결정 2026-10-06: 운영에서도 사용). 없으면 가짜 모델이며, 운영에서는 '준비 중'으로 막힌다.
 // secret은 파일로 읽지 않고 서버 환경값(process.env)에서 어댑터로 명시 주입한다.
-type DevModelBindings = {
-  PROJECTMATE_LIVE_MODEL?: string;
-  OPENAI_API_KEY?: string;
-  PROJECTMATE_MODEL?: string;
-  PROJECTMATE_REASONING_EFFORT?: string;
-};
-const devBindings = process.env as DevModelBindings;
-let model: Model = fakeModel();
-if (devBindings.PROJECTMATE_LIVE_MODEL) {
-  const { devLiveModel } = await import('@/lib/dev-live-model');
-  model = devLiveModel({
-    apiKey: devBindings.OPENAI_API_KEY,
-    model: devBindings.PROJECTMATE_MODEL,
-    reasoningEffort: devBindings.PROJECTMATE_REASONING_EFFORT,
-  });
-}
+let model: Model = liveModelFromEnv(process.env) ?? fakeModel();
 export function useModel(next: Model) {
   model = next;
 }
@@ -189,6 +178,18 @@ export async function POST(request: Request) {
         typeof b.sourceId === 'string' ? b.sourceId : '',
       );
       if (!source) return reply({ error: '원문을 찾을 수 없습니다.' }, 404);
+      // 모든 검사를 통과한 뒤, 모델을 부르기 전에 한 칸 쓴다. 한 문장의 upsert라 동시 요청에도 한도를 넘지 않는다.
+      const quota = await db
+        .prepare(
+          "INSERT INTO ai_quota(user_id,day,n) VALUES(?,(now() AT TIME ZONE 'Asia/Seoul')::date,1) ON CONFLICT (user_id,day) DO UPDATE SET n=ai_quota.n+1 WHERE ai_quota.n < ? RETURNING day",
+        )
+        .bind(user.id, DAILY_AI_LIMIT)
+        .first();
+      if (!quota)
+        return reply(
+          { error: `AI 변경안은 하루 ${DAILY_AI_LIMIT}회까지 만들 수 있습니다(한국 시간 0시에 초기화).` },
+          429,
+        );
       const input = {
         source: { id: source.id, body: source.body },
         tasks: sprint.tasks.map((t) => ({
@@ -226,6 +227,11 @@ export async function POST(request: Request) {
       } catch (e) {
         // 모델 오류·잘못된 구조는 검토 가능한 실패로 남기고 업무는 바꾸지 않는다.
         error = e instanceof Error ? e.message : '모델 응답을 처리하지 못했습니다.';
+        // 사용자가 고칠 수 없는 실패(시간 초과·서비스 오류·잘못된 응답)로 하루 한도를 쓰지 않게, 잡은 그날 칸을 돌려준다.
+        await db
+          .prepare('UPDATE ai_quota SET n=n-1 WHERE user_id=? AND day=? AND n>0')
+          .bind(user.id, quota.day)
+          .run();
       }
       // 모델 호출이 끝난 뒤 상태가 바뀌었을 수 있다. 실제 INSERT에도 프로젝트
       // 상태·마감·현재 멤버십 조건을 걸고, 세부 항목은 머리 행이 있을 때만 넣는다.

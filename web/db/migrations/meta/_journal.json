@@ -29,6 +29,13 @@
       "when": 1791271548658,
       "tag": "0003_jsonb_unwrap",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791284491236,
+      "tag": "0004_ai_quota",
+      "breakpoints": true
     }
   ]
 }
