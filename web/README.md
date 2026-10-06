@@ -126,5 +126,5 @@ npm run build
 - 환경변수(Production·Preview 같은 값): `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`(트랜잭션 풀러 6543). `AUTH_DEV_HEADERS`·`AI_FAKE_MODEL`은 넣지 않는다(넣어도 운영에서는 무시된다). `NEXT_PUBLIC_*`는 빌드 때 박히므로 바꾸면 다시 배포한다.
 - 미리보기 접근: Deployment Protection의 Vercel Authentication을 끈다. 접근 제어는 앱의 Google 로그인과 프로젝트 멤버 확인이다.
 - Supabase Auth: Site URL은 운영 주소, Redirect URLs에 `https://<운영주소>/**`, `https://*-<vercel계정>.vercel.app/**`, `http://localhost:*/**`.
-- 마이그레이션은 자동으로 돌지 않는다. `db/migrations/`에 새 파일이 생기는 PR은 머지 전에 `.env.local`의 `DATABASE_URL`로 `npm run db:migrate`를 실행한다. 미리보기도 같은 DB를 쓰므로 컬럼 삭제·이름 변경은 하지 않는다.
-- AI 변경안은 운영 모델이 연결되지 않아 배포 환경에서 '준비 중'이다(`lib/ai-extraction.ts` `aiAvailable`).
+- 마이그레이션은 자동으로 돌지 않는다. `db/migrations/`에 새 파일이 생기는 PR은 머지 전에 운영 DB에 적용한다: `node --env-file=.env.local --experimental-strip-types scripts/migrate.ts`(`npm run db:migrate`는 `.env.local`을 읽지 않아 로컬 PGlite에 적용된다). 미리보기도 같은 DB를 쓰므로 컬럼 삭제·이름 변경은 하지 않는다.
+- AI 변경안: Vercel 환경변수 `PROJECTMATE_LIVE_MODEL=1`과 `OPENAI_API_KEY`(Production·Preview)를 넣으면 실제 모델(`gpt-6.1-sol`, `PROJECTMATE_MODEL`로 바꿀 수 있음)을 쓴다. 없으면 '준비 중'이다(`lib/ai-extraction.ts` `aiAvailable`). 사용자당 하루 20회(`ai_quota`).

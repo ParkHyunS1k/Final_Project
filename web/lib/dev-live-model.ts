@@ -1,7 +1,6 @@
-// 개발 전용 실제 모델 어댑터. 운영 경로가 아니다 — 명시적 환경변수
-// PROJECTMATE_LIVE_MODEL이 있을 때만 route.ts가 이 어댑터로 바꿔 끼운다.
+// 실제 모델(OpenAI Responses API) 어댑터. 환경변수 PROJECTMATE_LIVE_MODEL이 있을 때만
+// route.ts가 이 어댑터로 바꿔 끼운다(사용자 결정 2026-10-06: 운영에서도 사용, gpt-6.1-sol).
 // 이 파일이 그냥 import되는 것만으로는 키를 읽거나 네트워크를 타지 않는다.
-// (사용자 결정 2026-09-14: 담당자 배정 결과를 눈으로 확인하기 위한 개발·검증 도구)
 //
 // 모델 출력에는 DB 쓰기 권한이 없다. run()이 돌려주는 RawChange[]는 항상
 // ai-extraction.ts의 validateChanges()를 그대로 통과해야 하며, 이 파일은
@@ -10,7 +9,10 @@ import type { ExtractionInput, Model, RawChange } from './ai-extraction';
 import { buildPrompt } from './ai-extraction';
 
 const API_URL = 'https://api.openai.com/v1/responses';
-const DEFAULT_MODEL = 'gpt-5.6-sol';
+const DEFAULT_MODEL = 'gpt-6.1-sol';
+// 한 번의 변경안 만들기에 쓰는 전체 시간(재시도 포함). Vercel 함수 제한(route maxDuration)보다 짧게 둔다.
+const DEFAULT_TIMEOUT_MS = 60_000;
+const TIMEOUT_MESSAGE = 'AI 응답이 늦어 중단했습니다. 잠시 후 다시 시도해주세요.';
 const DEFAULT_EFFORT = 'low';
 
 // 이 모델이 낼 수 있는 항목 형태. RawChange보다 좁게 강제해서 모델이
@@ -125,6 +127,7 @@ async function callResponsesApi(
   model: string,
   effort: string,
   input: string,
+  timeoutMs: number,
 ): Promise<Record<string, unknown>> {
   const body = JSON.stringify({
     model,
@@ -142,8 +145,12 @@ async function callResponsesApi(
     store: false,
   });
   // 429·5xx·네트워크 오류는 지수 백오프로 재시도한다. 다른 오류는 바로 던진다.
+  // 전체 시간은 timeoutMs로 묶는다. 시간을 다 쓰면 재시도하지 않고 다시 시도 안내로 실패한다.
+  const deadline = Date.now() + timeoutMs;
   let lastError: string = 'unknown error';
   for (let attempt = 0; attempt < 5; attempt++) {
+    const left = deadline - Date.now();
+    if (left <= 0) throw new Error(TIMEOUT_MESSAGE);
     let response: Response;
     try {
       response = await fetch(API_URL, {
@@ -153,10 +160,13 @@ async function callResponsesApi(
           'Content-Type': 'application/json',
         },
         body,
+        signal: AbortSignal.timeout(left),
       });
     } catch (e) {
+      if (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError'))
+        throw new Error(TIMEOUT_MESSAGE);
       lastError = e instanceof Error ? e.message : '네트워크 오류';
-      await sleep(2 ** attempt * 1000);
+      await sleep(Math.min(2 ** attempt * 1000, Math.max(0, deadline - Date.now())));
       continue;
     }
     if (response.ok) return response.json();
@@ -164,7 +174,7 @@ async function callResponsesApi(
     if (response.status !== 429 && response.status < 500)
       throw new Error(`실제 모델 호출 실패(${response.status}): ${detail.slice(0, 300)}`);
     lastError = `${response.status} ${detail.slice(0, 300)}`;
-    await sleep(2 ** attempt * 1000);
+    await sleep(Math.min(2 ** attempt * 1000, Math.max(0, deadline - Date.now())));
   }
   throw new Error(`실제 모델 호출이 재시도 후에도 실패했습니다: ${lastError}`);
 }
@@ -224,14 +234,16 @@ export type LiveModelOptions = {
   apiKey?: string;
   model?: string;
   reasoningEffort?: string;
+  timeoutMs?: number;
 };
 
-/** 개발 전용 실제 모델 어댑터. route.ts가 Workers binding의 secret을
+/** 실제 모델 어댑터. route.ts가 서버 환경값의 secret을
  * 명시적으로 주입한다. 이 모듈은 호스트 파일시스템이나 process.env를 읽지 않는다. */
 export function devLiveModel(options: LiveModelOptions = {}): Model {
   const apiKey = options.apiKey?.trim() ?? '';
   const modelName = options.model || DEFAULT_MODEL;
   const effort = options.reasoningEffort || DEFAULT_EFFORT;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   return {
     name: `live:${modelName}/${effort}`,
     live: true,
@@ -239,7 +251,7 @@ export function devLiveModel(options: LiveModelOptions = {}): Model {
       if (!apiKey)
         throw new Error('개발 실제 모델에는 OPENAI_API_KEY binding이 필요합니다.');
       const prompt = buildPrompt(input);
-      const raw = await callResponsesApi(apiKey, modelName, effort, prompt);
+      const raw = await callResponsesApi(apiKey, modelName, effort, prompt, timeoutMs);
       if (raw.status !== 'completed')
         throw new Error(`실제 모델이 완료 상태를 반환하지 않았습니다(status=${String(raw.status)}).`);
       const { text, refusal, usedTools } = extractOutputText(raw);

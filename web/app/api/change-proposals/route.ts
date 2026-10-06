@@ -33,10 +33,13 @@ import {
 import { cancelStatements, scheduleStatements } from '@/lib/reminder-store';
 import { readReplay, replayCases } from '@/lib/change-review-replay';
 export const dynamic = 'force-dynamic';
+// 실제 모델 호출(최대 60초, lib/dev-live-model.ts)에 저장 시간을 더한 여유.
+export const maxDuration = 90;
+// 사용자당 하루(KST) AI 변경안 만들기 수. 운영 모델 호출 비용을 묶는다(사용자 결정 2026-10-06).
+const DAILY_AI_LIMIT = 20;
 
-// 운영 모델은 아직 연결하지 않았다(사용자 결정 2026-09-09). 가짜 모델로 흐름만 잇는다.
-// PROJECTMATE_LIVE_MODEL binding이 명시된 경우에만 개발 전용 실제 모델
-// 어댑터로 바꾼다(사용자 결정 2026-09-14: 담당자 배정 확인용 개발·검증 도구).
+// PROJECTMATE_LIVE_MODEL과 OPENAI_API_KEY가 있으면 실제 모델(lib/dev-live-model.ts)을 쓴다
+// (사용자 결정 2026-10-06: 운영에서도 사용). 없으면 가짜 모델이며, 운영에서는 '준비 중'으로 막힌다.
 // secret은 파일로 읽지 않고 서버 환경값(process.env)에서 어댑터로 명시 주입한다.
 type DevModelBindings = {
   PROJECTMATE_LIVE_MODEL?: string;
@@ -189,6 +192,18 @@ export async function POST(request: Request) {
         typeof b.sourceId === 'string' ? b.sourceId : '',
       );
       if (!source) return reply({ error: '원문을 찾을 수 없습니다.' }, 404);
+      // 모든 검사를 통과한 뒤, 모델을 부르기 전에 한 칸 쓴다. 한 문장의 upsert라 동시 요청에도 한도를 넘지 않는다.
+      const quota = await db
+        .prepare(
+          "INSERT INTO ai_quota(user_id,day,n) VALUES(?,(now() AT TIME ZONE 'Asia/Seoul')::date,1) ON CONFLICT (user_id,day) DO UPDATE SET n=ai_quota.n+1 WHERE ai_quota.n < ? RETURNING n",
+        )
+        .bind(user.id, DAILY_AI_LIMIT)
+        .first();
+      if (!quota)
+        return reply(
+          { error: `AI 변경안은 하루 ${DAILY_AI_LIMIT}회까지 만들 수 있습니다(한국 시간 0시에 초기화).` },
+          429,
+        );
       const input = {
         source: { id: source.id, body: source.body },
         tasks: sprint.tasks.map((t) => ({

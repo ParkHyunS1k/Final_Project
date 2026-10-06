@@ -1322,3 +1322,23 @@ test('AI를 쓸 수 없으면 변경안 생성은 503이고 모델·DB를 건드
   const on = await proposalGet('aioff', 'project=' + encodeURIComponent(projectId));
   assert.equal((await on.json()).aiAvailable, true);
 });
+
+test('AI 변경안 만들기는 사용자당 하루(KST) 20회까지, 21번째는 429이고 모델을 부르지 않는다', async () => {
+  const { projectId } = await startedTeam('quota1', 'quota1mate');
+  const sourceId = await paste('quota1', projectId, '추출 화면 연결 완료했습니다.');
+  let calls = 0;
+  const counted = api.fakeModel();
+  api.useModel({ ...counted, run: async (input) => (calls++, counted.run(input)) });
+  try {
+    for (let i = 0; i < 20; i++) await propose('quota1', projectId, sourceId);
+    const r = await proposalRequest('quota1', { action: 'create', projectId, sourceId });
+    assert.equal(r.status, 429, await r.clone().text());
+    assert.match((await r.json()).error, /하루 20회/);
+    assert.equal(calls, 20);
+    // 다른 사용자의 한도는 따로 센다.
+    const other = await paste('quota1mate', projectId, '로그인 화면 시작했습니다.');
+    await propose('quota1mate', projectId, other);
+  } finally {
+    api.useModel(api.fakeModel());
+  }
+});

@@ -249,3 +249,26 @@ test('계획서와 사람 기준 expected 파일이 각각 네 건이다', () =>
     /모든 기존 업무를 완료 처리/,
   );
 });
+
+test('실제 모델 응답이 제한 시간 안에 오지 않으면 재시도하지 않고 다시 시도 안내로 실패한다', async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (_url, options) =>
+    new Promise((_resolve, reject) => {
+      calls++;
+      options.signal.addEventListener('abort', () => reject(options.signal.reason));
+    });
+  try {
+    await assert.rejects(
+      () => api.devLiveModel({ apiKey: 'test-only-key', timeoutMs: 50 }).run(input),
+      /다시 시도해주세요/,
+    );
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('기본 모델은 gpt-6.1-sol이다', () => {
+  assert.match(api.devLiveModel({ apiKey: 'k' }).name, /^live:gpt-6\.1-sol\//);
+});
