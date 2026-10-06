@@ -4,6 +4,8 @@
 
 목적은 연구가 아니라 서비스 개발이다. 팀의 남은 작업과 가용시간을 바탕으로 병목을 확인하고, 필수 기능을 지키는 복구안을 검토·적용하도록 돕는다.
 
+**배포 주소(Vercel, 팀 내부용):** https://projectmate-parkhyuns1ks-projects.vercel.app — `main`에 머지하면 운영으로, PR·브랜치는 미리보기로 배포된다. (`projectmate.vercel.app`은 다른 사람의 사이트다.)
+
 ## 현재 서비스
 
 `web/`에 웹 화면, 서버 API, Postgres 스키마·마이그레이션(`web/db/`)이 있다. 기존 Python 엔진은 `server/`에 별도로 보존한다. 두 구현이 연결되어 있다고 가정하지 않는다.
