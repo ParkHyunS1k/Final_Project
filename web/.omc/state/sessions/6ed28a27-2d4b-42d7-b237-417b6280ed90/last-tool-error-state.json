@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd /Users/parkhyunsik/파이썬/Final_project && grep -nE \\\"초|seconds|ms|latency|gpt-|비용|토큰\\\" docs/dev-live-model-assignment-test.md | head -15; grep -n \\\"maxDuration\\\" -r web/app | head; grep -...",
+  "error": "Exit code 1\n10:- 사용한 모델: `live:gpt-5.6-sol/low` (OpenAI Responses API, `model=gpt-5.6-sol`, `reasoning.effort=low`)\n44:| 프로젝트·초대·업무 API와 D1 저장 구현 | 박백엔드(백엔드) | 박백엔드(백엔드) | O | fact | (없음) | \"- 박백엔드(백엔드): 프로젝트·초대·업무 API와 D1 저장을 구현한다. 예상 공수 10시간.\" |\n55:| D1 schema 및 초대·업무 API 구현 | 박백엔드(백엔드) | 박백엔드(백엔드) | O | estimate | (없음) | \"- Workers API와 SQLite 경험이 필요한 D1 schema, 초대·업무 API 구현. 예상 공수 10시간.\" |\n67:| 초대 수락 흐름 구현 | 미정(person=null) | 미정 | O | fact | estimate | X | \"담당자 미정\" |\n94:| 초대 API 오류 응답 정리 | 박...",
+  "timestamp": "2026-10-06T10:57:06.769Z",
+  "retry_count": 1
+}

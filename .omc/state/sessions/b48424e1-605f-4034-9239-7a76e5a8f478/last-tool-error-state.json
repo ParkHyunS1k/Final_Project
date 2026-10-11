@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"S=/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/b48424e1-605f-4034-9239-7a76e5a8f478/scratchpad; L=/Users/parkhyunsik/파이썬/Final_project/web/public/landing; cd $S && i=0; for...",
+  "error": "Exit code 1\n[AVFilterGraph @ 0x71cc64180] No such filter: 'drawtext'\nError opening output file k0.png.\nError opening output files: Filter not found\n[AVFilterGraph @ 0x9e4c64180] No such filter: 'drawtext'\nError opening output file k1.png.\nError opening output files: Filter not found\n[AVFilterGraph @ 0x882c64180] No such filter: 'drawtext'\nError opening output file k2.png.\nError opening output files: Filter not found\n[AVFilterGraph @ 0xb1ac64180] No such filter: 'drawtext'\nError opening output fi...",
+  "timestamp": "2026-10-01T05:31:39.884Z",
+  "retry_count": 1
+}

@@ -1,0 +1,264 @@
+{
+  "version": 1,
+  "jobId": "79d90187-00d7-4f03-a493-5516a397e1f3",
+  "sessionId": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+  "scopeKey": "73bf4abd25890c6ce72a85973989e37ae22c6be960a1834d9fd1185889ddf0e8",
+  "revision": 11,
+  "createdAt": "2026-10-01T18:04:25.712Z",
+  "updatedAt": "2026-10-01T18:19:47.534Z",
+  "producerGraceExpiresAt": "2026-10-01T18:04:55.713Z",
+  "bestEffortDeadlineAt": "2026-10-01T18:05:46.713Z",
+  "producers": {
+    "core": {
+      "state": "no-op",
+      "intentKey": "a2a719f099bed813024f2d86b5ff75879865535c548a603ba8139b210f5f2ebf",
+      "payloadDigest": "a2a719f099bed813024f2d86b5ff75879865535c548a603ba8139b210f5f2ebf",
+      "sealedAt": "2026-10-01T18:19:47.534Z",
+      "sealedBy": "recovery"
+    },
+    "wiki": {
+      "state": "no-op",
+      "sealedAt": "2026-10-01T18:04:25.731Z",
+      "sealedBy": "wiki-producer"
+    }
+  },
+  "actions": {
+    "foreground-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "f8635b2cfe986b40f83197e6cbdca3c8cd937e5048a62b42840c3ef41793566b",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b/scratchpad",
+          "prompt_id": "c1c47257-c792-43a9-9653-eb59955f7d5a",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "lastOutcomeCode": "required-deadline-expired"
+    },
+    "wiki-capture": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "ccb00600206846e6cf1407d66a945e3aa3fc241f45e7aa73cf0691ccc60b8e94",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b/scratchpad",
+          "prompt_id": "c1c47257-c792-43a9-9653-eb59955f7d5a",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-10-01T18:04:25.731Z"
+    },
+    "team-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "cc8b8e9d6439af67d41a3c81e47f90cc0eea6d31470d0ee01e4985c047675f57",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b/scratchpad",
+          "prompt_id": "c1c47257-c792-43a9-9653-eb59955f7d5a",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "terminalization": {
+          "reason": "foreground-cleanup-exhausted",
+          "attempts": 0,
+          "outcomeCode": "required-deadline-expired"
+        }
+      },
+      "budgetMs": 9000,
+      "lastOutcomeCode": "required-core-producer-unavailable"
+    },
+    "python-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "224cf90964dc50e6748e4e9922b795697a7ebda6c928c310dd9ee30807679a66",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b/scratchpad",
+          "prompt_id": "c1c47257-c792-43a9-9653-eb59955f7d5a",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "terminalization": {
+          "reason": "foreground-cleanup-exhausted",
+          "attempts": 0,
+          "outcomeCode": "required-deadline-expired"
+        }
+      },
+      "budgetMs": 9000,
+      "lastOutcomeCode": "required-core-producer-unavailable"
+    },
+    "reply-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "eccec509f3d6f567f5dff2e273f818d8d5db0a5f25c963a048aebd8329dd2668",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b/scratchpad",
+          "prompt_id": "c1c47257-c792-43a9-9653-eb59955f7d5a",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "terminalization": {
+          "reason": "foreground-cleanup-exhausted",
+          "attempts": 0,
+          "outcomeCode": "required-deadline-expired"
+        }
+      },
+      "budgetMs": 9000,
+      "lastOutcomeCode": "required-core-producer-unavailable"
+    },
+    "callback": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "0d9436a504834c4237255b49e39405c6df58079d5cd53f97482e330958b117be",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b/scratchpad",
+          "prompt_id": "c1c47257-c792-43a9-9653-eb59955f7d5a",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "terminalization": {
+          "reason": "foreground-cleanup-exhausted",
+          "attempts": 0,
+          "outcomeCode": "required-deadline-expired"
+        }
+      },
+      "budgetMs": 2000,
+      "lastOutcomeCode": "best-effort-core-producer-unavailable"
+    },
+    "notification": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "3ef5e14957372a3e6da324e7cb28db38464f3efd7232ce793849d56420c359ad",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b/scratchpad",
+          "prompt_id": "c1c47257-c792-43a9-9653-eb59955f7d5a",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "terminalization": {
+          "reason": "foreground-cleanup-exhausted",
+          "attempts": 0,
+          "outcomeCode": "required-deadline-expired"
+        }
+      },
+      "budgetMs": 2000,
+      "lastOutcomeCode": "best-effort-core-producer-unavailable"
+    },
+    "openclaw": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "f1da49c4969588ca89b69723dde1586a6fb912f2abfa395f1b3bb9fca10ed91d",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "853faf89-2338-43d5-bb1a-a5c2a17ac40b",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/853faf89-2338-43d5-bb1a-a5c2a17ac40b/scratchpad",
+          "prompt_id": "c1c47257-c792-43a9-9653-eb59955f7d5a",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "terminalization": {
+          "reason": "foreground-cleanup-exhausted",
+          "attempts": 0,
+          "outcomeCode": "required-deadline-expired"
+        }
+      },
+      "budgetMs": 2000,
+      "lastOutcomeCode": "best-effort-core-producer-unavailable"
+    }
+  },
+  "owner": null,
+  "phase": "complete",
+  "completion": {
+    "completedAt": "2026-10-01T18:19:47.534Z",
+    "terminalDigest": "8366da01c3a9985cf479f623b157b0419b9480308e1cfd35db9ae010864bd9cc",
+    "terminalRevision": 11
+  }
+}

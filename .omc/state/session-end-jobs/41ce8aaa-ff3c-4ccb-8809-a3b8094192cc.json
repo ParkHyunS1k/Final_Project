@@ -1,0 +1,338 @@
+{
+  "version": 1,
+  "jobId": "55aee28c-3ba7-4567-bd87-04a6471e54bf",
+  "sessionId": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+  "scopeKey": "73bf4abd25890c6ce72a85973989e37ae22c6be960a1834d9fd1185889ddf0e8",
+  "revision": 57,
+  "createdAt": "2026-10-14T16:07:42.510Z",
+  "updatedAt": "2026-10-14T16:08:14.515Z",
+  "producerGraceExpiresAt": "2026-10-14T16:08:12.511Z",
+  "bestEffortDeadlineAt": "2026-10-14T16:09:03.511Z",
+  "producers": {
+    "core": {
+      "state": "sealed",
+      "intentKey": "671f2c0eb386e8fca09b5435ef3fc4fa1cf354b55a0bb6ff371fc703ee1fb71e",
+      "payloadDigest": "671f2c0eb386e8fca09b5435ef3fc4fa1cf354b55a0bb6ff371fc703ee1fb71e",
+      "sealedAt": "2026-10-14T16:08:13.561Z",
+      "sealedBy": "recovery"
+    },
+    "wiki": {
+      "state": "no-op",
+      "sealedAt": "2026-10-14T16:07:42.542Z",
+      "sealedBy": "wiki-producer"
+    }
+  },
+  "actions": {
+    "foreground-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "a828c56d13ec850ed4b97d5f86341216628f209d28de138f62bd8470e3e5835c",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc/scratchpad",
+          "prompt_id": "3ba85b4f-b621-4e83-a36c-3564ea6b4283",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "ended_at": "2026-10-14T16:08:12.739Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-10-14T16:08:12.586Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "0fa41cdc-bfab-4abb-ba51-9d6786973f36",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-14T16:08:22.512Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-14T16:08:13.547Z"
+    },
+    "wiki-capture": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "cfde599aed6eba88bdd12bcf6d3b36af3cb92fe6a4c90e178f1f9dd582f64b6e",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc/scratchpad",
+          "prompt_id": "3ba85b4f-b621-4e83-a36c-3564ea6b4283",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-10-14T16:07:42.542Z"
+    },
+    "team-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "9d1bd2551b5d47e3c5342a68b572a2c45e4f33e0097e71877d2ab7b61525fb64",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc/scratchpad",
+          "prompt_id": "3ba85b4f-b621-4e83-a36c-3564ea6b4283",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "ended_at": "2026-10-14T16:08:12.739Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-10-14T16:08:13.587Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "e2de7cbc-822f-401b-9ba1-86b1052abdf1",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-14T16:08:22.512Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-14T16:08:13.748Z"
+    },
+    "python-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "16f60a490d05258e5a3fc155b5ad79fd2ff54c553f7d78b8bb583dea28845b16",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc/scratchpad",
+          "prompt_id": "3ba85b4f-b621-4e83-a36c-3564ea6b4283",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "ended_at": "2026-10-14T16:08:12.739Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-10-14T16:08:13.773Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "ea109da4-5080-42ae-8126-3c3263806e11",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-14T16:08:22.512Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-14T16:08:13.922Z"
+    },
+    "reply-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "d51c677673b097eeb13319c0053dd32427fbe98afe27a24ad72a0f40915e418d",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc/scratchpad",
+          "prompt_id": "3ba85b4f-b621-4e83-a36c-3564ea6b4283",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-10-14T16:08:13.939Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "ef5471cd-b724-46ed-b235-ffcdbfd3fcdf",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-14T16:08:22.512Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-14T16:08:14.072Z"
+    },
+    "callback": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "3e2cc4e6432d349403897b6089964229727ad65ec21e141f95fe58a2c9f62fb0",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc/scratchpad",
+          "prompt_id": "3ba85b4f-b621-4e83-a36c-3564ea6b4283",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "ended_at": "2026-10-14T16:08:12.739Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-10-14T16:08:14.091Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "5af646ba-0ef3-438c-ab9a-da3b27b8dd27",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-14T16:08:22.512Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-14T16:08:14.214Z"
+    },
+    "notification": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "735317115c372349be36a846516a9d3237da56ac214dca90eb183b47a34852d8",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc/scratchpad",
+          "prompt_id": "3ba85b4f-b621-4e83-a36c-3564ea6b4283",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "ended_at": "2026-10-14T16:08:12.739Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-10-14T16:08:14.230Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "84402f22-07b6-4e98-9700-9a20022e5efe",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-14T16:08:22.512Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-14T16:08:14.346Z"
+    },
+    "openclaw": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "afc3b81d543ea7b7e904d9c68d299e18674bc69025922f9634c73e0191be0774",
+      "payload": {
+        "transcriptPath": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+        "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+        "reason": "other",
+        "input": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "transcript_path": "/Users/parkhyunsik/.claude/projects/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc.jsonl",
+          "cwd": "/Users/parkhyunsik/파이썬/Final_project/web",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/41ce8aaa-ff3c-4ccb-8809-a3b8094192cc/scratchpad",
+          "prompt_id": "3ba85b4f-b621-4e83-a36c-3564ea6b4283",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "41ce8aaa-ff3c-4ccb-8809-a3b8094192cc",
+          "ended_at": "2026-10-14T16:08:12.739Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-10-14T16:08:14.363Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "a7f1a272-b358-4252-a029-134c4759a43c",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-14T16:08:22.512Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-14T16:08:14.479Z"
+    }
+  },
+  "owner": null,
+  "phase": "complete",
+  "completion": {
+    "completedAt": "2026-10-14T16:08:14.495Z",
+    "terminalDigest": "16e59ac38ea1519e7dd9933b8412772df65a2bfb8e643e8787a22aaf7988fb7b",
+    "terminalRevision": 56
+  }
+}
