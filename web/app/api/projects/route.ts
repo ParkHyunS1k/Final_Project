@@ -13,6 +13,7 @@ import {
   AccessError,
   GoalChanged,
 } from '@/lib/projects';
+import { setListed, decideJoin } from '@/lib/teams';
 import { database, readSprint, readPolicy, save, Conflict } from '@/lib/sprint-store';
 import {
   assertProjectMutationAllowed,
@@ -107,6 +108,14 @@ export async function POST(request: Request) {
       return reply(
         await resendInvite(b.projectId, user, b.revision, b.inviteId, inviteOrigin(request.url)),
       );
+    if (b.action === 'setListed') {
+      await setListed(b.projectId, user, b.revision, b.listed);
+      return reply({ ok: true });
+    }
+    if (b.action === 'decideJoin') {
+      await decideJoin(b.projectId, user, b.revision, b.requestId, b.approve);
+      return reply({ ok: true });
+    }
     if (b.action === 'revoke') {
       const me = await member(b.projectId, user);
       assertProjectMutationAllowed({
