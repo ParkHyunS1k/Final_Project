@@ -1,7 +1,0 @@
-{
-  "tool_name": "mcp__Claude_Browser__preview_start",
-  "tool_input_preview": "{\"name\":\"projectmate-ai-off\"}",
-  "error": "The dev server exited during startup (code 1). Fix the error in the output below, then start the server again.\n\nOutput:\n> sites-project@0.1.0 dev\n> next dev -H 127.0.0.1 --port 3101\n\n\u001b[1m\u001b[38;2;173;127;168m▲ Next.js 16.3.8\u001b[39m\u001b[22m (Turbopack)\n- Local:         http://127.0.0.1:3101\n- Network:       http://127.0.0.1:3101\n- Environments: .env.local, .env.development, .env\n\u001b[32m\u001b[1m✓\u001b[22m\u001b[39m Ready in 177ms\n\u001b[32m\u001b[1m✓\u001b[22m\u001b[39m Running next.config.ts took 14ms\n\u001b[31m\u001b[1m⨯\u001b[22m\u001b[39m Another \u001b[36mne...",
-  "timestamp": "2026-10-03T18:12:04.535Z",
-  "retry_count": 1
-}

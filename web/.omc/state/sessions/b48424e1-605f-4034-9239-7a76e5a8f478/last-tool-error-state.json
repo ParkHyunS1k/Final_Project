@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"S=/private/tmp/claude-501/-Users-parkhyunsik-----Final-project/b48424e1-605f-4034-9239-7a76e5a8f478/scratchpad/assets; mkdir -p \\\"$S\\\" && cd \\\"$S\\\" && B=https://d8j0ntlcm91z4.cloudfront.ne...",
-  "error": "Exit code 254\ntotal 40\ndrwxr-xr-x@  7 parkhyunsik  wheel  224 Sep 28 00:28 .\ndrwx------@ 11 parkhyunsik  wheel  352 Sep 28 00:28 ..\n-rw-r--r--@  1 parkhyunsik  wheel  111 Sep 28 00:28 img0 hf_20260927_152654_7573a733-3748-4106-af29-ec52988466cf.png\n-rw-r--r--@  1 parkhyunsik  wheel  111 Sep 28 00:28 img1 hf_20260927_152654_4a493246-017a-4102-9096-60d610457a12.png\n-rw-r--r--@  1 parkhyunsik  wheel  111 Sep 28 00:28 img3 hf_20260927_152654_720be493-0938-4920-8c4d-5dba976e52c5.png\n-rw-r--r--@  1 pa...",
-  "timestamp": "2026-09-27T15:28:17.119Z",
-  "retry_count": 1
-}

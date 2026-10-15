@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"grep -n \\\"export async function\\\\|action ===\\\\|model\\\\.\\\\|run(\\\" app/api/change-proposals/route.ts | head -20; echo ==; grep -rn \\\"api/change-proposals\\\\|api/sources\\\" components app --inc...",
-  "error": "Exit code 1\n82:export async function GET(request: Request) {\n138:export async function POST(request: Request) {\n162:        action === 'create'\n164:          : action === 'apply'\n166:            : action === 'revert'\n182:    if (action === 'create') {\n214:        const output = await model.run(input);\n239:            model.name,\n281:          model: model.name,\n282:          live: model.live,\n309:    if (action === 'apply') {\n351:    if (action === 'revert') {\n(eval):1: = not found",
-  "timestamp": "2026-10-03T17:30:55.299Z",
-  "retry_count": 1
-}

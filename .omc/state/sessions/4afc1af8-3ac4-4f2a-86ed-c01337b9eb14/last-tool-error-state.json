@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"gh pr merge 4 --merge --match-head-commit 01f35b1 && gh pr view 4 --json state,mergedAt,mergeCommit --jq '.state, .mergedAt, .mergeCommit.oid[0:7]'\",\"description\":\"Merge PR 4 into phs\"}",
-  "error": "Exit code 1\nGraphQL: Variable $input of type MergePullRequestInput! was provided invalid value for expectedHeadOid (Could not coerce value \"01f35b1\" to GitObjectID)",
-  "timestamp": "2026-10-01T17:46:08.459Z",
-  "retry_count": 1
-}
