@@ -1,6 +1,11 @@
 // 시작 시 합의한 결과물 목록과 그 증빙·팀장 확인.
 // 고정 내용(제목·순서)과 확인 이력(증빙·확인)은 분리해서 갱신한다.
-import { PolicyError } from './sprint-policy';
+// 2026-10-14부터 새 프로젝트는 결과물을 받지 않고 서버가 완료 기준 행 하나(CRITERIA_ID)만 만든다.
+// 이전에 만든 결과물 프로젝트는 저장된 행을 그대로 쓴다.
+import { PolicyError } from './sprint-policy.ts';
+
+export const CRITERIA_ID = 'd_criteria';
+export const CRITERIA_TITLE = '완료 기준';
 
 export type Deliverable = {
   deliverableId: string;
@@ -30,22 +35,11 @@ export function deliverableRow(row: Record<string, unknown>): Deliverable {
   };
 }
 
-// 준비 중에는 제목 목록을 자유롭게 편집한다. 시작하면 이 목록이 고정된다.
-export function parseDeliverables(value: unknown): string[] {
-  if (typeof value !== 'string')
-    throw new PolicyError('필수 결과물을 입력해주세요.');
-  const list = value
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (!list.length || list.length > 10 || list.some((s) => s.length > 200))
-    throw new PolicyError('필수 결과물은 항목당 200자 이내, 1~10개입니다.');
-  if (new Set(list).size !== list.length)
-    throw new PolicyError('필수 결과물 이름이 중복됩니다.');
-  return list;
+export function isCriteriaOnly(list: Deliverable[]) {
+  return list.length === 1 && list[0].deliverableId === CRITERIA_ID;
 }
 
-// 완주 판정: 체크인 수·업무 수가 아니라 고정 결과물의 확인 여부만 본다.
+// 완주 판정: 체크인 수·업무 수가 아니라 고정 항목(완료 기준 또는 기존 결과물)의 확인 여부만 본다.
 export function completionCheck(list: Deliverable[]) {
   const missing = list.filter((d) => !d.confirmed);
   return {
@@ -53,6 +47,9 @@ export function completionCheck(list: Deliverable[]) {
     total: list.length,
     confirmed: list.length - missing.length,
     missing: missing.map((d) => d.title),
+    mode: (isCriteriaOnly(list) ? 'criteria' : 'deliverables') as
+      | 'criteria'
+      | 'deliverables',
   };
 }
 

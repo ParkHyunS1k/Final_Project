@@ -8,7 +8,7 @@
 - 업무 상세 패널에서 설명·상태·공수·선행 작업·최근 체크인·완료 근거를 확인하고 저장한다.
 - 표에서 상태와 담당자를 변경하고, 보드에서도 같은 상태를 조회·변경한다. 완료는 근거 입력, 재개는 남은 시간 입력 후 확정한다.
 
-- 목표·필수 결과물·완료 기준·시작일·7일 기간을 입력해 여러 프로젝트를 만든다.
+- 목표·기능 범위·완료 기준·7일 기간을 입력해 여러 프로젝트를 만든다. 필수 결과물은 받지 않고, 혼자서도 시작할 수 있다.
 - 이메일 지정 초대 링크와 목표 확인을 통해 최대 4명이 참여한다.
 - 팀장은 업무 생성·편집·담당자 배정·선행 작업·필수/부가 여부를 설정한다.
 - 팀원은 본인 업무·가용시간, 팀장은 전체 수정·초대·최종 승인 권한을 가진다.
@@ -47,11 +47,11 @@ npm run build
 
 ## API
 
-`GET /api/projects`: 내 프로젝트 목록. `?invite=token`은 로그인 이메일을 검사한 뒤 초대 프로젝트의 목표·결과물·기준 조회.
+`GET /api/projects`: 내 프로젝트 목록. `?invite=token`은 로그인 이메일을 검사한 뒤 초대 프로젝트의 목표·기준 조회(`details.deliverables`는 2026-10-14 이전 프로젝트의 결과물만, 새 프로젝트는 `[]`).
 
-`POST /api/projects`: create(title,goal,startDate,duration,deliverables:줄바꿈 문자열,completionCriteria,agreed), invite(projectId,revision,email: 그 주소로 초대 링크 메일 발송, 응답 email=sent|failed|off, 사용자당 하루 20개), resend(projectId,revision,inviteId: 새 링크 발급·발송, 이전 링크 무효, 초대당 3회·1분 간격), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능.
+`POST /api/projects`: create(title,goal,scope,duration,completionCriteria,agreed; deliverables는 받지 않음·보내도 무시), invite(projectId,revision,email: 그 주소로 초대 링크 메일 발송, 응답 email=sent|failed|off, 사용자당 하루 20개), resend(projectId,revision,inviteId: 새 링크 발급·발송, 이전 링크 무효, 초대당 3회·1분 간격), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능.
 
-`GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. 응답은 캐시하지 않는다.
+`GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. `completion`은 `{ ready, total, confirmed, missing, mode }`이며 `mode`는 완료 기준 항목 하나면 `criteria`, 기존 결과물 프로젝트면 `deliverables`. 응답은 캐시하지 않는다.
 
 `POST /api/sprint`: JSON `{ action, projectId, revision, ...fields }`.
 

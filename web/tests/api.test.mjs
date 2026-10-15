@@ -100,16 +100,17 @@ const goalFields = {
   goal: '공고문을 실행 계획으로 바꾸는 서비스를 출시한다',
   scope: '공고 붙여넣기, 마감일 추출, 결과 화면',
   completionCriteria: '핵심 흐름을 실제로 실행해 보인다',
-  deliverables: '동작하는 서비스\n3분 데모 영상',
   duration: 7,
   agreed: true,
 };
 const goalInput = { action: 'create', ...goalFields };
 // 팀장 1명 + 초대 수락 팀원 1명. 시작 전(draft) 상태로 돌려준다.
 async function draftTeam(owner, mate, over = {}) {
-  const created = await projectRequest(owner, { ...goalInput, ...over });
+  const { legacyDeliverables, previewDeliverables = [], ...fields } = over;
+  const created = await projectRequest(owner, { ...goalInput, ...fields });
   assert.equal(created.status, 201, await created.clone().text());
   const { projectId } = await created.json();
+  if (legacyDeliverables) await withDeliverables(projectId, legacyDeliverables);
   let state = await read(owner, projectId);
   const invite = await projectRequest(owner, {
     action: 'invite',
@@ -119,6 +120,14 @@ async function draftTeam(owner, mate, over = {}) {
   });
   assert.equal(invite.status, 201, await invite.clone().text());
   const { token } = await invite.json();
+  // 초대 미리보기에는 서버가 만든 완료 기준 행을 결과물로 내보내지 않는다.
+  const preview = await api.projectsGET(
+    new Request('https://test.local/api/projects?invite=' + encodeURIComponent(token), {
+      headers: headers(mate),
+    }),
+  );
+  assert.equal(preview.status, 200, await preview.clone().text());
+  assert.deepEqual((await preview.json()).details.deliverables, previewDeliverables);
   const accepted = await projectRequest(mate, {
     action: 'accept',
     token,
@@ -130,6 +139,22 @@ async function draftTeam(owner, mate, over = {}) {
   state = await read(owner, projectId);
   return { projectId, state };
 }
+// 세션 1 이전에 만든 결과물 프로젝트를 재현한다: 시작 전 DB에 결과물 행을 직접 넣는다.
+async function withDeliverables(projectId, titles) {
+  await run('DELETE FROM project_deliverables WHERE project_id=?', projectId);
+  for (const [i, title] of titles.entries())
+    await run(
+      'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) VALUES(?,?,?,?)',
+      projectId,
+      'd_old' + i,
+      i,
+      title,
+    );
+}
+const oldDeliverables = {
+  legacyDeliverables: ['동작하는 서비스', '3분 데모 영상'],
+  previewDeliverables: ['동작하는 서비스', '3분 데모 영상'],
+};
 async function startedTeam(owner, mate, over = {}) {
   const { projectId, state } = await draftTeam(owner, mate, over);
   const r = await post(owner, 'start', state.sprint.revision, { projectId });
@@ -187,30 +212,52 @@ test('이전 규칙 기록은 열람·내보내기만 되고 모든 변경은 �
   assert.equal((await exported.json()).lifecycle, 'legacy');
 });
 
-test('생성은 준비 상태이며 혼자서는 시작할 수 없다', async () => {
+test('혼자 만든 프로젝트는 바로 시작해 완료 기준 근거와 본인 확인으로 완주한다', async () => {
   const created = await projectRequest('solo', goalInput);
   assert.equal(created.status, 201);
   const { projectId } = await created.json();
-  const state = await read('solo', projectId);
+  let state = await read('solo', projectId);
   assert.equal(state.lifecycle, 'draft');
   assert.equal(state.policy.startedAt, null);
   assert.equal(state.policy.deadlineAt, null);
   assert.equal(state.policy.goalVersion, 1);
-  assert.equal(state.deliverables.length, 2);
+  // 결과물 입력 없이 서버가 완료 기준 행 하나를 만든다.
+  assert.equal(state.deliverables.length, 1);
+  assert.equal(state.deliverables[0].deliverableId, 'd_criteria');
+  assert.equal(state.deliverables[0].title, '완료 기준');
   assert.equal(state.deliverables[0].fixedAt, null);
-  assert.equal(state.readiness.ready, false);
+  assert.equal(state.completion.mode, 'criteria');
+  assert.deepEqual(
+    (await one('SELECT deliverables FROM project_details WHERE project_id=?', projectId)).deliverables,
+    [],
+  );
+  // 팀장은 생성 시 목표에 동의했으므로 혼자서도 시작할 수 있다.
+  assert.equal(state.readiness.ready, true);
   assert.equal(state.readiness.joined, 1);
+  assert.deepEqual(state.readiness.missing, []);
   // 준비 중 계획은 예상치로만 표시한다.
   assert.equal(state.plan.provisional, true);
-  const start = await post('solo', 'start', state.sprint.revision, {
-    projectId,
+  state = await change('solo', projectId, 'start', state);
+  assert.equal(state.lifecycle, 'active');
+  assert.ok(state.deliverables[0].fixedAt);
+  const early = await post('solo', 'finish', state.sprint.revision, { projectId });
+  assert.equal(early.status, 400);
+  assert.match((await early.json()).error, /완료 기준/);
+  state = await change('solo', projectId, 'deliverableEvidence', state, {
+    deliverableId: 'd_criteria',
+    evidence: '저장소 링크와 실행 영상으로 핵심 흐름을 보였습니다.',
   });
-  assert.equal(start.status, 400);
-  assert.match((await start.json()).error, /2명 이상/);
-  // 시작 거절은 준비 기간을 소모하지 않는다.
-  const after = await read('solo', projectId);
-  assert.equal(after.policy.startedAt, null);
-  assert.equal(after.sprint.revision, state.sprint.revision);
+  state = await change('solo', projectId, 'deliverableConfirm', state, {
+    deliverableId: 'd_criteria',
+    confirmed: true,
+  });
+  assert.deepEqual(
+    { ready: state.completion.ready, total: state.completion.total, mode: state.completion.mode },
+    { ready: true, total: 1, mode: 'criteria' },
+  );
+  const done = await change('solo', projectId, 'finish', state);
+  assert.equal(done.lifecycle, 'completed');
+  assert.match(done.events[0].detail, /완료 기준/);
   // 기간은 7일 고정이다(2026-09-15). 다른 기간은 생성 단계에서 거절한다.
   for (const duration of [6, 8, 10])
     assert.equal(
@@ -221,6 +268,20 @@ test('생성은 준비 상태이며 혼자서는 시작할 수 없다', async ()
     (await projectRequest('solo', { ...goalInput, agreed: false })).status,
     400,
   );
+});
+
+test('생성 요청의 결과물 필드는 무시하고 완료 기준 행 하나만 만든다', async () => {
+  for (const deliverables of ['동작하는 서비스\n3분 데모 영상', '', undefined, 42]) {
+    const created = await projectRequest('ignored', { ...goalInput, deliverables });
+    assert.equal(created.status, 201, String(deliverables));
+    const { projectId } = await created.json();
+    const state = await read('ignored', projectId);
+    assert.deepEqual(
+      state.deliverables.map((d) => d.deliverableId),
+      ['d_criteria'],
+    );
+    assert.equal(state.completion.mode, 'criteria');
+  }
 });
 
 test('목표를 편집하면 이전 동의로 시작할 수 없다', async () => {
@@ -234,7 +295,8 @@ test('목표를 편집하면 이전 동의로 시작할 수 없다', async () =>
   assert.equal(edited.policy.goalVersion, 2);
   assert.equal(edited.readiness.ready, false);
   assert.match(edited.readiness.missing.join(' '), /최신 목표 미동의/);
-  assert.equal(edited.deliverables.length, 3);
+  // 보낸 결과물은 무시하고 완료 기준 행 하나를 유지한다.
+  assert.deepEqual(edited.deliverables.map((d) => d.deliverableId), ['d_criteria']);
   const rejected = await post('editor', 'start', edited.sprint.revision, {
     projectId,
   });
@@ -274,6 +336,48 @@ test('목표를 편집하면 이전 동의로 시작할 수 없다', async () =>
   );
   assert.equal(started.plan.provisional, false);
   assert.ok(started.deliverables.every((d) => d.fixedAt));
+});
+
+test('준비 중 목표 편집은 완료 기준 행을 새로 만들고 남긴 근거·확인을 푼다', async () => {
+  const { projectId, state } = await draftTeam('regoal', 'regoalmate');
+  // 팀원은 근거를 남길 수 있지만 완료 기준 확인은 팀장만 한다.
+  let s = await change('regoalmate', projectId, 'deliverableEvidence', state, {
+    deliverableId: 'd_criteria',
+    evidence: '준비 중 미리 남긴 근거입니다.',
+  });
+  assert.equal(
+    (
+      await post('regoalmate', 'deliverableConfirm', s.sprint.revision, {
+        projectId,
+        deliverableId: 'd_criteria',
+        confirmed: true,
+      })
+    ).status,
+    403,
+  );
+  s = await change('regoal', projectId, 'deliverableConfirm', s, {
+    deliverableId: 'd_criteria',
+    confirmed: true,
+  });
+  assert.equal(s.deliverables[0].confirmed, true);
+  const edited = await change('regoal', projectId, 'editGoal', s, {
+    ...goalFields,
+    completionCriteria: '바뀐 완료 기준 문장',
+  });
+  assert.equal(edited.policy.goalVersion, 2);
+  assert.equal(edited.agreement.completion_criteria, '바뀐 완료 기준 문장');
+  assert.deepEqual(edited.deliverables.map((d) => d.deliverableId), ['d_criteria']);
+  assert.equal(edited.deliverables[0].evidence, '');
+  assert.equal(edited.deliverables[0].confirmed, false);
+});
+
+test('준비 중인 기존 결과물 프로젝트는 목표 편집 때 완료 기준으로 바뀐다', async () => {
+  const { projectId, state } = await draftTeam('oldgoal', 'oldgoalmate', oldDeliverables);
+  assert.equal(state.completion.mode, 'deliverables');
+  assert.equal(state.readiness.ready, true);
+  const edited = await change('oldgoal', projectId, 'editGoal', state, goalFields);
+  assert.deepEqual(edited.deliverables.map((d) => d.deliverableId), ['d_criteria']);
+  assert.equal(edited.completion.mode, 'criteria');
 });
 
 test('동시 시작 요청은 하나의 시작 시각과 하나의 기한만 확정한다', async () => {
@@ -368,7 +472,10 @@ test('마감 이후에는 실제 저장 시점에서 모든 변경이 거절된�
 });
 
 test('완주는 보고 수가 아니라 합의 결과물 확인으로 판정한다', async () => {
-  const { projectId, state } = await startedTeam('goal', 'goalmate');
+  // 세션 1 이전 결과물 프로젝트의 규칙이 그대로 동작하는지 본다.
+  const { projectId, state } = await startedTeam('goal', 'goalmate', oldDeliverables);
+  assert.equal(state.completion.mode, 'deliverables');
+  assert.equal(state.deliverables.length, 2);
   let s = await change('goal', projectId, 'createTask', state, {
     title: '끝내지 않을 관리 업무',
     person: 0,
@@ -424,7 +531,7 @@ test('완주는 보고 수가 아니라 합의 결과물 확인으로 판정한�
 });
 
 test('업무를 모두 끝내도 결과물 하나가 미확인이면 완주할 수 없다', async () => {
-  const { projectId, state } = await startedTeam('tasksonly', 'tasksmate');
+  const { projectId, state } = await startedTeam('tasksonly', 'tasksmate', oldDeliverables);
   let s = await change('tasksonly', projectId, 'createTask', state, {
     title: '전부 끝낸 업무',
     person: 0,
@@ -671,9 +778,9 @@ test('초대·수락·취소와 팀 인원 제한은 새 정책에서도 유지�
     tokens.push(await r.json());
     state = await read('teamlead', projectId);
   }
-  // 초대만 보낸 사람은 가입 인원이 아니다.
+  // 초대만 보낸 사람은 가입 인원이 아니며 시작을 막지도 않는다(솔로 시작 가능).
   assert.equal(state.readiness.joined, 1);
-  assert.equal(state.readiness.ready, false);
+  assert.equal(state.readiness.ready, true);
   assert.equal(
     (
       await projectRequest('outsider', {

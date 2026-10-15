@@ -9,6 +9,7 @@ import {
   type Actor,
   type Policy,
 } from '../lib/sprint-policy.ts';
+import { CRITERIA_ID, completionCheck, type Deliverable } from '../lib/deliverables.ts';
 
 const started = '2026-09-09T05:23:00.000Z';
 const deadline = '2026-09-16T05:23:00.000Z';
@@ -257,9 +258,29 @@ test('정책 목록에 없는 action은 거절한다', () => {
     );
 });
 
-test('시작 자격: 최소 2명 가입과 전원 최신 목표 동의', () => {
+function deliverable(over: Partial<Deliverable> = {}): Deliverable {
+  return {
+    deliverableId: 'd_1',
+    position: 0,
+    title: '동작하는 서비스',
+    fixedAt: null,
+    evidence: '',
+    evidenceBy: null,
+    evidenceAt: null,
+    confirmed: false,
+    confirmedBy: null,
+    confirmedAt: null,
+    ...over,
+  };
+}
+
+test('시작 자격(1명부터, 전원 최신 동의)과 완주 판정 모드', () => {
+  // 솔로플레이(2026-10-14): 팀장 혼자서도 시작할 수 있다.
   const solo = [{ agreedGoalVersion: 2, displayName: '팀장', leftAt: null }];
-  assert.equal(startReadiness(solo, 2, 1).ready, false);
+  const soloCheck = startReadiness(solo, 2, 1);
+  assert.equal(soloCheck.ready, true);
+  assert.equal(soloCheck.joined, 1);
+  assert.equal(startReadiness([{ ...solo[0], agreedGoalVersion: 1 }], 2, 1).ready, false);
   const stale = [
     { agreedGoalVersion: 2, displayName: '팀장', leftAt: null },
     { agreedGoalVersion: 1, displayName: '팀원', leftAt: null },
@@ -271,8 +292,10 @@ test('시작 자격: 최소 2명 가입과 전원 최신 목표 동의', () => {
   assert.ok(check.missing.join(' ').includes('팀원'));
   const ready = stale.map((m) => ({ ...m, agreedGoalVersion: 2 }));
   assert.equal(startReadiness(ready, 2, 1).ready, true);
-  // 결과물이 없으면 시작할 수 없다.
-  assert.equal(startReadiness(ready, 2, 0).ready, false);
+  // 완료 기준 행조차 없으면(데이터 손상) 시작할 수 없다.
+  const broken = startReadiness(ready, 2, 0);
+  assert.equal(broken.ready, false);
+  assert.ok(!broken.missing.join(' ').includes('필수 결과물'));
   // 참여 중단자는 인원으로 세지 않는다.
   assert.equal(
     startReadiness(
@@ -288,6 +311,36 @@ test('시작 자격: 최소 2명 가입과 전원 최신 목표 동의', () => {
       2,
       1,
     ).ready,
+    true,
+  );
+  // 전원이 나가면 시작할 수 없다.
+  assert.equal(
+    startReadiness(
+      ready.map((m) => ({ ...m, leftAt: new Date(started) })),
+      2,
+      1,
+    ).ready,
     false,
   );
+  // 완주 판정 모드: 완료 기준 한 행이면 criteria, 그 외는 deliverables.
+  const criteria = deliverable({ deliverableId: CRITERIA_ID, title: '완료 기준' });
+  assert.equal(CRITERIA_ID, 'd_criteria');
+  assert.deepEqual(completionCheck([criteria]), {
+    ready: false,
+    total: 1,
+    confirmed: 0,
+    missing: ['완료 기준'],
+    mode: 'criteria',
+  });
+  assert.equal(completionCheck([{ ...criteria, confirmed: true }]).ready, true);
+  const old = [deliverable(), deliverable({ deliverableId: 'd_2', title: '데모', confirmed: true })];
+  const partial = completionCheck(old);
+  assert.equal(partial.mode, 'deliverables');
+  assert.equal(partial.ready, false);
+  assert.deepEqual(partial.missing, ['동작하는 서비스']);
+  // 기존 프로젝트의 결과물 1개짜리도 deliverables 모드다.
+  assert.equal(completionCheck([deliverable({ confirmed: true })]).mode, 'deliverables');
+  // 행이 없으면(legacy) 완주할 수 없다.
+  assert.equal(completionCheck([]).ready, false);
+  assert.equal(completionCheck([]).mode, 'deliverables');
 });

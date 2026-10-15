@@ -7,6 +7,7 @@ import {
   listProjects,
   projectState,
   exportProject,
+  criteriaStatements,
   goalInput,
   AccessError,
 } from '@/lib/projects';
@@ -196,14 +197,7 @@ export async function POST(request: Request) {
                 'UPDATE project_details SET goal=?,deliverables=?,completion_criteria=? WHERE project_id=?' +
                   gate,
               )
-              .bind(
-                v.goal,
-                v.deliverables,
-                v.completion,
-                id,
-                id,
-                m,
-              ),
+              .bind(v.goal, [], v.completion, id, id, m),
             // 편집한 팀장은 새 버전에 동의한 상태, 나머지는 재동의 대상이다.
             db
               .prepare(
@@ -211,19 +205,8 @@ export async function POST(request: Request) {
                   gate,
               )
               .bind(version, id, user.id, id, m),
-            db
-              .prepare(
-                'DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL' +
-                  gate,
-              )
-              .bind(id, id, m),
-            ...v.deliverables.map((title, i) =>
-              db
-                .prepare(
-                  'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) SELECT owner,?,?,? FROM sprints WHERE owner=? AND mutation=?',
-                )
-                .bind('d_' + crypto.randomUUID(), i, title, id, m),
-            ),
+            // 기존 결과물 프로젝트도 준비 중 편집이면 완료 기준 행으로 바뀐다.
+            ...criteriaStatements(id, m),
           ];
         },
         ['draft'],
@@ -553,20 +536,25 @@ export async function POST(request: Request) {
         [...open],
       );
     } else if (b.action === 'finish') {
-      // 완주 판정은 결과물 확인만 본다. 체크인 수·업무 수는 조건이 아니다.
+      // 완주 판정은 완료 기준(또는 기존 결과물) 확인만 본다. 체크인 수·업무 수는 조건이 아니다.
       const check = completionCheck(await readDeliverables(id));
+      const criteria = check.mode === 'criteria';
       if (!check.ready)
         throw new PolicyError(
-          check.total
-            ? `아직 확인되지 않은 필수 결과물이 있습니다: ${check.missing.join(', ')}`
-            : '확인할 필수 결과물이 없습니다.',
+          criteria
+            ? '완료 기준에 근거를 남기고 팀장이 확인해야 완주할 수 있습니다.'
+            : check.total
+              ? `아직 확인되지 않은 필수 결과물이 있습니다: ${check.missing.join(', ')}`
+              : '확인할 필수 결과물이 없습니다.',
         );
       s.finished = true;
       await save(
         id,
         s,
         'finish',
-        '기한 내 합의 결과물 전체 확인 · 금전 환급은 운영자 검토 전',
+        criteria
+          ? '기한 내 완료 기준 근거 확인 · 금전 환급은 운영자 검토 전'
+          : '기한 내 합의 결과물 전체 확인 · 금전 환급은 운영자 검토 전',
         (m) => [
           db
             .prepare(
