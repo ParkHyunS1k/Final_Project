@@ -116,7 +116,7 @@ type State = ProjectMeta & {
     created_at: string;
   }[];
 };
-type Modal = 'checkin' | 'stepBack' | 'evidence' | null;
+type Modal = 'checkin' | 'evidence' | null;
 export default function Home() {
   return (
     <ProjectWorkspace>
@@ -712,8 +712,9 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                           <b>{m.display_name}</b>
                           <span>
                             {m.role === 'owner' ? '팀장' : '팀원'} ·{' '}
+                            {/* 2026-10-15에 참여 중단 기능을 뺐다. 그 전에 남은 기록만 표시한다. */}
                             {m.left_at
-                              ? '참여 중단 보고'
+                              ? '참여 중단'
                               : m.agreed_goal_version ===
                                   state!.policy?.goalVersion
                                 ? `목표 v${m.agreed_goal_version} 동의`
@@ -722,10 +723,6 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                         </div>
                       </div>
                     ))}
-                    <div className="team-note">
-                      참여 중단은 당사자가 보고하고, 남은 팀 기준의 변경안은
-                      팀장이 검토합니다. 자동 재배정은 하지 않습니다.
-                    </div>
                   </div>
                   <TeamInvites
                     state={state!}
@@ -868,18 +865,6 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                     <button className="btn" disabled={busy} onClick={exportProject}>
                       내보내기
                     </button>
-                    {writable && agreedToGoal && !state!.me.leftAt && (
-                      <button
-                        className="btn"
-                        disabled={busy}
-                        onClick={() => {
-                          setNote('');
-                          setDialog('stepBack');
-                        }}
-                      >
-                        참여 중단 보고
-                      </button>
-                    )}
                   </div>
                 </section>
               </section>
@@ -926,16 +911,12 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
           <DialogTitle>
             {dialog === 'checkin'
               ? '진행 보고'
-              : dialog === 'stepBack'
-                ? '참여 중단을 팀에 알립니다.'
-                : '결과물 근거 기록'}
+              : '결과물 근거 기록'}
           </DialogTitle>
           <DialogDescription>
             {dialog === 'checkin'
               ? '막힌 점과 남은 공수를 저장하면 예상 종료를 다시 계산합니다. 보고가 없어도 완주 판정은 결과물 기준입니다.'
-              : dialog === 'stepBack'
-                ? '보고만으로 담당이나 기한이 바뀌지 않습니다. 남은 팀 기준의 변경은 팀장이 검토합니다.'
-                : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
+              : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
           </DialogDescription>
           {dialog === 'checkin' ? (
             <form
@@ -1000,38 +981,6 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                 disabled={busy || !note.trim()}
               >
                 저장하고 재계산
-              </button>
-            </form>
-          ) : dialog === 'stepBack' ? (
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (
-                  await mutate(
-                    'stepBack',
-                    { note },
-                    '참여 중단 보고를 저장했습니다.',
-                  )
-                )
-                  setDialog(null);
-              }}
-            >
-              <label className="input-label" htmlFor="leave-note">
-                팀에 알릴 내용
-              </label>
-              <textarea
-                id="leave-note"
-                rows={4}
-                maxLength={1000}
-                required
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-              <button
-                className="btn primary wide"
-                disabled={busy || !note.trim()}
-              >
-                보고 저장
               </button>
             </form>
           ) : dialog === 'evidence' ? (
