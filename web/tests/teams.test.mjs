@@ -311,3 +311,23 @@ test('승인 저장 직전에 신청자가 취소하면 승인도 팀원 추가�
   assert.equal(await one('SELECT 1 FROM project_members WHERE project_id=? AND user_id=?', projectId, 'k-mate'), null);
   assert.equal((await rows("SELECT 1 FROM sprint_events WHERE owner=? AND action='approve_join'", projectId)).length, 0);
 });
+
+test('거절된 비회원 신청자의 이름은 팀원의 상태 조회·내보내기 어디에도 남지 않는다', async () => {
+  const projectId = await listed('n-owner');
+  const mate = await json(await ask('n-mate', projectId), 201);
+  await json(await decide('n-owner', projectId, mate.requestId, true), 200);
+  const outsider = await json(await ask('n-outsider', projectId), 201);
+  await json(await decide('n-owner', projectId, outsider.requestId, false), 200);
+  const seen = await state('n-mate', projectId);
+  assert.deepEqual(seen.joinRequests, []);
+  assert.ok(seen.events.some((e) => e.action === 'reject_join'));
+  assert.doesNotMatch(JSON.stringify(seen), /n-outsider/);
+  const exported = await json(
+    await api.sprintGET(
+      new Request('https://test.local/api/sprint?project=' + projectId + '&format=export', { headers: headers('n-mate') }),
+    ),
+    200,
+  );
+  assert.ok(exported.events.some((e) => e.action === 'reject_join'));
+  assert.doesNotMatch(JSON.stringify(exported), /n-outsider/);
+});

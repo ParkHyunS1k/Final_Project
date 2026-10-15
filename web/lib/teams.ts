@@ -241,7 +241,8 @@ export async function decideJoin(
     args: [requestId] as unknown[],
   };
   if (!approve) {
-    await save(project, s, 'reject_join', `${me.display_name} · 참여 신청 거절: ${req.display_name}`, (m) => [decided(m, 'rejected')], ['draft', 'active'], pending);
+    // 변경 기록은 팀원 모두가 보고 내보낸다. 비회원 신청자의 이름은 남기지 않는다(신청자 목록은 팀장 전용).
+    await save(project, s, 'reject_join', `${me.display_name} · 참여 신청 거절`, (m) => [decided(m, 'rejected')], ['draft', 'active'], pending);
     return;
   }
   if (!joinWindowOpen(policy, now))
