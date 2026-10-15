@@ -18,7 +18,7 @@ import {
   startReadiness,
   type Actor,
 } from './sprint-policy';
-import { assertEvidence, parseDeliverables } from './deliverables';
+import { assertEvidence, CRITERIA_ID, CRITERIA_TITLE } from './deliverables';
 import { scheduleStatements } from './reminder-store';
 /** 화면에서 확인한 목표와 저장 시점의 목표가 다를 때. 최신 내용을 함께 돌려준다. */
 export class GoalChanged extends Error {
@@ -228,34 +228,36 @@ export function goalInput(b: Record<string, unknown>) {
     goal: textField(b.goal, '목표', 1000),
     scope: textField(b.scope, '기능 범위', 2000),
     completion: textField(b.completionCriteria, '완료 기준', 2000),
-    deliverables: parseDeliverables(b.deliverables),
+    // 필수 결과물은 받지 않는다(2026-10-14). 요청에 있어도 읽지 않는다.
     duration: assertDuration(b.duration),
   };
 }
-function deliverableStatements(
-  project: string,
-  mutation: string | null,
-  titles: string[],
-) {
+// 고정 전 항목을 지우고 완료 기준 행 하나를 넣는다. 생성(mutation 없음)과 준비 중 목표 편집이 같이 쓴다.
+// 완료 기준 문장이 바뀔 수 있으므로 준비 중 남긴 근거·확인은 함께 풀린다.
+export function criteriaStatements(project: string, mutation: string | null) {
   const db = database();
-  const gate = mutation
-    ? ' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)'
-    : '';
-  const args = mutation ? [project, mutation] : [];
+  if (!mutation)
+    return [
+      db
+        .prepare('DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL')
+        .bind(project),
+      db
+        .prepare(
+          'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) VALUES(?,?,0,?)',
+        )
+        .bind(project, CRITERIA_ID, CRITERIA_TITLE),
+    ];
   return [
     db
       .prepare(
-        'DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL' +
-          gate,
+        'DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
       )
-      .bind(project, ...args),
-    ...titles.map((title, i) =>
-      db
-        .prepare(
-          'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) VALUES(?,?,?,?)',
-        )
-        .bind(project, 'd_' + crypto.randomUUID(), i, title),
-    ),
+      .bind(project, project, mutation),
+    db
+      .prepare(
+        'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) SELECT owner,?,0,? FROM sprints WHERE owner=? AND mutation=?',
+      )
+      .bind(CRITERIA_ID, CRITERIA_TITLE, project, mutation),
   ];
 }
 // 생성은 준비(draft) 상태로 저장한다. 시작 시각·최종 기한은 아직 없다.
@@ -282,7 +284,7 @@ export async function createProject(
         id,
         user.id,
         v.goal,
-        v.deliverables,
+        [],
         v.completion,
         now,
       ),
@@ -301,7 +303,7 @@ export async function createProject(
         "INSERT INTO project_members(project_id,user_id,display_name,role,person,agreed_at,agreed_goal_version,joined_at,email) VALUES(?,?,?,'owner',0,?,1,?,?)",
       )
       .bind(id, user.id, user.name, now, now, user.email || null),
-    ...deliverableStatements(id, null, v.deliverables),
+    ...criteriaStatements(id, null),
   ]);
   return id;
 }
@@ -477,7 +479,10 @@ export async function inspectInvite(user: Identity, token: string) {
     )
     .bind(project)
     .first();
-  const deliverables = (await readDeliverables(project)).map((d) => d.title);
+  // 서버가 만든 완료 기준 행은 결과물이 아니다. 완료 기준 문장은 details에 이미 있다.
+  const deliverables = (await readDeliverables(project))
+    .filter((d) => d.deliverableId !== CRITERIA_ID)
+    .map((d) => d.title);
   return { invite, details: { ...details, deliverables } };
 }
 export async function acceptInvite(
@@ -570,4 +575,4 @@ export async function acceptInvite(
   );
   return project;
 }
-export { assertEvidence, parseDeliverables, startReadiness, PolicyError, deadlineFrom };
+export { assertEvidence, startReadiness, PolicyError, deadlineFrom };

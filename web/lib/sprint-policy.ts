@@ -2,7 +2,8 @@
 // 규칙 근거: docs/superpowers/specs/2026-09-09-spartan-sprint-design.md
 // 사용자 결정(2026-09-15): 7일 고정. 이전에 만든 8~10일 프로젝트는 저장된 duration_days를 그대로 쓴다.
 export const DURATIONS = [7] as const;
-export const MIN_MEMBERS = 2;
+// 솔로플레이(2026-10-14): 팀장 혼자서도 시작한다. 시작 후 초대·합류는 그대로 허용한다.
+export const MIN_MEMBERS = 1;
 export const MAX_MEMBERS = 4;
 export const DAILY_HOURS = 8;
 
@@ -179,7 +180,7 @@ export type StartCheck = {
   missing: string[];
 };
 
-// 시작 자격: 팀장 권한, 실제 가입한 최소 2명, 현재 멤버 전원의 최신 목표 동의.
+// 시작 자격: 팀장 권한, 실제 가입한 최소 1명, 현재 멤버 전원의 최신 목표 동의.
 // 초대만 보낸 사람은 가입 인원으로 세지 않는다.
 export function startReadiness(
   members: { agreedGoalVersion: number; displayName: string; leftAt: Date | null }[],
@@ -190,7 +191,7 @@ export function startReadiness(
   const agreed = active.filter((m) => m.agreedGoalVersion === goalVersion);
   const missing: string[] = [];
   if (active.length < MIN_MEMBERS)
-    missing.push(`가입한 팀원이 ${MIN_MEMBERS}명 이상이어야 합니다.`);
+    missing.push(`참여 중인 멤버가 ${MIN_MEMBERS}명 이상이어야 합니다.`);
   if (agreed.length !== active.length)
     missing.push(
       `최신 목표 미동의: ${active
@@ -198,7 +199,8 @@ export function startReadiness(
         .map((m) => m.displayName)
         .join(', ')}`,
     );
-  if (!deliverables) missing.push('필수 결과물이 최소 1개 필요합니다.');
+  // 새 프로젝트는 완료 기준 행을 항상 가진다. 행이 없으면 데이터 손상으로 보고 막는다.
+  if (!deliverables) missing.push('완료 기준 항목이 없습니다. 목표를 다시 저장해주세요.');
   return {
     ready: !missing.length,
     joined: active.length,

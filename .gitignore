@@ -19,3 +19,7 @@ venv/
 
 # 브레인스토밍 시안
 .superpowers/brainstorm/
+
+# 에이전트 도구 상태
+.omc/
+.DS_Store
