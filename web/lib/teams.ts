@@ -15,6 +15,8 @@ import { AccessError, GoalChanged, actorOf, member, type Identity } from './proj
 
 /** 한 사용자가 동시에 기다릴 수 있는 신청 수. 여러 팀에 한꺼번에 뿌리지 않게 묶는다. */
 export const MAX_PENDING_REQUESTS = 5;
+/** 한 팀에 쌓일 수 있는 대기 신청 수. 팀장 화면의 신청 목록과 조회 비용이 끝없이 늘지 않게 묶는다. */
+export const MAX_PROJECT_PENDING = 20;
 
 // 참여 창을 DB 시각으로 다시 본다(joinWindowOpen과 같은 규칙). 별칭만 바꿔 넣는다.
 function windowSql(p: string) {
@@ -28,6 +30,11 @@ const WAITING =
   "(SELECT count(*) FROM project_join_requests w JOIN project_policy wp ON wp.project_id=w.project_id WHERE w.user_id=? AND w.status='pending' AND " +
   windowSql('wp') +
   ')';
+// 신청을 처리할 팀장이 아직 참여 중인가. 참여 중단한 팀장은 승인·거절·비공개 전환을 할 수 없다.
+const ACTIVE_OWNER =
+  "EXISTS(SELECT 1 FROM project_members o WHERE o.project_id=s.owner AND o.role='owner' AND o.left_at IS NULL)";
+const PROJECT_PENDING =
+  "(SELECT count(*) FROM project_join_requests q WHERE q.project_id=s.owner AND q.status='pending')";
 const MEMBER_COUNT = '(SELECT count(*) FROM project_members m WHERE m.project_id=s.owner)::int';
 
 type TeamRow = {
@@ -38,6 +45,8 @@ type TeamRow = {
   completion_criteria: string;
   members: number;
   requested: boolean;
+  has_owner: boolean;
+  project_pending: number;
   listed: boolean;
 } & Record<string, unknown>;
 
@@ -58,13 +67,14 @@ function teamOf(r: TeamRow, now: Date) {
     startedAt: policy.startedAt,
     deadlineAt: policy.deadlineAt,
     joinUntil: policy.startedAt ? joinUntil(policy.startedAt) : null,
-    open,
-    joinable: open && members < MAX_MEMBERS && !r.requested,
+    // 팀장이 참여 중단했으면 신청을 처리할 사람이 없으므로 닫힌 팀으로 본다.
+    open: open && Boolean(r.has_owner),
+    joinable: open && Boolean(r.has_owner) && members < MAX_MEMBERS && !r.requested && Number(r.project_pending) < MAX_PROJECT_PENDING,
     requested: Boolean(r.requested),
   };
 }
 const TEAM_SELECT =
-  `SELECT s.owner AS id,s.title,a.goal,a.scope,a.completion_criteria,p.lifecycle,p.goal_version,p.duration_days,p.daily_hours,p.started_at,p.deadline_at,p.completed_at,p.listed,${MEMBER_COUNT} AS members,` +
+  `SELECT s.owner AS id,s.title,a.goal,a.scope,a.completion_criteria,p.lifecycle,p.goal_version,p.duration_days,p.daily_hours,p.started_at,p.deadline_at,p.completed_at,p.listed,${MEMBER_COUNT} AS members,${ACTIVE_OWNER} AS has_owner,${PROJECT_PENDING}::int AS project_pending,` +
   "EXISTS(SELECT 1 FROM project_join_requests r WHERE r.project_id=s.owner AND r.user_id=? AND r.status='pending') AS requested " +
   'FROM sprints s JOIN project_policy p ON p.project_id=s.owner JOIN project_agreement a ON a.project_id=s.owner ';
 
@@ -75,7 +85,7 @@ export async function listTeams(user: Identity) {
     db
       .prepare(
         TEAM_SELECT +
-          `WHERE p.listed AND ${windowSql('p')} AND NOT EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=s.owner AND m.user_id=?) ORDER BY p.created_at DESC,s.owner LIMIT 50`,
+          `WHERE p.listed AND ${windowSql('p')} AND ${ACTIVE_OWNER} AND NOT EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=s.owner AND m.user_id=?) ORDER BY p.created_at DESC,s.owner LIMIT 50`,
       )
       .bind(user.id, user.id),
     db
@@ -126,10 +136,12 @@ export async function requestJoin(user: Identity, b: Record<string, unknown>) {
   if (mine?.pending) return { requestId: mine.pending, status: 'pending' as const };
   const team = teamOf(row, new Date());
   if (!team.open)
-    throw new AccessError(`시작 후 ${JOIN_WINDOW_HOURS}시간이 지났거나 끝난 팀이라 신청할 수 없습니다.`, 410);
+    throw new AccessError(`지금은 신청을 받지 않는 팀입니다(시작 후 ${JOIN_WINDOW_HOURS}시간 경과, 종료, 또는 팀장 참여 중단).`, 410);
   if (team.members >= MAX_MEMBERS) throw new Error(`팀은 최대 ${MAX_MEMBERS}명입니다.`);
   const { open: _, joinable: __, requested: ___, ...details } = team;
   if (team.goalVersion !== b.goalVersion) throw new GoalChanged(details);
+  if (Number(row.project_pending) >= MAX_PROJECT_PENDING)
+    throw new AccessError('이 팀에 대기 중인 신청이 많습니다. 팀장이 처리한 뒤 다시 신청해주세요.', 429);
   if (Number(mine?.waiting) >= MAX_PENDING_REQUESTS)
     throw new AccessError(`대기 중인 신청은 ${MAX_PENDING_REQUESTS}개까지입니다. 결과를 기다리거나 신청을 취소해주세요.`, 429);
   const id = 'jr_' + crypto.randomUUID();
@@ -141,7 +153,7 @@ export async function requestJoin(user: Identity, b: Record<string, unknown>) {
     .prepare(
       'INSERT INTO project_join_requests(id,project_id,user_id,display_name,email,goal_version,status,created_at) ' +
         "SELECT ?,s.owner,?,?,?,?,'pending',now() FROM sprints s JOIN project_policy p ON p.project_id=s.owner " +
-        `WHERE s.owner=? AND p.listed AND p.goal_version=? AND ${windowSql('p')} AND ${MEMBER_COUNT} < ? ` +
+        `WHERE s.owner=? AND p.listed AND p.goal_version=? AND ${windowSql('p')} AND ${ACTIVE_OWNER} AND ${MEMBER_COUNT} < ? AND ${PROJECT_PENDING} < ? ` +
         'AND NOT EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=s.owner AND m.user_id=?) ' +
         `AND ${WAITING} < ? ` +
         'ON CONFLICT DO NOTHING RETURNING id',
@@ -155,6 +167,7 @@ export async function requestJoin(user: Identity, b: Record<string, unknown>) {
       project,
       b.goalVersion,
       MAX_MEMBERS,
+      MAX_PROJECT_PENDING,
       user.id,
       user.id,
       MAX_PENDING_REQUESTS,

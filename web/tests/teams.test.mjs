@@ -331,3 +331,19 @@ test('거절된 비회원 신청자의 이름은 팀원의 상태 조회·내보
   assert.ok(exported.events.some((e) => e.action === 'reject_join'));
   assert.doesNotMatch(JSON.stringify(exported), /n-outsider/);
 });
+
+test('팀장이 참여 중단하면 신청을 처리할 사람이 없으므로 목록에서 빠지고 신청도 거절된다', async () => {
+  const projectId = await listed('o-owner');
+  const s = await state('o-owner', projectId);
+  await json(await sprint('o-owner', { action: 'stepBack', projectId, revision: s.sprint.revision, note: '개인 사정' }), 200);
+  assert.ok(!(await teams('o-viewer')).teams.some((t) => t.projectId === projectId));
+  assert.equal((await ask('o-viewer', projectId)).status, 410);
+});
+
+test('한 팀의 대기 신청은 20건까지다', async () => {
+  const projectId = await listed('m-owner');
+  for (let i = 0; i < 20; i++) await json(await ask('m-user' + i, projectId), 201);
+  assert.equal((await teams('m-late')).teams.find((t) => t.projectId === projectId).joinable, false);
+  assert.equal((await ask('m-late', projectId)).status, 429);
+  assert.equal((await state('m-owner', projectId)).joinRequests.length, 20);
+});

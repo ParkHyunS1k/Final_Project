@@ -169,7 +169,7 @@ export async function projectState(project: string, user: Identity) {
     // 공개 팀 목록에서 들어온 대기 신청. 팀장에게만 표시 이름을 보여준다.
     db
       .prepare(
-        "SELECT id,display_name,goal_version,created_at FROM project_join_requests WHERE project_id=? AND status='pending' AND ?='owner' ORDER BY created_at,id",
+        "SELECT id,display_name,goal_version,created_at FROM project_join_requests WHERE project_id=? AND status='pending' AND ?='owner' ORDER BY created_at,id LIMIT 20",
       )
       .bind(project, me.role),
   ]);
