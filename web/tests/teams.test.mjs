@@ -285,3 +285,29 @@ test('형식이 틀리거나 교차 출처·로그인 없는 신청은 쓰기 �
   assert.equal((await api.teamsGET(new Request('https://test.local/api/teams'))).status, 401);
   assert.equal((await one('SELECT count(*)::int AS n FROM project_join_requests WHERE project_id=?', projectId)).n, 0);
 });
+
+test('끝난 팀의 대기 신청은 expired로 보이고 대기 한도에서 빠진다', async () => {
+  const hosts = [];
+  for (let i = 0; i < 6; i++) hosts.push(await listed('q-host' + i));
+  for (const id of hosts.slice(0, 5)) await json(await ask('q-mate', id), 201);
+  assert.equal((await ask('q-mate', hosts[5])).status, 429);
+  await run("UPDATE project_policy SET lifecycle='completed' WHERE project_id=?", hosts[0]);
+  const mine = (await teams('q-mate')).requests;
+  assert.equal(mine.find((r) => r.projectId === hosts[0]).status, 'expired');
+  await json(await ask('q-mate', hosts[5]), 201);
+});
+
+test('승인 저장 직전에 신청자가 취소하면 승인도 팀원 추가도 기록도 남지 않는다', async () => {
+  const projectId = await listed('k-owner');
+  const r = await json(await ask('k-mate', projectId), 201);
+  const s = await state('k-owner', projectId);
+  globalThis.__BEFORE_WRITE = async () => {
+    await json(await teamsPost('k-mate', { action: 'cancel', requestId: r.requestId }), 200);
+  };
+  const raced = await projects('k-owner', { action: 'decideJoin', projectId, revision: s.sprint.revision, requestId: r.requestId, approve: true });
+  globalThis.__BEFORE_WRITE = null;
+  assert.equal(raced.status, 409);
+  assert.equal((await one('SELECT status FROM project_join_requests WHERE id=?', r.requestId)).status, 'cancelled');
+  assert.equal(await one('SELECT 1 FROM project_members WHERE project_id=? AND user_id=?', projectId, 'k-mate'), null);
+  assert.equal((await rows("SELECT 1 FROM sprint_events WHERE owner=? AND action='approve_join'", projectId)).length, 0);
+});

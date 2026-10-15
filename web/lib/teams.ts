@@ -23,6 +23,11 @@ function windowSql(p: string) {
     ` AND (${p}.deadline_at IS NULL OR ${p}.deadline_at > now())))`
   );
 }
+// 내 대기 신청 수. 참여 창이 닫힌 팀(완주·종료·24시간 경과)의 대기 신청은 세지 않는다.
+const WAITING =
+  "(SELECT count(*) FROM project_join_requests w JOIN project_policy wp ON wp.project_id=w.project_id WHERE w.user_id=? AND w.status='pending' AND " +
+  windowSql('wp') +
+  ')';
 const MEMBER_COUNT = '(SELECT count(*) FROM project_members m WHERE m.project_id=s.owner)::int';
 
 type TeamRow = {
@@ -75,7 +80,8 @@ export async function listTeams(user: Identity) {
       .bind(user.id, user.id),
     db
       .prepare(
-        'SELECT r.id,r.project_id,s.title,r.status,r.created_at,r.decided_at FROM project_join_requests r JOIN sprints s ON s.owner=r.project_id WHERE r.user_id=? ORDER BY r.created_at DESC,r.id LIMIT 20',
+        // 참여 창이 닫힌 팀의 대기 신청은 더 처리되지 않으므로 expired로 보여준다.
+        `SELECT r.id,r.project_id,s.title,CASE WHEN r.status='pending' AND NOT ${windowSql('p')} THEN 'expired' ELSE r.status END AS status,r.created_at,r.decided_at FROM project_join_requests r JOIN sprints s ON s.owner=r.project_id JOIN project_policy p ON p.project_id=r.project_id WHERE r.user_id=? ORDER BY r.created_at DESC,r.id LIMIT 20`,
       )
       .bind(user.id),
   ]);
@@ -112,7 +118,7 @@ export async function requestJoin(user: Identity, b: Record<string, unknown>) {
   if (!row || !row.listed) throw new AccessError('참여할 수 있는 팀을 찾을 수 없습니다.', 404);
   const mine = await db
     .prepare(
-      "SELECT (SELECT 1 FROM project_members WHERE project_id=? AND user_id=?) AS member,(SELECT id FROM project_join_requests WHERE project_id=? AND user_id=? AND status='pending') AS pending,(SELECT count(*) FROM project_join_requests WHERE user_id=? AND status='pending')::int AS waiting",
+      `SELECT (SELECT 1 FROM project_members WHERE project_id=? AND user_id=?) AS member,(SELECT id FROM project_join_requests WHERE project_id=? AND user_id=? AND status='pending') AS pending,${WAITING}::int AS waiting`,
     )
     .bind(project, user.id, project, user.id, user.id)
     .first<{ member: number | null; pending: string | null; waiting: number }>();
@@ -128,13 +134,16 @@ export async function requestJoin(user: Identity, b: Record<string, unknown>) {
     throw new AccessError(`대기 중인 신청은 ${MAX_PENDING_REQUESTS}개까지입니다. 결과를 기다리거나 신청을 취소해주세요.`, 429);
   const id = 'jr_' + crypto.randomUUID();
   // 위 검사를 저장 시점에 한 문장의 조건으로 다시 본다. 하나라도 바뀌었으면 아무것도 쓰지 않는다.
-  const inserted = await db
+  const [, result] = await db.batch([
+    // 같은 사용자의 신청을 트랜잭션 끝까지 줄 세운다. 동시 신청이 서로의 대기 수를 못 보고 한도를 넘지 않게.
+    db.prepare("SELECT pg_advisory_xact_lock(hashtext('join_request:' || ?))").bind(user.id),
+    db
     .prepare(
       'INSERT INTO project_join_requests(id,project_id,user_id,display_name,email,goal_version,status,created_at) ' +
         "SELECT ?,s.owner,?,?,?,?,'pending',now() FROM sprints s JOIN project_policy p ON p.project_id=s.owner " +
         `WHERE s.owner=? AND p.listed AND p.goal_version=? AND ${windowSql('p')} AND ${MEMBER_COUNT} < ? ` +
         'AND NOT EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=s.owner AND m.user_id=?) ' +
-        "AND (SELECT count(*) FROM project_join_requests w WHERE w.user_id=? AND w.status='pending') < ? " +
+        `AND ${WAITING} < ? ` +
         'ON CONFLICT DO NOTHING RETURNING id',
     )
     .bind(
@@ -149,9 +158,9 @@ export async function requestJoin(user: Identity, b: Record<string, unknown>) {
       user.id,
       user.id,
       MAX_PENDING_REQUESTS,
-    )
-    .first();
-  if (!inserted) throw new Conflict();
+    ),
+  ]);
+  if (result.results.length !== 1) throw new Conflict();
   return { requestId: id, status: 'pending' as const };
 }
 
@@ -227,7 +236,8 @@ export async function decideJoin(
       )
       .bind(status, user.id, requestId, project, m);
   const pending = {
-    sql: "EXISTS(SELECT 1 FROM project_join_requests r WHERE r.id=? AND r.project_id=sprints.owner AND r.status='pending')",
+    // FOR UPDATE: 이 트랜잭션이 끝날 때까지 신청 행을 잠근다. 그 사이 도착한 취소는 기다렸다가 처리된 신청을 보고 실패한다.
+    sql: "EXISTS(SELECT 1 FROM project_join_requests r WHERE r.id=? AND r.project_id=sprints.owner AND r.status='pending' FOR UPDATE)",
     args: [requestId] as unknown[],
   };
   if (!approve) {
