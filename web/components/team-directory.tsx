@@ -20,7 +20,7 @@ export type Team = {
   joinable: boolean;
   requested: boolean;
 };
-type JoinRequest = {
+export type JoinRequest = {
   requestId: string;
   projectId: string;
   title: string;
@@ -216,24 +216,53 @@ export function TeamDirectory() {
           })}
         </ul>
       )}
-      {requests.length > 0 && (
-        <>
-          <h2>내 신청</h2>
-          <ul className="team-requests">
-            {requests.map((r) => (
-              <li key={r.requestId}>
-                {r.status === 'approved' ? (
-                  <a href={'/workspace?project=' + encodeURIComponent(r.projectId)}>{r.title}</a>
-                ) : (
-                  r.title
-                )}{' '}
-                · {STATUS[r.status]} · {kst(r.createdAt)} 신청
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      <MyRequests
+        requests={requests}
+        busy={busy}
+        onCancel={(r) =>
+          void run(() => call('/api/teams', { action: 'cancel', requestId: r.requestId }), '신청을 취소했습니다.')
+        }
+      />
     </section>
+  );
+}
+
+// 내 신청 목록. 팀이 비공개로 바뀌어 카드가 사라져도 대기 신청은 여기서 취소할 수 있어야 한다
+// (대기 신청은 사용자당 한도를 차지한다).
+export function MyRequests({
+  requests,
+  busy,
+  onCancel,
+}: {
+  requests: JoinRequest[];
+  busy: boolean;
+  onCancel: (r: JoinRequest) => void;
+}) {
+  if (!requests.length) return null;
+  return (
+    <>
+      <h2>내 신청</h2>
+      <ul className="team-requests">
+        {requests.map((r) => (
+          <li key={r.requestId}>
+            {r.status === 'approved' ? (
+              <a href={'/workspace?project=' + encodeURIComponent(r.projectId)}>{r.title}</a>
+            ) : (
+              r.title
+            )}{' '}
+            · {STATUS[r.status]} · {kst(r.createdAt)} 신청
+            {r.status === 'pending' && (
+              <>
+                {' '}
+                <button className="btn" disabled={busy} onClick={() => onCancel(r)}>
+                  신청 취소
+                </button>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

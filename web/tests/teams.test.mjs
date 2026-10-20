@@ -334,8 +334,8 @@ test('거절된 비회원 신청자의 이름은 팀원의 상태 조회·내보
 
 test('팀장이 참여 중단하면 신청을 처리할 사람이 없으므로 목록에서 빠지고 신청도 거절된다', async () => {
   const projectId = await listed('o-owner');
-  const s = await state('o-owner', projectId);
-  await json(await sprint('o-owner', { action: 'stepBack', projectId, revision: s.sprint.revision, note: '개인 사정' }), 200);
+  // 참여 중단 보고 기능은 #15에서 제거된다. 그 전에 남은 중단 기록을 DB에 직접 만든다.
+  await run("UPDATE project_members SET left_at=now(),left_note='이전 기록' WHERE project_id=? AND user_id=?", projectId, 'o-owner');
   assert.ok(!(await teams('o-viewer')).teams.some((t) => t.projectId === projectId));
   assert.equal((await ask('o-viewer', projectId)).status, 410);
 });
@@ -346,4 +346,16 @@ test('한 팀의 대기 신청은 20건까지다', async () => {
   assert.equal((await teams('m-late')).teams.find((t) => t.projectId === projectId).joinable, false);
   assert.equal((await ask('m-late', projectId)).status, 429);
   assert.equal((await state('m-owner', projectId)).joinRequests.length, 20);
+});
+
+test('신청 뒤 팀이 비공개로 바뀌어도 신청자는 내 신청에서 취소해 한도를 되찾는다', async () => {
+  const projectId = await listed('h-owner');
+  const r = await json(await ask('h-mate', projectId), 201);
+  const s = await state('h-owner', projectId);
+  await json(await projects('h-owner', { action: 'setListed', projectId, revision: s.sprint.revision, listed: false }), 200);
+  const mine = await teams('h-mate');
+  assert.ok(!mine.teams.some((t) => t.projectId === projectId));
+  assert.equal(mine.requests.find((x) => x.requestId === r.requestId).status, 'pending');
+  await json(await teamsPost('h-mate', { action: 'cancel', requestId: r.requestId }), 200);
+  assert.equal((await teams('h-mate')).requests.find((x) => x.requestId === r.requestId).status, 'cancelled');
 });

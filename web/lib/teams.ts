@@ -146,8 +146,10 @@ export async function requestJoin(user: Identity, b: Record<string, unknown>) {
     throw new AccessError(`대기 중인 신청은 ${MAX_PENDING_REQUESTS}개까지입니다. 결과를 기다리거나 신청을 취소해주세요.`, 429);
   const id = 'jr_' + crypto.randomUUID();
   // 위 검사를 저장 시점에 한 문장의 조건으로 다시 본다. 하나라도 바뀌었으면 아무것도 쓰지 않는다.
-  const [, result] = await db.batch([
-    // 같은 사용자의 신청을 트랜잭션 끝까지 줄 세운다. 동시 신청이 서로의 대기 수를 못 보고 한도를 넘지 않게.
+  const [, , result] = await db.batch([
+    // 같은 팀, 같은 사용자의 신청을 트랜잭션 끝까지 줄 세운다. 동시 신청이 서로의 대기 수를 못 보고
+    // 팀당·사용자당 한도를 넘지 않게. 잠금 순서는 항상 팀 → 사용자라 서로 기다리다 멈추지 않는다.
+    db.prepare("SELECT pg_advisory_xact_lock(hashtext('join_project:' || ?))").bind(project),
     db.prepare("SELECT pg_advisory_xact_lock(hashtext('join_request:' || ?))").bind(user.id),
     db
     .prepare(
