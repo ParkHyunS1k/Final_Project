@@ -203,7 +203,7 @@ test('최신 목표에 동의하지 않은 사람은 읽기만 하고, 동의는
   );
 });
 
-test('참여 중단을 보고한 팀원은 목표 동의 외 변경을 하지 않는다', () => {
+test('기능 제거(2026-10-15) 전에 참여 중단을 보고한 팀원은 목표 동의 외 변경을 하지 않는다', () => {
   const now = new Date(started);
   const gone = actor({ role: 'member', person: 1, leftAt: new Date(started) });
   assert.throws(
@@ -216,21 +216,6 @@ test('참여 중단을 보고한 팀원은 목표 동의 외 변경을 하지 �
         assigneePerson: 1,
       }),
     /참여 중단/,
-  );
-});
-
-test('참여 중단 보고는 본인만 할 수 있다', () => {
-  const now = new Date(started);
-  assert.throws(
-    () =>
-      allow({
-        policy: policy(),
-        actor: actor(),
-        action: 'stepBack',
-        now,
-        targetUserId: 'other',
-      }),
-    /본인만/,
   );
 });
 

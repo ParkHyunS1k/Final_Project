@@ -92,7 +92,7 @@ export function assertDuration(value: unknown): number {
 }
 
 // 담당자 본인만, 팀장만, 멤버 누구나 중 어느 권한인지.
-type Scope = 'owner' | 'assignee' | 'member' | 'self';
+type Scope = 'owner' | 'assignee' | 'member';
 type Rule = { scope: Scope; states: Lifecycle[] };
 
 // 모든 사용자 변경 진입점의 정책 목록. 여기에 없는 action은 거절한다.
@@ -106,7 +106,6 @@ export const RULES: Record<string, Rule> = {
   revokeInvite: { scope: 'owner', states: ['draft', 'active'] },
   resendInvite: { scope: 'owner', states: ['draft', 'active'] },
   acceptInvite: { scope: 'member', states: ['draft', 'active'] },
-  stepBack: { scope: 'self', states: ['draft', 'active'] },
   // 공개 팀 목록 (참여 창은 joinWindowOpen으로 따로 본다)
   setListed: { scope: 'owner', states: ['draft', 'active'] },
   decideJoin: { scope: 'owner', states: ['draft', 'active'] },
@@ -152,19 +151,18 @@ export function assertProjectMutationAllowed({
   action,
   now,
   assigneePerson,
-  targetUserId,
 }: {
   policy: Policy | null;
   actor: Actor;
   action: string;
   now: Date;
   assigneePerson?: number;
-  targetUserId?: string;
 }): Lifecycle {
   const state = effectiveLifecycle(policy, now);
   const rule = RULES[action];
   if (!rule) throw new PolicyError('지원하지 않는 작업입니다.');
   if (!rule.states.includes(state)) throw new PolicyError(stateMessage(state));
+  // 참여 중단 기능은 2026-10-15에 뺐다. 그 전에 중단을 보고한 기록은 그대로 막는다.
   if (actor.leftAt && action !== 'agreeGoal')
     throw new PolicyError('참여 중단을 보고한 팀원은 변경할 수 없습니다.', 403);
   // 고정 목표에 동의하지 않은 사람은 어떤 변경도 하지 않고 읽기만 한다.
@@ -178,8 +176,6 @@ export function assertProjectMutationAllowed({
     throw new PolicyError('최신 목표와 완료 기준을 먼저 확인해주세요.');
   if (rule.scope === 'owner' && actor.role !== 'owner')
     throw new PolicyError('팀장만 실행할 수 있습니다.', 403);
-  if (rule.scope === 'self' && targetUserId && targetUserId !== actor.userId)
-    throw new PolicyError('본인만 보고할 수 있습니다.', 403);
   if (
     rule.scope === 'assignee' &&
     actor.role !== 'owner' &&
