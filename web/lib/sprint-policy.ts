@@ -6,6 +6,8 @@ export const DURATIONS = [7] as const;
 export const MIN_MEMBERS = 1;
 export const MAX_MEMBERS = 4;
 export const DAILY_HOURS = 8;
+// 공개 팀 목록 참여(2026-10-15): 진행 중 팀은 시작 후 24시간 안에만 신청·승인한다.
+export const JOIN_WINDOW_HOURS = 24;
 
 // legacy: 새 규칙 이전에 만들어진 기록. 자동 전환하지 않고 열람·내보내기만 유지한다.
 export type Lifecycle = 'legacy' | 'draft' | 'active' | 'completed' | 'expired';
@@ -62,6 +64,17 @@ export function effectiveLifecycle(policy: Policy | null, now: Date): Lifecycle 
   return 'active';
 }
 
+/** 목록 신청·승인이 가능한가. 준비 중은 언제나, 진행 중은 시작 후 JOIN_WINDOW_HOURS 안. */
+export function joinWindowOpen(policy: Policy | null, now: Date) {
+  const state = effectiveLifecycle(policy, now);
+  if (state === 'draft') return true;
+  if (state !== 'active' || !policy?.startedAt) return false;
+  return now.getTime() < joinUntil(policy.startedAt).getTime();
+}
+export function joinUntil(startedAt: Date) {
+  return new Date(startedAt.getTime() + JOIN_WINDOW_HOURS * 3600000);
+}
+
 // 시작 시각 + 선택한 일수. 사용자 확정 규칙(2026-09-09): 마지막 날 18시 고정이 아니다.
 export function deadlineFrom(startedAt: Date, durationDays: number) {
   return new Date(
@@ -93,6 +106,9 @@ export const RULES: Record<string, Rule> = {
   revokeInvite: { scope: 'owner', states: ['draft', 'active'] },
   resendInvite: { scope: 'owner', states: ['draft', 'active'] },
   acceptInvite: { scope: 'member', states: ['draft', 'active'] },
+  // 공개 팀 목록 (참여 창은 joinWindowOpen으로 따로 본다)
+  setListed: { scope: 'owner', states: ['draft', 'active'] },
+  decideJoin: { scope: 'owner', states: ['draft', 'active'] },
   // 업무
   createTask: { scope: 'owner', states: ['draft', 'active'] },
   editTask: { scope: 'owner', states: ['draft', 'active'] },

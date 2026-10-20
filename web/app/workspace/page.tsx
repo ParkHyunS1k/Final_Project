@@ -5,6 +5,7 @@ import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
 import { ChangeReview } from '@/components/change-review';
 import { RaceHome } from '@/components/race-home';
+import { TeamListing } from '@/components/team-directory';
 import {
   ProjectWorkspace,
   ProjectDetails,
@@ -731,6 +732,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                     setLink={setInviteLink}
                     writable={writable}
                   />
+                  <TeamListing state={state!} refresh={load} writable={writable} />
                 </section>
                 <section className="project-block">
                   <div className="section-heading">
