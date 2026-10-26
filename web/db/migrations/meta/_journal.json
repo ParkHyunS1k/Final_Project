@@ -40,7 +40,14 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1792085314223,
+      "when": 1792081678203,
+      "tag": "0005_team_join",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792978057118,
       "tag": "0007_learning_review",
       "breakpoints": true
     }

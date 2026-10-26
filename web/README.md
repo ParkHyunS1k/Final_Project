@@ -51,7 +51,13 @@ npm run build
 
 `POST /api/projects`: create(title,goal,scope,duration,completionCriteria,agreed; deliverables는 받지 않음·보내도 무시), invite(projectId,revision,email: 그 주소로 초대 링크 메일 발송, 응답 email=sent|failed|off, 사용자당 하루 20개), resend(projectId,revision,inviteId: 새 링크 발급·발송, 이전 링크 무효, 초대당 3회·1분 간격), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능.
 
-`GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. `completion`은 `{ ready, total, confirmed, missing, mode }`이며 `mode`는 완료 기준 항목 하나면 `criteria`, 기존 결과물 프로젝트면 `deliverables`. 응답은 캐시하지 않는다.
+팀장 전용 추가 action: setListed(projectId,revision,listed: 공개 팀 목록 노출), decideJoin(projectId,revision,requestId,approve: 참여 신청 승인·거절. 승인은 준비 중이거나 시작 후 24시간 안, 최대 4명).
+
+`GET /api/teams`: 공개 중이고 참여 가능한 다른 팀 목록 `{ teams: [{ projectId,title,goal,scope,completionCriteria,lifecycle,goalVersion,members,maxMembers,startedAt,deadlineAt,joinUntil,joinable,requested }], requests: [내 신청 최근 20개] }`. 팀원 이름·이메일·ID는 없다.
+
+`POST /api/teams`: request(projectId,goalVersion,agreed: 참여 신청, 목표 버전이 다르면 409와 최신 목표), cancel(requestId: 본인 대기 신청 취소). 신청은 프로젝트 revision을 올리지 않는다.
+
+`GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. `completion`은 `{ ready, total, confirmed, missing, mode }`이며 `mode`는 완료 기준 항목 하나면 `criteria`, 기존 결과물 프로젝트면 `deliverables`. `listed`(목록 공개 여부)와 팀장에게만 `joinRequests`(대기 신청자 표시 이름)를 함께 준다. 응답은 캐시하지 않는다.
 
 `POST /api/sprint`: JSON `{ action, projectId, revision, ...fields }`.
 

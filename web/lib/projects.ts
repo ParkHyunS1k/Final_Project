@@ -149,7 +149,7 @@ export async function listProjects(user: Identity) {
 export async function projectState(project: string, user: Identity) {
   const me = await member(project, user);
   const db = database();
-  const [details, members, invites] = await db.batch<Record<string, unknown>>([
+  const [details, members, invites, listing, joinRequests] = await db.batch<Record<string, unknown>>([
     db
       .prepare(
         'SELECT goal,deliverables,completion_criteria,legacy FROM project_details WHERE project_id=?',
@@ -163,6 +163,13 @@ export async function projectState(project: string, user: Identity) {
     db
       .prepare(
         "SELECT id,email,expires_at,status,email_status,email_sent_at,email_sends FROM project_invites WHERE project_id=? AND ?='owner' ORDER BY created_at DESC LIMIT 20",
+      )
+      .bind(project, me.role),
+    db.prepare('SELECT listed FROM project_policy WHERE project_id=?').bind(project),
+    // 공개 팀 목록에서 들어온 대기 신청. 팀장에게만 표시 이름을 보여준다.
+    db
+      .prepare(
+        "SELECT id,display_name,goal_version,created_at FROM project_join_requests WHERE project_id=? AND status='pending' AND ?='owner' ORDER BY created_at,id LIMIT 20",
       )
       .bind(project, me.role),
   ]);
@@ -180,6 +187,8 @@ export async function projectState(project: string, user: Identity) {
     details: details.results[0],
     members: members.results,
     invites: invites.results,
+    listed: Boolean(listing.results[0]?.listed),
+    joinRequests: joinRequests.results,
   };
 }
 // 멤버만 읽는 내보내기. 다른 멤버의 이메일·인증 정보는 포함하지 않는다.

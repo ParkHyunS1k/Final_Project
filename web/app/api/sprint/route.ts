@@ -133,7 +133,6 @@ export async function POST(request: Request) {
       action: b.action,
       now,
       assigneePerson: target?.person,
-      targetUserId: typeof b.userId === 'string' ? b.userId : user.id,
     });
     if (b.revision !== s.revision) throw new Conflict();
     const open = ['draft', 'active'] as const;
@@ -565,28 +564,6 @@ export async function POST(request: Request) {
           ...cancelStatements(id, m, { reason: '프로젝트 완주' }),
         ],
         ['active'],
-      );
-    } else if (b.action === 'stepBack') {
-      // 당사자가 알리고, 남은 팀 기준의 변경안은 팀장이 검토한다. 자동 재배정은 없다.
-      if (typeof b.note !== 'string' || !b.note.trim() || b.note.length > 1000)
-        throw new Error('참여 중단 사유를 1~1000자로 남겨주세요.');
-      await save(
-        id,
-        s,
-        'stepBack',
-        `${me.display_name} · 참여 중단 보고`,
-        (m) => [
-          db
-            .prepare(
-              'UPDATE project_members SET left_at=?,left_note=? WHERE project_id=? AND user_id=? AND left_at IS NULL AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
-            )
-            .bind(timestamp, b.note.trim(), id, user.id, id, m),
-          ...cancelStatements(id, m, {
-            userId: user.id,
-            reason: '참여 중단 보고',
-          }),
-        ],
-        [...open],
       );
     } else throw new Error('지원하지 않는 작업입니다.');
     return reply(await projectState(id, user));

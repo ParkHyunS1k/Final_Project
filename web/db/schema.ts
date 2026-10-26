@@ -11,6 +11,7 @@ import {
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 const tz = { withTimezone: true, mode: 'date' } as const;
 // Supabase는 public 테이블을 anon 키(화면 번들에 공개)로 REST에 노출한다. 모든 테이블에 RLS를 켜고
@@ -172,6 +173,8 @@ export const projectPolicy = pgTable('project_policy', {
   deadlineAt: timestamp('deadline_at', tz),
   completedAt: timestamp('completed_at', tz),
   createdAt: timestamp('created_at', tz).notNull(),
+  // 공개 팀 목록 노출(2026-10-15, 마이그레이션 0005). 기본 비공개, 팀장만 바꾼다.
+  listed: boolean('listed').notNull().default(false),
 }).enableRLS();
 export const projectAgreement = pgTable('project_agreement', {
   projectId: text('project_id')
@@ -365,6 +368,34 @@ export const aiQuota = pgTable(
     n: integer('n').notNull(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.day] })],
+).enableRLS();
+
+// --- 공개 팀 참여 신청 (마이그레이션 0005) ---
+export const projectJoinRequests = pgTable(
+  'project_join_requests',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    userId: text('user_id').notNull(),
+    displayName: text('display_name').notNull(),
+    email: text('email'),
+    // 신청자가 확인하고 동의한 목표 버전.
+    goalVersion: integer('goal_version').notNull(),
+    // pending | approved | rejected | cancelled
+    status: text('status').notNull().default('pending'),
+    createdAt: timestamp('created_at', tz).notNull(),
+    decidedAt: timestamp('decided_at', tz),
+    decidedBy: text('decided_by'),
+  },
+  (t) => [
+    uniqueIndex('idx_join_requests_pending')
+      .on(t.projectId, t.userId)
+      .where(sql`status = 'pending'`),
+    index('idx_join_requests_user').on(t.userId, t.status),
+    index('idx_join_requests_project').on(t.projectId, t.status),
+  ],
 ).enableRLS();
 
 // 학습 확인(2026-10-15): 사용자가 프로젝트마다 등록한 공개 GitHub 저장소와 본인 GitHub 아이디.

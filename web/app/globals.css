@@ -2350,3 +2350,56 @@ textarea {
   color: var(--gray-500);
   white-space: nowrap;
 }
+
+/* 팀 찾기(공개 팀 목록) */
+.project-panel .team-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.project-panel .team-entry {
+  margin: 0;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--gray-25);
+}
+.team-entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.project-panel .team-entry-head h2 {
+  font-size: 18px;
+  margin: 0 8px 0 0;
+}
+.team-entry-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 8px 0 12px;
+  font-size: 14px;
+}
+.team-entry-facts dt {
+  color: var(--gray-500);
+}
+.team-entry-facts dd {
+  margin: 0;
+  color: var(--gray-700);
+}
+.team-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.team-listing {
+  margin-top: 16px;
+}
+@media (max-width: 640px) {
+  .team-entry-facts {
+    grid-template-columns: 1fr;
+  }
+}
