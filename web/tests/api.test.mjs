@@ -588,46 +588,37 @@ test('개인별 가용시간과 부가 업무 보류는 새 정책에 남지 않
   assert.equal(s.sprint.tasks[0].optional, false);
 });
 
-test('참여 중단 보고는 배정이나 기한을 바꾸지 않는다', async () => {
+test('참여 중단 보고는 제거됐고, 이전에 남은 중단 기록의 팀원은 변경하지 않는다', async () => {
   const { projectId, state } = await startedTeam('leave', 'leavemate');
-  let s = await change('leave', projectId, 'createTask', state, {
+  const s = await change('leave', projectId, 'createTask', state, {
     title: '팀원 담당 업무',
     person: 1,
     remaining: 4,
     dependsOn: [],
   });
-  // 다른 사람 대신 보고할 수 없다.
-  assert.equal(
-    (
-      await post('leave', 'stepBack', s.sprint.revision, {
-        projectId,
-        userId: 'leavemate',
-        note: '대신 보고',
-      })
-    ).status,
-    403,
-  );
-  s = await change('leavemate', projectId, 'stepBack', s, {
-    note: '개인 사정으로 남은 기간 참여가 어렵습니다.',
+  // 2026-10-15 제품에서 참여 중단을 뺐다. 요청해도 아무것도 쓰지 않는다.
+  const removed = await post('leavemate', 'stepBack', s.sprint.revision, {
+    projectId,
+    note: '개인 사정',
   });
-  assert.equal(s.members[1].left_at !== null, true);
-  assert.equal(s.sprint.tasks[0].person, 1);
-  assert.equal(s.policy.deadlineAt, state.policy.deadlineAt);
-  // 남은 팀 기준으로는 자동 배치되지 않고 위험으로 보인다.
-  assert.equal(s.plan.feasible, false);
-  assert.deepEqual(s.plan.unscheduled, [1]);
-  // 보고한 팀원은 더 이상 변경하지 않는다.
-  assert.equal(
-    (
-      await post('leavemate', 'checkin', s.sprint.revision, {
-        projectId,
-        taskId: 1,
-        note: '계속 진행',
-        remaining: 1,
-      })
-    ).status,
-    403,
+  assert.equal(removed.status, 400);
+  assert.match((await removed.json()).error, /지원하지 않는/);
+  const after = await read('leave', projectId);
+  assert.equal(after.sprint.revision, s.sprint.revision);
+  assert.equal(after.members[1].left_at, null);
+  // 제거 전에 저장된 중단 기록은 그대로 존중한다.
+  await run(
+    "UPDATE project_members SET left_at=now(),left_note='이전 기록' WHERE project_id=? AND user_id=?",
+    projectId,
+    'leavemate',
   );
+  const blocked = await post('leavemate', 'checkin', s.sprint.revision, {
+    projectId,
+    taskId: 1,
+    note: '계속 진행',
+    remaining: 1,
+  });
+  assert.equal(blocked.status, 403);
 });
 
 test('업무 편집 권한·검증·동시 쓰기 원자성은 유지된다', async () => {

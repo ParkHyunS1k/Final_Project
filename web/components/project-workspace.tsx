@@ -17,12 +17,13 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Zap, ListTodo, FileText, Gauge, LogOut } from 'lucide-react';
+import { Zap, ListTodo, FileText, Gauge, LogOut, Users } from 'lucide-react';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { viewFrom, type View } from '@/lib/race';
 import { apiFetch, signInWithGoogle, signOut } from '@/lib/supabase-browser';
 import { workspaceEntry } from '@/lib/workspace-entry';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { TeamDirectory } from '@/components/team-directory';
 export const workspaceViews = [
   { id: 'home' as View, label: '홈', icon: Gauge },
   { id: 'tasks' as View, label: '업무', icon: ListTodo },
@@ -38,7 +39,8 @@ function WorkspaceMenu({
   view,
   onChange,
 }: {
-  view: View;
+  // 팀 찾기를 보는 동안은 어느 메뉴도 활성으로 표시하지 않는다.
+  view: View | null;
   onChange: (view: View) => void;
 }) {
   const { setOpenMobile } = useSidebar();
@@ -214,6 +216,8 @@ export function ProjectWorkspace({
   const [mine, setMine] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [creating, setCreating] = useState(false);
+  // 사이드바 '팀 찾기'. 프로젝트 선택과 무관하게 열 수 있다(?teams=1).
+  const [browsing, setBrowsing] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [invite, setInvite] = useState('');
@@ -233,6 +237,7 @@ export function ProjectWorkspace({
         const entry = workspaceEntry(location.search, data.projects);
         setInvite(entry.invite);
         setCreating(entry.creating);
+        setBrowsing(!entry.invite && params.get('teams') === '1');
         setProjects(data.projects);
         setSelected(entry.selected);
         if (token)
@@ -282,10 +287,14 @@ export function ProjectWorkspace({
           <ProjectSwitcher
             projects={projects}
             value={creating ? '__new' : selected}
-            onCreate={() => setCreating(true)}
+            onCreate={() => {
+              setCreating(true);
+              setBrowsing(false);
+            }}
             onSelect={(id) => {
               setSelected(id);
               setCreating(false);
+              setBrowsing(false);
               setView('home');
               setMine(false);
               history.replaceState(null, '', '/workspace?project=' + encodeURIComponent(id));
@@ -297,14 +306,34 @@ export function ProjectWorkspace({
             <SidebarGroup>
               <SidebarGroupLabel>메뉴</SidebarGroupLabel>
               <WorkspaceMenu
-                view={view}
+                view={browsing ? null : view}
                 onChange={(v) => {
                   setView(v);
                   setCreating(false);
+                  setBrowsing(false);
+                  history.replaceState(null, '', '/workspace?project=' + encodeURIComponent(selected));
                 }}
               />
             </SidebarGroup>
           )}
+          <SidebarGroup>
+            <SidebarGroupLabel>팀</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <WorkspaceButton
+                  isActive={browsing}
+                  onClick={() => {
+                    setBrowsing(true);
+                    setCreating(false);
+                    history.replaceState(null, '', '/workspace?teams=1');
+                  }}
+                >
+                  <Users size={16} />
+                  <span>팀 찾기</span>
+                </WorkspaceButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
           <div className="sidebar-actions">
@@ -322,10 +351,10 @@ export function ProjectWorkspace({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="workspace-body">
-        {!(selected && !creating && !invite) && (
+        {!(selected && !creating && !invite && !browsing) && (
           <header className="workspace-bar">
             <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
-            <b>{creating ? '새 프로젝트' : '프로젝트'}</b>
+            <b>{creating ? '새 프로젝트' : browsing && !invite ? '팀 찾기' : '프로젝트'}</b>
           </header>
         )}
         {error && (
@@ -472,12 +501,23 @@ export function ProjectWorkspace({
               내 프로젝트로 돌아가기
             </a>
           </section>
+        ) : browsing && !creating ? (
+          <TeamDirectory />
         ) : selected && !creating ? (
           children(selected, { view, setView, mine, setMine })
         ) : loaded && !creating ? (
           <section className="project-panel">
             <h1>첫 스프린트를 만들어보세요.</h1>
             <p>목표를 정하고 팀원을 초대해 7일 동안 함께 진행합니다.</p>
+            <button
+              className="btn"
+              onClick={() => {
+                setBrowsing(true);
+                history.replaceState(null, '', '/workspace?teams=1');
+              }}
+            >
+              이미 굴러가는 팀 찾기
+            </button>
           </section>
         ) : !loaded ? (
           <section className="project-panel" aria-busy="true">

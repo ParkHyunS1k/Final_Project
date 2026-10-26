@@ -167,7 +167,11 @@ test('완주한 팀: 기간 중 1회 제출, 익명 평균은 마감 뒤에만, 
   assert.equal(s.score, null);
   assert.deepEqual(s.review.targets, []);
   assert.equal((await review('lead', projectId, [rating(1, 5, 5, 5)])).status, 400);
-  await act('m3', projectId, 'stepBack', { note: '개인 사정으로 중단합니다.' });
+  // 참여 중단 기능은 제거됐지만(2026-10-15) 이전에 저장된 중단 기록은 존중한다.
+  await run(
+    "UPDATE project_members SET left_at=now(),left_note='이전 기록' WHERE project_id=? AND user_id='m3'",
+    projectId,
+  );
   await finish('lead', projectId);
 
   s = await score('lead', projectId);
