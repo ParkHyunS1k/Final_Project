@@ -238,7 +238,7 @@ export function goalInput(b: Record<string, unknown>) {
     scope: textField(b.scope, '기능 범위', 2000),
     completion: textField(b.completionCriteria, '완료 기준', 2000),
     // 필수 결과물은 받지 않는다(2026-10-14). 요청에 있어도 읽지 않는다.
-    duration: assertDuration(b.duration),
+    // 기간은 생성할 때만 검사한다. 준비 중 편집은 저장된 기간(이전 8~10일 포함)을 그대로 둔다.
   };
 }
 // 고정 전 항목을 지우고 완료 기준 행 하나를 넣는다. 생성(mutation 없음)과 준비 중 목표 편집이 같이 쓴다.
@@ -274,7 +274,7 @@ export async function createProject(
   user: Identity,
   b: Record<string, unknown>,
 ) {
-  const v = goalInput(b);
+  const v = { ...goalInput(b), duration: assertDuration(b.duration) };
   if (b.agreed !== true) throw new Error('목표와 완료 기준을 확인해주세요.');
   const id = 'p_' + crypto.randomUUID();
   const db = database();
