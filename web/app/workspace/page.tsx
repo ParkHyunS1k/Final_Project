@@ -702,6 +702,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                     <GoalEditor
                       agreement={state!.agreement}
                       durationDays={state!.policy.durationDays}
+                      revision={state!.sprint.revision}
                       busy={busy}
                       onSave={(f) =>
                         mutate('editGoal', f, '목표를 고쳤습니다. 팀원은 다시 동의해야 합니다.')
