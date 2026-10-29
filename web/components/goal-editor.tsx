@@ -9,7 +9,6 @@ export type GoalFields = {
   goal: string;
   scope: string;
   completionCriteria: string;
-  duration: number;
   // 폼을 연 시점의 버전. 화면이 주기적으로 다시 불러와도 그 사이 다른 변경이 있으면 서버가 409로 거절한다.
   revision: number;
 };
@@ -23,13 +22,11 @@ type Agreement = {
 
 export function GoalEditor({
   agreement,
-  durationDays,
   revision,
   busy,
   onSave,
 }: {
   agreement: Agreement;
-  durationDays: number;
   revision: number;
   busy: boolean;
   onSave: (fields: GoalFields) => Promise<boolean>;
@@ -72,7 +69,6 @@ export function GoalEditor({
             goal,
             scope,
             completionCriteria: criteria,
-            duration: durationDays,
             revision: openedAt,
           });
           if (ok) setOpen(false);

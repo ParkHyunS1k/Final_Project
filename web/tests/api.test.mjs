@@ -417,6 +417,30 @@ test('시작한 뒤에는 팀장도 목표와 최종 기한을 바꿀 수 없다
   assert.equal(after.sprint.revision, state.sprint.revision);
 });
 
+test('8~10일로 만든 기존 준비 중 프로젝트도 목표를 고칠 수 있고 기간은 그대로 남는다', async () => {
+  const created = await projectRequest('oldlen', goalInput);
+  assert.equal(created.status, 201);
+  const { projectId } = await created.json();
+  await run('UPDATE project_policy SET duration_days=8 WHERE project_id=?', projectId);
+  const state = await read('oldlen', projectId);
+  assert.equal(state.policy.durationDays, 8);
+  // 목표 고치기 화면은 저장된 기간을 그대로 보낸다.
+  const edited = await change('oldlen', projectId, 'editGoal', state, {
+    ...goalFields,
+    goal: '바뀐 목표',
+    duration: 8,
+  });
+  assert.equal(edited.agreement.goal, '바뀐 목표');
+  assert.equal(edited.policy.durationDays, 8);
+  // 7을 보내도 저장된 기간을 줄이지 않는다.
+  const again = await change('oldlen', projectId, 'editGoal', edited, {
+    ...goalFields,
+    goal: '다시 바뀐 목표',
+    duration: 7,
+  });
+  assert.equal(again.policy.durationDays, 8);
+});
+
 test('마감 이후에는 실제 저장 시점에서 모든 변경이 거절된다', async () => {
   const { projectId, state } = await startedTeam('clock', 'clockmate');
   const withTask = await change('clock', projectId, 'createTask', state, {

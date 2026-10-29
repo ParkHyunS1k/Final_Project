@@ -68,7 +68,8 @@
 - 폼: 이름(input, 100) · 목표(textarea, 1000) · 범위 슬라이더 · 기능 범위(textarea, 2000) · 완료 기준(textarea, 2000).
   초깃값은 `state.agreement`. 슬라이더 초깃값은 scope 앞 `[단계명]`으로 찾고, 없으면 2(MVP).
   슬라이더를 움직이면 기능 범위·완료 기준 칸을 그 단계 문장으로 덮어쓴다(직접 쓴 문장을 지울 수 있다는 것을 슬라이더 옆에 표시).
-- 저장: `{action:'editGoal', projectId, revision, title, goal, scope, completionCriteria, duration: policy.durationDays}`.
+- 저장: `{action:'editGoal', projectId, revision(폼을 연 시점), title, goal, scope, completionCriteria}`.
+  기간은 보내지 않는다. 서버는 편집 시 저장된 기간을 그대로 둔다(이전 8~10일 프로젝트 보존, PR #18 리뷰 반영으로 `editGoal`에서 기간 검사 제거).
   성공하면 재조회. 안내: "저장하면 목표 버전이 올라가고 팀원은 다시 동의해야 합니다."
 - 실패: 서버 메시지 그대로 표시 후 재조회(버전 충돌 409 포함). 브라우저에서 권한·상태를 판단하지 않고 서버 거절을 따른다(버튼 노출 조건은 편의용).
 

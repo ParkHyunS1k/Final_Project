@@ -697,11 +697,9 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                 <ProjectDetails state={state!} />
                 {state!.me.role === 'owner' &&
                   lifecycle === 'draft' &&
-                  state!.agreement &&
-                  state!.policy && (
+                  state!.agreement && (
                     <GoalEditor
                       agreement={state!.agreement}
-                      durationDays={state!.policy.durationDays}
                       revision={state!.sprint.revision}
                       busy={busy}
                       onSave={(f) =>
