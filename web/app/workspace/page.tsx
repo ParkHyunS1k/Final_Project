@@ -49,6 +49,7 @@ type Sprint = Wire<ServerSprint>;
 type Task = Wire<ServerTask>;
 import { meetingSuggestions } from '@/lib/meeting-suggestions';
 import { apiFetch, signInWithGoogle } from '@/lib/supabase-browser';
+import { GoalEditor } from '@/components/goal-editor';
 
 export type Lifecycle =
   | 'legacy'
@@ -694,6 +695,19 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
             {tab === 'project' && (
               <section className="work-section project-stack">
                 <ProjectDetails state={state!} />
+                {state!.me.role === 'owner' &&
+                  lifecycle === 'draft' &&
+                  state!.agreement &&
+                  state!.policy && (
+                    <GoalEditor
+                      agreement={state!.agreement}
+                      durationDays={state!.policy.durationDays}
+                      busy={busy}
+                      onSave={(f) =>
+                        mutate('editGoal', f, '목표를 고쳤습니다. 팀원은 다시 동의해야 합니다.')
+                      }
+                    />
+                  )}
                 <section className="project-block">
                   <div className="section-heading">
                     <h2>팀원 · {state!.members.length}/4명</h2>

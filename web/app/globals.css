@@ -2496,3 +2496,10 @@ textarea {
   color: var(--heat-ink);
   font-weight: 700;
 }
+.goal-editor .row {
+  justify-content: flex-start;
+  gap: 8px;
+}
+.goal-editor .project-form {
+  margin-top: 0;
+}
