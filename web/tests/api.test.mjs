@@ -424,7 +424,7 @@ test('8~10일로 만든 기존 준비 중 프로젝트도 목표를 고칠 수 �
   await run('UPDATE project_policy SET duration_days=8 WHERE project_id=?', projectId);
   const state = await read('oldlen', projectId);
   assert.equal(state.policy.durationDays, 8);
-  // 목표 고치기 화면은 저장된 기간을 그대로 보낸다.
+  // 화면은 기간을 보내지 않는다. 보내도 서버는 저장된 기간을 그대로 둔다.
   const edited = await change('oldlen', projectId, 'editGoal', state, {
     ...goalFields,
     goal: '바뀐 목표',
