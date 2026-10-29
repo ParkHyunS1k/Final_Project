@@ -2403,3 +2403,96 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* 만들기 화면: 주사위 단어와 기능 범위 5단계 */
+.dice-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.dice-slot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 6px 6px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  background: var(--gray-25);
+}
+.dice-word {
+  display: inline-block;
+  min-width: 3em;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gray-900);
+  animation: dice-shake 280ms ease-out 1;
+}
+.dice-lock {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gray-500);
+  cursor: pointer;
+}
+.dice-lock[aria-pressed='true'] {
+  background: var(--heat-500);
+  color: var(--heat-ink);
+}
+.dice-slot:has(.dice-lock[aria-pressed='true']) {
+  border-color: var(--heat-500);
+}
+.dice-roll {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+@keyframes dice-shake {
+  0% { transform: translateY(-6px) rotate(-6deg); opacity: 0.2; }
+  60% { transform: translateY(2px) rotate(3deg); opacity: 1; }
+  100% { transform: none; }
+}
+.scope-field {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+.scope-field p {
+  margin: 0;
+}
+.scope-slider {
+  display: grid;
+  gap: 6px;
+}
+.project-form .scope-slider input[type='range'] {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--heat-500);
+}
+.scope-steps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.scope-step {
+  padding: 6px 2px;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gray-600);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.scope-step[aria-pressed='true'] {
+  border-color: var(--heat-500);
+  background: var(--heat-500);
+  color: var(--heat-ink);
+  font-weight: 700;
+}
