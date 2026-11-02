@@ -84,12 +84,34 @@ void test('체크인 현황: 참여 중인 팀원만, 지금 업무와 오늘 �
   const tasks = [task(1, 0, 'DB 구축', NOW + H), task(2, 1, '화면 시안', NOW + 2 * H)];
   const checkins = [{ task_id: 1, created_at: new Date(NOW - 60000).toISOString() }];
   const html = renderToString(
-    createElement(TeamCheckins, { members, me: { person: 0 }, tasks, checkins, now: NOW }),
+    createElement(TeamCheckins, { members, me: { person: 0 }, tasks, checkins, now: NOW, active: true }),
   );
   const rows = html.split('race-checkin-row').slice(1).map(text);
   assert.equal(rows.length, 2);
   assert.match(rows[0], /도윤.*나.*DB 구축.*오늘 체크인 완료/);
   assert.match(rows[1], /서연.*화면 시안.*아직 체크인 안 함/);
+});
+
+void test('체크인 현황: 지금 업무는 카운트다운과 같이 마감이 가장 가까운 업무', () => {
+  const members = [{ display_name: '도윤', person: 0, left_at: null }];
+  const tasks = [task(1, 0, '먼 업무', NOW + 100 * H), task(2, 0, '가까운 업무', NOW + H)];
+  const t = text(
+    renderToString(
+      createElement(TeamCheckins, { members, me: { person: 0 }, tasks, checkins: [], now: NOW, active: true }),
+    ),
+  );
+  assert.match(t, /가까운 업무/);
+  assert.doesNotMatch(t, /먼 업무/);
+});
+
+void test('체크인 현황: 진행 중이 아니면 체크인 여부 배지를 보여주지 않는다', () => {
+  const members = [{ display_name: '도윤', person: 0, left_at: null }];
+  const t = text(
+    renderToString(
+      createElement(TeamCheckins, { members, me: { person: 0 }, tasks: [], checkins: [], now: NOW, active: false }),
+    ),
+  );
+  assert.doesNotMatch(t, /체크인 안 함|체크인 완료/);
 });
 
 void test('캘린더: 진행 중에만 칩 단계, 오늘 aria-current, 병목 표시 없음', () => {
