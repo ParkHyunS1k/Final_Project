@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  sprintPulse,
   countdown,
   clockOffset,
   sprintDay,
@@ -26,29 +25,6 @@ const plan = (needed: number, available: number, unscheduled: number[] = []) => 
   needed,
   available,
   unscheduled,
-});
-
-void test('sprintPulse: 업무가 없으면 0/0, 계획이 없으면 공수·병목 0', () => {
-  assert.deepEqual(sprintPulse([], null), { done: 0, total: 0, hoursOver: 0, bottlenecks: [] });
-});
-
-void test('sprintPulse: 보류 업무는 세지 않고 완료 수를 센다', () => {
-  const p = sprintPulse([t(1, { done: true }), t(2), t(3, { deferred: true })], plan(4, 10));
-  assert.equal(p.done, 1);
-  assert.equal(p.total, 2);
-});
-
-void test('sprintPulse: 필요가 예산보다 크면 양수(초과), 작으면 음수(여유), 소수 첫째 자리', () => {
-  assert.equal(sprintPulse([t(1)], plan(25.04, 16)).hoursOver, 9);
-  assert.equal(sprintPulse([t(1)], plan(4, 16.33)).hoursOver, -12.3);
-});
-
-void test('sprintPulse: 병목은 unscheduled 중 완료·보류가 아닌 업무', () => {
-  const p = sprintPulse(
-    [t(1), t(2, { done: true }), t(3, { deferred: true }), t(4)],
-    plan(10, 5, [1, 2, 3]),
-  );
-  assert.deepEqual(p.bottlenecks, [1]);
 });
 
 void test('countdown: 총 시간 HH:MM:SS, 100시간 이상도 그대로', () => {

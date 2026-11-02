@@ -1,5 +1,5 @@
 // 작업 화면 레이스 표시용 순수 계산. 서버가 준 값(asOf·plan)만 읽고 저장하지 않는다.
-import { seoulTime, type Plan } from './sprint.ts';
+import { seoulTime } from './sprint.ts';
 
 const DAY_MS = 86400000;
 const HOUR_S = 3600;
@@ -12,22 +12,6 @@ export type RaceTask = {
   status?: 'todo' | 'in_progress';
   dependsOn: number[];
 };
-
-/** 홈 큰 숫자 3개. 보류 업무는 세지 않는다. 병목 = 마감 안에 배치되지 않은 미완료 업무(plan.unscheduled). */
-export function sprintPulse(
-  tasks: RaceTask[],
-  plan: Pick<Plan, 'needed' | 'available' | 'unscheduled'> | null,
-) {
-  const counted = tasks.filter((t) => !t.deferred);
-  return {
-    done: counted.filter((t) => t.done).length,
-    total: counted.length,
-    hoursOver: plan ? Math.round((plan.needed - plan.available) * 10) / 10 : 0,
-    bottlenecks: plan
-      ? counted.filter((t) => !t.done && plan.unscheduled.includes(t.id)).map((t) => t.id)
-      : [],
-  };
-}
 
 export type ClockLevel = 'calm' | 'heat' | 'critical';
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -100,7 +84,7 @@ export function dueLabel(dueAt: string | null | undefined) {
   return `${Number(month)}/${Number(day)} ${seoulTime(dueAt).slice(11)} 마감`;
 }
 
-export type FocusTask = RaceTask & { dueAt: string | null };
+export type FocusTask = RaceTask & { dueAt?: string | null };
 
 const isMine = (t: RaceTask, person: number) => t.person === person && !t.deferred;
 

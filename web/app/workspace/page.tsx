@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
 import { ChangeReview } from '@/components/change-review';
-import { RaceHome } from '@/components/race-home';
+import { RaceHome, TeamCheckins } from '@/components/race-home';
 import { TeamListing } from '@/components/team-directory';
 import {
   ProjectWorkspace,
@@ -530,14 +530,19 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                     startedAt={state!.policy?.startedAt ?? null}
                     deadline={deadline}
                     tasks={tasks}
-                    plan={plan ?? null}
-                    members={state!.members}
                     me={state!.me}
                     people={people}
                     onTasks={() => setTab('tasks')}
                   />
                 )}
                 <div className="race-below">
+                  <TeamCheckins
+                    members={state!.members}
+                    me={state!.me}
+                    tasks={tasks}
+                    checkins={state!.checkins}
+                    now={Date.parse(state!.asOf)}
+                  />
                   <section>
                   <div className="section-heading task-heading">
                     <h2>회의 제안</h2>
@@ -584,35 +589,6 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                           회의록을 붙여넣으면 업무 변경안을 만들 수 있습니다.
                         </p>
                       </>
-                    )}
-                  </div>
-                  </section>
-                  <section>
-                  <div className="section-heading task-heading">
-                    <h2>최근 진행 보고</h2>
-                  </div>
-                  <div className="task-list">
-                    {state!.checkins.length ? (
-                      state!.checkins.slice(0, 3).map((c) => (
-                        <div className="task-row" key={c.id}>
-                          <Check size={18} />
-                          <div>
-                            <b>{c.note}</b>
-                            <span>
-                              {tasks.find((t) => t.id === c.task_id)?.title} ·
-                              남은 {c.remaining}h ·{' '}
-                              {new Date(c.created_at).toLocaleString('ko-KR', {
-                                timeZone: 'Asia/Seoul',
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="empty-copy">
-                        하루 한 번 진행 보고로 완료·남은 일·막힘을 남겨주세요. 보고가
-                        없어도 완주 판정에는 영향을 주지 않습니다.
-                      </p>
                     )}
                   </div>
                   </section>
