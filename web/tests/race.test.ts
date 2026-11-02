@@ -10,6 +10,12 @@ import {
   laneTask,
   reportChoices,
   dueLabel,
+  focusTask,
+  waitReason,
+  tension,
+  chipStage,
+  focusClock,
+  checkedInToday,
   type RaceTask,
 } from '../lib/race.ts';
 
@@ -126,4 +132,86 @@ void test('dueLabel: 승인된 마감은 KST 월/일 시:분, 없으면 마감 �
   assert.equal(dueLabel('2026-10-08T15:30:00.000Z'), '10/9 00:30 마감');
   assert.equal(dueLabel(null), '마감 미정');
   assert.equal(dueLabel(undefined), '마감 미정');
+});
+
+const H = 3600000;
+const ft = (id: number, person: number, dueAt: string | null, over: Partial<RaceTask> = {}) => ({
+  id,
+  person,
+  dueAt,
+  done: false,
+  deferred: false,
+  dependsOn: [] as number[],
+  ...over,
+});
+
+void test('focusTask: 내 미완료·마감 있는 업무 중 가장 이른 마감, 지난 마감 포함', () => {
+  const tasks = [
+    ft(1, 0, '2026-11-05T00:00:00.000Z'),
+    ft(2, 0, '2026-11-03T00:00:00.000Z'),
+    ft(3, 1, '2026-11-01T00:00:00.000Z'), // 남의 업무
+    ft(4, 0, '2026-11-01T00:00:00.000Z', { done: true }),
+    ft(5, 0, '2026-11-01T00:00:00.000Z', { deferred: true }),
+    ft(6, 0, null),
+  ];
+  assert.equal(focusTask(tasks, 0)?.id, 2);
+  assert.equal(focusTask(tasks, 2), null);
+  assert.equal(focusTask([ft(7, 0, '2020-01-01T00:00:00.000Z'), ...tasks], 0)?.id, 7);
+});
+
+void test('waitReason: 배정 없음·마감 미정만 남음·모두 완료', () => {
+  assert.equal(waitReason([ft(1, 1, null)], 0), 'unassigned');
+  assert.equal(waitReason([ft(1, 0, null, { deferred: true })], 0), 'unassigned');
+  assert.equal(waitReason([ft(1, 0, null)], 0), 'undated');
+  assert.equal(waitReason([ft(1, 0, '2026-11-05T00:00:00.000Z', { done: true })], 0), 'done');
+});
+
+void test('tension: 구간 경계', () => {
+  assert.deepEqual(tension(null), { stage: 'idle', tint: 0 });
+  assert.deepEqual(tension(NaN), { stage: 'idle', tint: 0 });
+  assert.deepEqual(tension(73 * H), { stage: 'calm', tint: 0 });
+  assert.equal(tension(72 * H).stage, 'heat');
+  assert.equal(tension(24 * H + 1).stage, 'heat');
+  assert.equal(tension(24 * H).stage, 'critical');
+  assert.equal(tension(H + 1).stage, 'critical');
+  assert.equal(tension(H).stage, 'final');
+  assert.equal(tension(1).stage, 'final');
+  assert.deepEqual(tension(0), { stage: 'over', tint: 1 });
+  assert.deepEqual(tension(-5 * H), { stage: 'over', tint: 1 });
+});
+
+void test('tension: 붉은 기는 (1 - 남은/72h)^1.4로 마감에 가까울수록 진해진다', () => {
+  assert.ok(Math.abs(tension(48 * H).tint - Math.pow(1 / 3, 1.4)) < 1e-9);
+  assert.ok(tension(48 * H).tint < tension(24 * H).tint);
+  assert.ok(tension(24 * H).tint < tension(H).tint);
+  assert.equal(tension(72 * H).tint, 0);
+});
+
+void test('chipStage: 칩은 24h 주황, 6h 빨강, 1h 깜빡, 지나면 초과', () => {
+  assert.equal(chipStage(24 * H + 1), 'calm');
+  assert.equal(chipStage(24 * H), 'heat');
+  assert.equal(chipStage(6 * H + 1), 'heat');
+  assert.equal(chipStage(6 * H), 'critical');
+  assert.equal(chipStage(H), 'final');
+  assert.equal(chipStage(0), 'over');
+});
+
+void test('focusClock: 24시간 넘어도 시간 단위, 초과는 + 와 지난 시간', () => {
+  assert.equal(focusClock(52 * H + 10 * 60000 + 3000), '52:10:03');
+  assert.equal(focusClock(168 * H - 1000), '167:59:59');
+  assert.equal(focusClock(0), '+00:00:00');
+  assert.equal(focusClock(-(2 * H + 13 * 60000 + 5000)), '+02:13:05');
+});
+
+void test('checkedInToday: 담당자 기준, KST 날짜가 같을 때만', () => {
+  const tasks = [
+    { id: 1, person: 0 },
+    { id: 2, person: 1 },
+  ];
+  const now = Date.parse('2026-11-02T15:30:00.000Z'); // KST 11/3 00:30
+  const at = (task_id: number, created_at: string) => [{ task_id, created_at }];
+  assert.equal(checkedInToday(at(1, '2026-11-02T15:00:00.000Z'), tasks, 0, now), true); // KST 11/3 00:00
+  assert.equal(checkedInToday(at(1, '2026-11-02T14:59:59.000Z'), tasks, 0, now), false); // KST 11/2 23:59
+  assert.equal(checkedInToday(at(2, '2026-11-02T15:10:00.000Z'), tasks, 0, now), false); // 다른 사람 업무
+  assert.equal(checkedInToday(at(9, '2026-11-02T15:10:00.000Z'), tasks, 0, now), false); // 없는 업무
 });
