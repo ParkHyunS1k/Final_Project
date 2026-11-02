@@ -1,7 +1,7 @@
 import { ArrowRight, CalendarDays, Check, Flag } from 'lucide-react';
 import { deadlineDays, seoulTime, type Task as ServerTask } from '@/lib/sprint';
 import type { Wire } from '@/lib/wire';
-import { dayProgress } from '@/lib/race';
+import { chipStage, dayProgress } from '@/lib/race';
 // 화면은 JSON으로 받은 값을 다룬다(시각은 ISO 문자열).
 type Task = Wire<ServerTask>;
 
@@ -22,14 +22,15 @@ export function DeadlineCalendar({
   now,
   tasks,
   people,
-  bottlenecks,
+  active,
   onPlan,
 }: {
   startedAt: string | null;
   deadline: string | null;
   /** 서버 기준 현재 시각(ms). useServerNow로 흐른다. 렌더 중 Date.now()를 쓰지 않는다. */
   now: number;
-  bottlenecks: number[];
+  /** 진행 중일 때만 칩 긴장 표시. 끝난 프로젝트는 완료 표시만 남는다. */
+  active: boolean;
   tasks: Task[];
   people: { name: string }[];
   onPlan: () => void;
@@ -57,7 +58,11 @@ export function DeadlineCalendar({
               const when =
                 now >= start + DAY_MS ? ' past' : now >= start ? ' today' : '';
               return (
-                <li key={d.day} className={'calendar-day' + when}>
+                <li
+                  key={d.day}
+                  className={'calendar-day' + when}
+                  aria-current={when === ' today' ? 'date' : undefined}
+                >
                   {when === ' today' && (
                     <span
                       className="calendar-now"
@@ -70,20 +75,20 @@ export function DeadlineCalendar({
                     <span>{dayLabel(d.start)}</span>
                   </div>
                   {d.tasks.map((t) => {
-                    const late = !t.done && Date.parse(t.dueAt!) < now;
-                    const blocked = !t.done && bottlenecks.includes(t.id);
+                    const stage =
+                      active && !t.done ? chipStage(Date.parse(t.dueAt!) - now) : 'calm';
+                    const late = stage === 'over';
                     return (
                       <div
                         key={t.id}
                         className={
                           'deadline-card' +
                           (t.done ? ' done' : late ? ' late' : '') +
-                          (blocked ? ' blocked' : '')
+                          (stage === 'calm' || late ? '' : ` chip-${stage}`)
                         }
                       >
                         <span className="deadline-title">
                           {t.done && <Check size={13} />}
-                          {blocked && <Flag size={13} aria-label="병목" />}
                           {t.title}
                         </span>
                         <span className="deadline-meta">
