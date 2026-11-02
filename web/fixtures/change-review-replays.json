@@ -14,21 +14,21 @@
       "excerpts": [
         {
           "index": 0,
-          "text": "좋아요 !! 제가 UD 파트 해도 될까요 !?",
+          "text": "(원문은 원본 링크에서 확인)",
           "authorLogin": "haram22",
           "createdAt": "2022-05-02T12:17:11Z",
           "sourceUrl": "https://github.com/haram22/2022OSS_team_KH/issues/1#issuecomment-1114781249"
         },
         {
           "index": 1,
-          "text": "주제는 일단 저희 주변에 불편함이 느껴지는 것을 하면 좋을 것 같은데, 기숙사 시스템이나 도서관 도서 목록 시스템 등 혹시 불편한 거 느껴지신 게 있을 까요? ",
+          "text": "(원문은 원본 링크에서 확인)",
           "authorLogin": "majink",
           "createdAt": "2022-05-02T12:17:36Z",
           "sourceUrl": "https://github.com/haram22/2022OSS_team_KH/issues/1#issuecomment-1114781571"
         },
         {
           "index": 2,
-          "text": "제가 CR파트를 맡아보도록 할게요 !\r\n",
+          "text": "(원문은 원본 링크에서 확인)",
           "authorLogin": "majink",
           "createdAt": "2022-05-02T12:17:52Z",
           "sourceUrl": "https://github.com/haram22/2022OSS_team_KH/issues/1#issuecomment-1114781787"
@@ -116,7 +116,7 @@
       "excerpts": [
         {
           "index": 0,
-          "text": "혹시 학우님께서 파일부분 담당해주실 수 잇나요?",
+          "text": "(원문은 원본 링크에서 확인)",
           "authorLogin": "oneStepHank",
           "createdAt": "2022-05-12T14:58:11Z",
           "sourceUrl": "https://github.com/2022OSS-teampro/TeamProject/issues/9#issuecomment-1125100581"
@@ -197,21 +197,21 @@
       "excerpts": [
         {
           "index": 0,
-          "text": "@mara89ma 좋습니다 — T5 02/03 입력측을 지금 선제작 배정합니다 (#83 없이도 빌드 가능한 부분).\n\n**raw_t5 fixture(02) + terrain_class 급락 시나리오(03)** — `examples/` + `src/onboard/layer_02_sensor/` + 03 테스트\n- 02: `raw_t5.json` + `mission_brief_t5.json` — terrain_class 품질이 직전 대비 급락(예: camera_confidence 1.0→0.65)하는 입력. build_scenario_envelope 로 주입.\n- 03: previous_qualities 를 직접 넘겨 `terrain_class.quality_delta ≈ -0.35 < -0.3` 이 성립함을 유닛으로 잠금(이미 #94 계약과 정합).\n- 종단 골든(expected_t5.json)은 **#83(szkim 오케스트레이터 스레딩) 머지 후** 붙이면 됩니다 — 그 전엔 fixture+03 유닛까지만.\n\n이렇게 하면 #83 들어오는 즉시 hobeen(#79)이 04 T5 배선 + 골든을 최소 지연으로 완성합니다. TDD, 골든은 CLI 산출, conventional commits, 최신 main 위 브랜치.",
+          "text": "(원문은 원본 링크에서 확인)",
           "authorLogin": "s1ns3nz0",
           "createdAt": "2026-07-04T05:42:45Z",
           "sourceUrl": "https://github.com/s1ns3nz0/fried-mushroom/issues/45#issuecomment-4880847237"
         },
         {
           "index": 1,
-          "text": "@mara89ma 업데이트 — szkim 님 #97 이 **raw_t5.json / mission_brief_t5.json / qualities_t5_primed.json 을 이미 main 에 추가**했습니다(오케스트레이터 스레딩과 함께). 배정드렸던 raw_t5 fixture(02)는 중복이 되었으니 그 부분은 드롭해 주세요.\n\n남은 03 몫 — 여전히 유효합니다: **terrain_class 급락 → quality_delta ≈ -0.35 성립 03 유닛**(#94 계약과 정합). 그리고 스레딩이 들어왔으니 원하시면 **expected_t5 종단 골든**도 이제 CLI 로 산출 가능합니다(hobeen 04 배선과 겹치면 조율 — 04 판정은 hobeen, 03 채널/입력측은 김수지). 겹침 방지 위해 hobeen(#79)과 raw_t5 정본만 맞춰주세요. 중복이면 03 유닛만으로도 충분합니다.",
+          "text": "(원문은 원본 링크에서 확인)",
           "authorLogin": "s1ns3nz0",
           "createdAt": "2026-07-04T05:50:59Z",
           "sourceUrl": "https://github.com/s1ns3nz0/fried-mushroom/issues/45#issuecomment-4880867669"
         },
         {
           "index": 2,
-          "text": "⚠️ **collision 보고**: 배정받은 raw_t5 선제작을 올리는 사이 **#83이 #97로 머지**됐고, #97이 이미 **`raw_t5.json` + `mission_brief_t5.json` + `qualities_t5_primed.json` + CLI `--prev-qualities` 스레딩 + `test_prev_qualities_threading.py`** 까지 포함했습니다. `test_t5_quality_delta_triggers_with_prev_qualities` 가 `primary.threat_event==\"T5\"` 를 검증 → **T5 종단이 #97 로 이미 완결**입니다.\n\n따라서 제 **PR #98 은 fixture(raw_t5/mission_brief_t5)가 #97 과 정면 충돌(dirty)** 하고 대부분 중복입니다. #97 merged 본이 정본이므로 **#98 은 close** 하겠습니다.\n\n**잔여 가치(옵션)**: #97 의 `raw_t5.json` 은 손작성 fixture라 `build_scenario_envelope` 산출도 아니고 `test_golden_fixture_matches_builder` 커버리지 밖입니다(다른 raw_tN 은 전부 builder 정합). 원하시면 **`build_scenario_envelope(\"t5\")` 가 #97 의 raw_t5 를 그대로 재생성하도록 추가 + 골든가드 편입**하는 작은 정합 PR(02, 비충돌)만 따로 올리겠습니다. 불필요하면 스킵하고 다음 배정 주세요. @s1ns3nz0",
+          "text": "(원문은 원본 링크에서 확인)",
           "authorLogin": "mara89ma",
           "createdAt": "2026-07-04T05:53:39Z",
           "sourceUrl": "https://github.com/s1ns3nz0/fried-mushroom/issues/45#issuecomment-4880873604"
@@ -308,7 +308,7 @@
       "excerpts": [
         {
           "index": 0,
-          "text": "# 역할 분담\n\n## 지환\n- 서버 처리 관련\n  - 인증(로그인)\n  - 통계\n- 아이템 관련\n  - 인벤토리\n  - 장비\n    - 무기\n      - 애니메이션?\n  - 상호작용\n    - 상점\n    - 배송\n\n## 경용\n- 플레이어 조작 관련\n  - 캐릭터\n    - 캐릭터 액션\n    - 애니메이션\n\n## 현제\n- 콘텐츠\n  - 레벨 디자인\n  - 리소스 찾기(FAB)\n  - UI(위젯)\n- 지형\n  - 미니맵\n  - 내비게이션\n\n## 차후 논의 사항\n- AI\n  - 몬스터\n- 퀘스트\n- 메시지 시스템\n  - 배송",
+          "text": "(원문은 원본 링크에서 확인)",
           "authorLogin": "Roddyd94",
           "createdAt": "2026-08-07T00:35:33Z",
           "sourceUrl": "https://github.com/AssortRock-KDT6-Unreal-PowerAde/ProjectPG/issues/11#issuecomment-5210407787"

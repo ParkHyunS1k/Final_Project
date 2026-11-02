@@ -1,5 +1,6 @@
 // 저장된 실제 AI 평가 응답 4건을 화면 재생용 fixture로 고정한다.
 // 응답은 결과 파일의 response를 그대로 옮기고, 원본 경로와 해시를 함께 기록한다.
+// 발췌 본문은 싣지 않고 자리표시자로 대신한다(출처 URL·작성자·시각은 유지).
 // 생성 시각을 넣지 않으므로 같은 원본에서는 항상 같은 파일이 나온다.
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -16,7 +17,10 @@ const selections = [
   ['sol-low', 'GH-TL-5210407787'],
 ];
 
-const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+// 라이선스 없는 저장소의 댓글 원문은 배포되는 앱에 싣지 않는다. 원문은 sourceUrl에서 확인한다.
+const EXCERPT_PLACEHOLDER = '(원문은 원본 링크에서 확인)';
+
+const sha256 =(value) => createHash('sha256').update(value).digest('hex');
 function check(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -49,7 +53,7 @@ const cases = selections.map(([variant, caseId]) => {
     thread: { title: candidate.input.thread_title_as_of, url: candidate.input.thread_url },
     excerpts: candidate.input.excerpts.map((e, index) => ({
       index,
-      text: e.text,
+      text: EXCERPT_PLACEHOLDER,
       authorLogin: e.author_login,
       createdAt: e.created_at,
       sourceUrl: e.source_url,
