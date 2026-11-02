@@ -99,3 +99,64 @@ export function dueLabel(dueAt: string | null | undefined) {
   const [, month, day] = seoulTime(dueAt).slice(0, 10).split('-');
   return `${Number(month)}/${Number(day)} ${seoulTime(dueAt).slice(11)} 마감`;
 }
+
+export type FocusTask = RaceTask & { dueAt: string | null };
+
+const isMine = (t: RaceTask, person: number) => t.person === person && !t.deferred;
+
+/** 큰 카운트다운이 셀 내 업무: 미완료·마감 있음 중 가장 이른 마감. 지난 마감도 포함한다. */
+export function focusTask<T extends FocusTask>(tasks: T[], person: number): T | null {
+  const open = tasks.filter((t) => isMine(t, person) && !t.done && t.dueAt);
+  return open.reduce<T | null>(
+    (first, t) => (!first || Date.parse(t.dueAt!) < Date.parse(first.dueAt!) ? t : first),
+    null,
+  );
+}
+
+/** focusTask가 없을 때 대기 중인 이유. */
+export function waitReason(tasks: FocusTask[], person: number) {
+  const mine = tasks.filter((t) => isMine(t, person));
+  if (!mine.length) return 'unassigned' as const;
+  return mine.some((t) => !t.done) ? ('undated' as const) : ('done' as const);
+}
+
+export type TensionStage = 'idle' | 'calm' | 'heat' | 'critical' | 'final' | 'over';
+const HOUR_MS = HOUR_S * 1000;
+
+/** 남은 시간 → 긴장 단계와 배경 붉은 기(0~1). null이면 세는 업무가 없다. 다음 업무로 넘어가면 그 마감 기준으로 다시 옅어진다. */
+export function tension(msLeft: number | null): { stage: TensionStage; tint: number } {
+  if (msLeft === null || Number.isNaN(msLeft)) return { stage: 'idle', tint: 0 };
+  if (msLeft <= 0) return { stage: 'over', tint: 1 };
+  if (msLeft > 72 * HOUR_MS) return { stage: 'calm', tint: 0 };
+  const stage = msLeft <= HOUR_MS ? 'final' : msLeft <= 24 * HOUR_MS ? 'critical' : 'heat';
+  return { stage, tint: Math.pow(1 - msLeft / (72 * HOUR_MS), 1.4) };
+}
+
+/** 캘린더 칩 단계. 자기 업무 마감 기준이며 큰 카운트다운보다 늦게 달아오른다. */
+export function chipStage(msLeft: number) {
+  if (msLeft <= 0) return 'over' as const;
+  if (msLeft <= HOUR_MS) return 'final' as const;
+  if (msLeft <= 6 * HOUR_MS) return 'critical' as const;
+  return msLeft <= 24 * HOUR_MS ? ('heat' as const) : ('calm' as const);
+}
+
+/** 큰 카운트다운 숫자. 24시간을 넘어도 시간 단위, 마감이 지나면 + 와 지난 시간. */
+export function focusClock(msLeft: number) {
+  return msLeft > 0 ? countdown(msLeft).text : `+${countdown(-msLeft).text}`;
+}
+
+// ponytail: 서버 상태의 checkins는 프로젝트 전체 최근 20건. 하루 20건을 넘으면 이른 보고가 빠진다. 필요하면 서버에서 멤버별 마지막 보고 시각을 내려준다.
+/** 오늘(KST) 이 사람이 담당한 업무에 진행 보고가 있는가. 팀장이 대신 보고한 경우도 담당자 기준으로 센다. */
+export function checkedInToday(
+  checkins: { task_id: number; created_at: string }[],
+  tasks: { id: number; person: number }[],
+  person: number,
+  nowMs: number,
+) {
+  const day = (iso: string) => seoulTime(iso).slice(0, 10);
+  const today = day(new Date(nowMs).toISOString());
+  return checkins.some(
+    (c) =>
+      tasks.find((t) => t.id === c.task_id)?.person === person && day(c.created_at) === today,
+  );
+}
