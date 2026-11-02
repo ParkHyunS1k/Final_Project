@@ -5,6 +5,7 @@ import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
 import { ChangeReview } from '@/components/change-review';
 import { RaceHome, TeamCheckins } from '@/components/race-home';
+import { TensionLayer } from '@/components/tension-layer';
 import { TeamListing } from '@/components/team-directory';
 import {
   ProjectWorkspace,
@@ -404,6 +405,12 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
           </section>
         ) : (
           <>
+            <TensionLayer
+              lifecycle={lifecycle}
+              asOf={state!.asOf}
+              tasks={tasks}
+              person={state!.me.person}
+            />
             <header className="race-bar">
               <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
               <div className="race-title">
