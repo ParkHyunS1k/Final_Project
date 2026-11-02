@@ -2,9 +2,12 @@
 // 규칙 근거: docs/superpowers/specs/2026-09-09-spartan-sprint-design.md
 // 사용자 결정(2026-09-15): 7일 고정. 이전에 만든 8~10일 프로젝트는 저장된 duration_days를 그대로 쓴다.
 export const DURATIONS = [7] as const;
-export const MIN_MEMBERS = 2;
+// 솔로플레이(2026-10-14): 팀장 혼자서도 시작한다. 시작 후 초대·합류는 그대로 허용한다.
+export const MIN_MEMBERS = 1;
 export const MAX_MEMBERS = 4;
 export const DAILY_HOURS = 8;
+// 공개 팀 목록 참여(2026-10-15): 진행 중 팀은 시작 후 24시간 안에만 신청·승인한다.
+export const JOIN_WINDOW_HOURS = 24;
 
 // legacy: 새 규칙 이전에 만들어진 기록. 자동 전환하지 않고 열람·내보내기만 유지한다.
 export type Lifecycle = 'legacy' | 'draft' | 'active' | 'completed' | 'expired';
@@ -47,7 +50,7 @@ export function policyRow(row: Record<string, unknown> | null | undefined) {
     goalVersion: Number(row.goal_version),
     durationDays: Number(row.duration_days),
     dailyHours: Number(row.daily_hours),
-    minMembers: Number(row.min_members ?? 2),
+    minMembers: Number(row.min_members ?? MIN_MEMBERS),
     completionMode: row.completion_mode === 'tasks' ? 'tasks' : 'deliverables',
     startedAt: (row.started_at as Date | null) ?? null,
     deadlineAt: (row.deadline_at as Date | null) ?? null,
@@ -68,6 +71,17 @@ export function effectiveLifecycle(
   return 'active';
 }
 
+/** 목록 신청·승인이 가능한가. 준비 중은 언제나, 진행 중은 시작 후 JOIN_WINDOW_HOURS 안. */
+export function joinWindowOpen(policy: Policy | null, now: Date) {
+  const state = effectiveLifecycle(policy, now);
+  if (state === 'draft') return true;
+  if (state !== 'active' || !policy?.startedAt) return false;
+  return now.getTime() < joinUntil(policy.startedAt).getTime();
+}
+export function joinUntil(startedAt: Date) {
+  return new Date(startedAt.getTime() + JOIN_WINDOW_HOURS * 3600000);
+}
+
 // 시작 시각 + 선택한 일수. 사용자 확정 규칙(2026-09-09): 마지막 날 18시 고정이 아니다.
 export function deadlineFrom(startedAt: Date, durationDays: number) {
   return new Date(
@@ -85,7 +99,7 @@ export function assertDuration(value: unknown): number {
 }
 
 // 담당자 본인만, 팀장만, 멤버 누구나 중 어느 권한인지.
-type Scope = 'owner' | 'assignee' | 'member' | 'self';
+type Scope = 'owner' | 'assignee' | 'member';
 type Rule = { scope: Scope; states: Lifecycle[] };
 
 // 모든 사용자 변경 진입점의 정책 목록. 여기에 없는 action은 거절한다.
@@ -99,7 +113,9 @@ export const RULES: Record<string, Rule> = {
   revokeInvite: { scope: 'owner', states: ['draft', 'active'] },
   resendInvite: { scope: 'owner', states: ['draft', 'active'] },
   acceptInvite: { scope: 'member', states: ['draft', 'active'] },
-  stepBack: { scope: 'self', states: ['draft', 'active'] },
+  // 공개 팀 목록 (참여 창은 joinWindowOpen으로 따로 본다)
+  setListed: { scope: 'owner', states: ['draft', 'active'] },
+  decideJoin: { scope: 'owner', states: ['draft', 'active'] },
   // 업무
   createTask: { scope: 'owner', states: ['draft', 'active'] },
   editTask: { scope: 'owner', states: ['draft', 'active'] },
@@ -148,19 +164,18 @@ export function assertProjectMutationAllowed({
   action,
   now,
   assigneePerson,
-  targetUserId,
 }: {
   policy: Policy | null;
   actor: Actor;
   action: string;
   now: Date;
   assigneePerson?: number;
-  targetUserId?: string;
 }): Lifecycle {
   const state = effectiveLifecycle(policy, now);
   const rule = RULES[action];
   if (!rule) throw new PolicyError('지원하지 않는 작업입니다.');
   if (!rule.states.includes(state)) throw new PolicyError(stateMessage(state));
+  // 참여 중단 기능은 2026-10-15에 뺐다. 그 전에 중단을 보고한 기록은 그대로 막는다.
   if (actor.leftAt && action !== 'agreeGoal')
     throw new PolicyError('참여 중단을 보고한 팀원은 변경할 수 없습니다.', 403);
   // 고정 목표에 동의하지 않은 사람은 어떤 변경도 하지 않고 읽기만 한다.
@@ -174,8 +189,6 @@ export function assertProjectMutationAllowed({
     throw new PolicyError('최신 목표와 완료 기준을 먼저 확인해주세요.');
   if (rule.scope === 'owner' && actor.role !== 'owner')
     throw new PolicyError('팀장만 실행할 수 있습니다.', 403);
-  if (rule.scope === 'self' && targetUserId && targetUserId !== actor.userId)
-    throw new PolicyError('본인만 보고할 수 있습니다.', 403);
   if (
     rule.scope === 'assignee' &&
     actor.role !== 'owner' &&
@@ -192,7 +205,7 @@ export type StartCheck = {
   missing: string[];
 };
 
-// 시작 자격: 팀장 권한, 실제 가입한 최소 2명, 현재 멤버 전원의 최신 목표 동의.
+// 시작 자격: 팀장 권한, 실제 가입한 최소 1명, 현재 멤버 전원의 최신 목표 동의.
 // 초대만 보낸 사람은 가입 인원으로 세지 않는다.
 export function startReadiness(
   members: {
@@ -218,7 +231,7 @@ export function startReadiness(
         .join(', ')}`,
     );
   if (!deliverables && options?.completionMode !== 'tasks')
-    missing.push('필수 결과물이 최소 1개 필요합니다.');
+    missing.push('완료 기준 항목이 없습니다. 목표를 다시 저장해주세요.');
   return {
     ready: !missing.length,
     joined: active.length,

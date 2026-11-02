@@ -18,7 +18,7 @@ import {
   startReadiness,
   type Actor,
 } from './sprint-policy';
-import { assertEvidence, parseDeliverables } from './deliverables';
+import { assertEvidence, CRITERIA_ID, CRITERIA_TITLE } from './deliverables';
 import { scheduleStatements } from './reminder-store';
 /** 화면에서 확인한 목표와 저장 시점의 목표가 다를 때. 최신 내용을 함께 돌려준다. */
 export class GoalChanged extends Error {
@@ -155,7 +155,9 @@ export async function listProjects(user: Identity) {
 export async function projectState(project: string, user: Identity) {
   const me = await member(project, user);
   const db = database();
-  const [details, members, invites] = await db.batch<Record<string, unknown>>([
+  const [details, members, invites, listing, joinRequests] = await db.batch<
+    Record<string, unknown>
+  >([
     db
       .prepare(
         'SELECT goal,deliverables,completion_criteria,legacy FROM project_details WHERE project_id=?',
@@ -169,6 +171,15 @@ export async function projectState(project: string, user: Identity) {
     db
       .prepare(
         "SELECT id,email,expires_at,status,email_status,email_sent_at,email_sends FROM project_invites WHERE project_id=? AND ?='owner' ORDER BY created_at DESC LIMIT 20",
+      )
+      .bind(project, me.role),
+    db
+      .prepare('SELECT listed FROM project_policy WHERE project_id=?')
+      .bind(project),
+    // 공개 팀 목록에서 들어온 대기 신청. 팀장에게만 표시 이름을 보여준다.
+    db
+      .prepare(
+        "SELECT id,display_name,goal_version,created_at FROM project_join_requests WHERE project_id=? AND status='pending' AND ?='owner' ORDER BY created_at,id LIMIT 20",
       )
       .bind(project, me.role),
   ]);
@@ -186,6 +197,8 @@ export async function projectState(project: string, user: Identity) {
     details: details.results[0],
     members: members.results,
     invites: invites.results,
+    listed: Boolean(listing.results[0]?.listed),
+    joinRequests: joinRequests.results,
   };
 }
 // 멤버만 읽는 내보내기. 다른 멤버의 이메일·인증 정보는 포함하지 않는다.
@@ -236,34 +249,36 @@ export function goalInput(b: Record<string, unknown>, simple = false) {
     completion: simple
       ? ''
       : textField(b.completionCriteria, '완료 기준', 2000),
-    deliverables: simple ? [] : parseDeliverables(b.deliverables),
-    duration: assertDuration(b.duration),
   };
 }
-function deliverableStatements(
-  project: string,
-  mutation: string | null,
-  titles: string[],
-) {
+// 고정 전 항목을 지우고 완료 기준 행 하나를 넣는다. 생성(mutation 없음)과 준비 중 목표 편집이 같이 쓴다.
+// 완료 기준 문장이 바뀔 수 있으므로 준비 중 남긴 근거·확인은 함께 풀린다.
+export function criteriaStatements(project: string, mutation: string | null) {
   const db = database();
-  const gate = mutation
-    ? ' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)'
-    : '';
-  const args = mutation ? [project, mutation] : [];
+  if (!mutation)
+    return [
+      db
+        .prepare(
+          'DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL',
+        )
+        .bind(project),
+      db
+        .prepare(
+          'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) VALUES(?,?,0,?)',
+        )
+        .bind(project, CRITERIA_ID, CRITERIA_TITLE),
+    ];
   return [
     db
       .prepare(
-        'DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL' +
-          gate,
+        'DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
       )
-      .bind(project, ...args),
-    ...titles.map((title, i) =>
-      db
-        .prepare(
-          'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) VALUES(?,?,?,?)',
-        )
-        .bind(project, 'd_' + crypto.randomUUID(), i, title),
-    ),
+      .bind(project, project, mutation),
+    db
+      .prepare(
+        'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) SELECT owner,?,0,? FROM sprints WHERE owner=? AND mutation=?',
+      )
+      .bind(CRITERIA_ID, CRITERIA_TITLE, project, mutation),
   ];
 }
 // 생성은 준비(draft) 상태로 저장한다. 시작 시각·최종 기한은 아직 없다.
@@ -274,7 +289,10 @@ export async function createProject(
   related: (projectId: string) => import('./db').Statement[] = () => [],
   options?: { simple: boolean },
 ) {
-  const v = goalInput(b, options?.simple);
+  const v = {
+    ...goalInput(b, options?.simple),
+    duration: assertDuration(b.duration),
+  };
   if (b.agreed !== true) throw new Error('목표와 완료 기준을 확인해주세요.');
   const id = 'p_' + crypto.randomUUID();
   const db = database();
@@ -289,7 +307,7 @@ export async function createProject(
       .prepare(
         'INSERT INTO project_details(project_id,created_by,goal,deliverables,completion_criteria,created_at) VALUES(?,?,?,?,?,?)',
       )
-      .bind(id, user.id, v.goal, v.deliverables, v.completion, now),
+      .bind(id, user.id, v.goal, [], v.completion, now),
     db
       .prepare(
         'INSERT INTO project_policy(project_id,lifecycle,goal_version,duration_days,created_at,min_members,completion_mode) VALUES(?,?,1,?,?,?,?)',
@@ -299,7 +317,7 @@ export async function createProject(
         'draft',
         v.duration,
         now,
-        options?.simple ? 1 : 2,
+        1,
         options?.simple ? 'tasks' : 'deliverables',
       ),
     db
@@ -312,7 +330,7 @@ export async function createProject(
         "INSERT INTO project_members(project_id,user_id,display_name,role,person,agreed_at,agreed_goal_version,joined_at,email) VALUES(?,?,?,'owner',0,?,1,?,?)",
       )
       .bind(id, user.id, user.name, now, now, user.email || null),
-    ...deliverableStatements(id, null, v.deliverables),
+    ...(options?.simple ? [] : criteriaStatements(id, null)),
     ...related(id),
   ]);
   return id;
@@ -520,7 +538,10 @@ export async function inspectInvite(user: Identity, token: string) {
     )
     .bind(project)
     .first();
-  const deliverables = (await readDeliverables(project)).map((d) => d.title);
+  // 서버가 만든 완료 기준 행은 결과물이 아니다. 완료 기준 문장은 details에 이미 있다.
+  const deliverables = (await readDeliverables(project))
+    .filter((d) => d.deliverableId !== CRITERIA_ID)
+    .map((d) => d.title);
   return { invite, details: { ...details, deliverables } };
 }
 export async function acceptInvite(
@@ -614,10 +635,4 @@ export async function acceptInvite(
   );
   return project;
 }
-export {
-  assertEvidence,
-  parseDeliverables,
-  startReadiness,
-  PolicyError,
-  deadlineFrom,
-};
+export { assertEvidence, startReadiness, PolicyError, deadlineFrom };

@@ -7,6 +7,7 @@ import {
   listProjects,
   projectState,
   exportProject,
+  criteriaStatements,
   goalInput,
   AccessError,
 } from '@/lib/projects';
@@ -133,7 +134,6 @@ export async function POST(request: Request) {
       action: b.action,
       now,
       assigneePerson: target?.person,
-      targetUserId: typeof b.userId === 'string' ? b.userId : user.id,
     });
     if (b.revision !== s.revision) throw new Conflict();
     const open = ['draft', 'active'] as const;
@@ -175,10 +175,10 @@ export async function POST(request: Request) {
               .bind(v.title, id, id, m),
             db
               .prepare(
-                'UPDATE project_policy SET goal_version=?,duration_days=? WHERE project_id=?' +
+                'UPDATE project_policy SET goal_version=? WHERE project_id=?' +
                   gate,
               )
-              .bind(version, v.duration, id, id, m),
+              .bind(version, id, id, m),
             db
               .prepare(
                 'UPDATE project_agreement SET goal_version=?,title=?,goal=?,scope=?,completion_criteria=? WHERE project_id=?' +
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
                 'UPDATE project_details SET goal=?,deliverables=?,completion_criteria=? WHERE project_id=?' +
                   gate,
               )
-              .bind(v.goal, v.deliverables, v.completion, id, id, m),
+              .bind(v.goal, [], v.completion, id, id, m),
             // 편집한 팀장은 새 버전에 동의한 상태, 나머지는 재동의 대상이다.
             db
               .prepare(
@@ -198,19 +198,10 @@ export async function POST(request: Request) {
                   gate,
               )
               .bind(version, id, user.id, id, m),
-            db
-              .prepare(
-                'DELETE FROM project_deliverables WHERE project_id=? AND fixed_at IS NULL' +
-                  gate,
-              )
-              .bind(id, id, m),
-            ...v.deliverables.map((title, i) =>
-              db
-                .prepare(
-                  'INSERT INTO project_deliverables(project_id,deliverable_id,position,title) SELECT owner,?,?,? FROM sprints WHERE owner=? AND mutation=?',
-                )
-                .bind('d_' + crypto.randomUUID(), i, title, id, m),
-            ),
+            // 기존 결과물 프로젝트도 준비 중 편집이면 완료 기준 행으로 바뀐다.
+            ...(policy?.completionMode === 'tasks'
+              ? []
+              : criteriaStatements(id, m)),
           ];
         },
         ['draft'],
@@ -534,23 +525,31 @@ export async function POST(request: Request) {
         [...open],
       );
     } else if (b.action === 'finish') {
-      // 완주 판정은 결과물 확인만 본다. 체크인 수·업무 수는 조건이 아니다.
       const check =
         policy?.completionMode === 'tasks'
           ? taskCompletionCheck(s.tasks)
           : completionCheck(await readDeliverables(id));
+      const criteria = check.mode === 'criteria';
       if (!check.ready)
         throw new PolicyError(
-          check.total
-            ? `아직 확인되지 않은 필수 결과물이 있습니다: ${check.missing.join(', ')}`
-            : '확인할 필수 결과물이 없습니다.',
+          check.mode === 'tasks'
+            ? check.total
+              ? `완료와 근거가 필요한 업무: ${check.missing.join(', ')}`
+              : '완료할 업무가 없습니다.'
+            : criteria
+              ? '완료 기준에 근거를 남기고 팀장이 확인해야 완주할 수 있습니다.'
+              : check.total
+                ? `아직 확인되지 않은 필수 결과물이 있습니다: ${check.missing.join(', ')}`
+                : '확인할 필수 결과물이 없습니다.',
         );
       s.finished = true;
       await save(
         id,
         s,
         'finish',
-        '기한 내 합의 결과물 전체 확인 · 금전 환급은 운영자 검토 전',
+        criteria
+          ? '기한 내 완료 기준 근거 확인 · 금전 환급은 운영자 검토 전'
+          : '기한 내 합의 결과물 전체 확인 · 금전 환급은 운영자 검토 전',
         (m) => [
           db
             .prepare(
@@ -561,28 +560,6 @@ export async function POST(request: Request) {
           ...cancelStatements(id, m, { reason: '프로젝트 완주' }),
         ],
         ['active'],
-      );
-    } else if (b.action === 'stepBack') {
-      // 당사자가 알리고, 남은 팀 기준의 변경안은 팀장이 검토한다. 자동 재배정은 없다.
-      if (typeof b.note !== 'string' || !b.note.trim() || b.note.length > 1000)
-        throw new Error('참여 중단 사유를 1~1000자로 남겨주세요.');
-      await save(
-        id,
-        s,
-        'stepBack',
-        `${me.display_name} · 참여 중단 보고`,
-        (m) => [
-          db
-            .prepare(
-              'UPDATE project_members SET left_at=?,left_note=? WHERE project_id=? AND user_id=? AND left_at IS NULL AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
-            )
-            .bind(timestamp, b.note.trim(), id, user.id, id, m),
-          ...cancelStatements(id, m, {
-            userId: user.id,
-            reason: '참여 중단 보고',
-          }),
-        ],
-        [...open],
       );
     } else throw new Error('지원하지 않는 작업입니다.');
     return reply(await projectState(id, user));

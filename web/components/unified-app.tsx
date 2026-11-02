@@ -16,6 +16,8 @@ import {
   LogOut,
   FileText,
 } from 'lucide-react';
+import { TeamDirectory } from './team-directory';
+import { ProjectCreate } from './project-create';
 import { CareerWorkspace } from './career-workspace';
 import ProjectDashboard from './project-dashboard';
 import { ThemeToggle } from './theme-toggle';
@@ -36,6 +38,8 @@ import type { JoobleJob, JoobleSearchResult } from '@/lib/jooble';
 type Hub = Wire<Awaited<ReturnType<typeof readHub>>>;
 type Tab =
   | 'home'
+  | 'teams'
+  | 'create'
   | 'templates'
   | 'work'
   | 'jobs'
@@ -45,6 +49,8 @@ type Tab =
   | 'team';
 const TITLES: Record<Tab, string> = {
   home: '홈',
+  teams: '팀 찾기',
+  create: '직접 프로젝트 만들기',
   templates: '프로젝트 찾기',
   work: '내 프로젝트',
   jobs: '공고 찾기',
@@ -56,6 +62,7 @@ const TITLES: Record<Tab, string> = {
 const MAIN_NAV = [
   { id: 'home', icon: House },
   { id: 'templates', icon: Layers3 },
+  { id: 'teams', icon: Users },
   { id: 'work', icon: FolderKanban },
   { id: 'jobs', icon: BriefcaseBusiness },
   { id: 'profile', icon: UserRound },
@@ -422,6 +429,9 @@ export function UnifiedApp({
           <button onClick={() => navigate('templates')}>
             템플릿 둘러보기 <ArrowRight size={14} />
           </button>
+          <button onClick={() => navigate('create')}>
+            직접 만들어보기 <ArrowRight size={14} />
+          </button>
         </div>
         <div className="hub-sidebar-bottom">
           <ThemeToggle />
@@ -488,6 +498,31 @@ export function UnifiedApp({
                 ))}
               </nav>
             </>
+          )}
+          {tab === 'teams' && <TeamDirectory />}
+          {tab === 'create' && (
+            <ProjectCreate
+              onSubmit={async (body) => {
+                setError('');
+                try {
+                  const response = await apiFetch('/api/projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                  });
+                  const result = await response.json();
+                  if (!response.ok)
+                    throw new Error(
+                      result.error || '프로젝트를 만들지 못했습니다.',
+                    );
+                  navigate('work', result.projectId);
+                  return true;
+                } catch (e) {
+                  setError((e as Error).message);
+                  return false;
+                }
+              }}
+            />
           )}
           {tab === 'home' && (
             <>
@@ -582,11 +617,12 @@ export function UnifiedApp({
                             <span>{team.members}/4명</span>
                           </div>
                           <h3>{team.title}</h3>
-                          <p>{team.template.goal}</p>
+                          <p>{team.template?.goal || team.goal}</p>
                           <Chips
                             skills={[
                               ...new Set(
-                                team.template.tasks.flatMap((t) => t.skills),
+                                team.template?.tasks.flatMap((t) => t.skills) ??
+                                  [],
                               ),
                             ].slice(0, 4)}
                           />
@@ -600,6 +636,13 @@ export function UnifiedApp({
                               onClick={() => navigate('work', team.project_id)}
                             >
                               프로젝트 열기
+                            </button>
+                          ) : !team.template ? (
+                            <button
+                              className="btn wide"
+                              onClick={() => navigate('teams')}
+                            >
+                              참여 조건 확인하고 신청
                             </button>
                           ) : (
                             <>

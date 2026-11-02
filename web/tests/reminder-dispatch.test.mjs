@@ -369,7 +369,7 @@ test('담당자를 바꿨다 되돌려도 이미 보낸 단계는 다시 발송�
   ]);
 });
 
-test('업무 완료·완주·참여 중단은 남은 독촉을 중단한다', async () => {
+test('업무 완료·완주는 남은 독촉을 중단한다', async () => {
   const { projectId, state } = await reminderTeam('rem5', 'rem5mate');
   let s = await change('rem5', projectId, 'createTask', state, {
     title: '완료할 업무',
@@ -402,24 +402,6 @@ test('업무 완료·완주·참여 중단은 남은 독촉을 중단한다', as
       projectId,
     ))[0].n,
     3,
-  );
-  s = await change('rem5mate', projectId, 'stepBack', s, {
-    note: '참여를 이어가기 어렵습니다.',
-  });
-  assert.equal(
-    (await rows(
-      "SELECT count(*) AS n FROM reminder_items WHERE project_id=? AND user_id='rem5mate' AND status='pending'",
-      projectId,
-    ))[0].n,
-    0,
-  );
-  // 팀장의 프로젝트 알림은 남는다.
-  assert.equal(
-    (await rows(
-      "SELECT count(*) AS n FROM reminder_items WHERE project_id=? AND user_id='rem5' AND status='pending'",
-      projectId,
-    ))[0].n,
-    5,
   );
   for (const d of s.deliverables) {
     s = await change('rem5', projectId, 'deliverableEvidence', s, {

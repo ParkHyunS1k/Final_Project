@@ -105,7 +105,7 @@ void test('기준 마이그레이션: 두 번 실행해도 한 번만, 모든 �
     .prepare("SELECT c.relname AS name, c.relrowsecurity AS rls FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r'")
     .all<{ name: string; rls: boolean }>();
   // 기존 앱 테이블 20개 + CareerFlow 8개 + _migrations. 개인 이력서 테이블도 anon REST로 노출하지 않는다.
-  assert.equal(tables.results.length, 32);
+  assert.equal(tables.results.length, 33);
   assert.equal(tables.results.filter((t) => t.name.startsWith('hub_')).length, 3);
   assert.equal(tables.results.filter((t) => t.name.startsWith('career_')).length, 8);
   assert.deepEqual(tables.results.filter((t) => !t.rls).map((t) => t.name), []);

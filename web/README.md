@@ -6,7 +6,7 @@
 
 `/` 랜딩 → `/app` 통합 홈으로 들어간다. 이력서·포트폴리오·공고·프로젝트·성장 기록을 한 메뉴 안에서 사용한다. 20개 템플릿, 범위 슬라이더, 솔로 시작, 공개 팀 모집·참여 요청·초대, 일일 체크인·배지를 지원한다. `/career`와 `/workspace`는 호환 리다이렉트다. 기존 Python 자료를 자동 가져오지는 않는다.
 
-현재 구현·기존 프로젝트 보존 규칙·멘토 피드백 후속 설계·실행은 [통합 앱 문서](../docs/unified-app.md)를 참고한다. 새 로컬 DB에는 마이그레이션 `0000`부터 `0007`까지 필요하다. 기존 DB는 개발 서버를 끄고 `npm run db:migrate`로 추가분만 적용한다. 아래 파일럿 설명의 필수 결과물/최소 2명 규칙은 기존 프로젝트용이며, 새 통합 템플릿 프로젝트는 최소 1명·업무 근거 기반 완료다.
+현재 구현과 실행 방법은 [통합 앱 문서](../docs/unified-app.md)를 참고한다. 새 로컬 DB에는 마이그레이션 `0000`부터 `0009`까지 필요하다. 이전 main DB와 통합 앱 DB는 개발 서버를 끄고 `npm run db:migrate`로 추가분만 적용한다. 이전 파일명 기록은 자동 인식한다. 모든 프로젝트는 혼자 시작할 수 있고, 통합 템플릿은 업무 근거로 완료를 판정한다.
 
 ## 실제로 동작하는 범위
 
@@ -14,7 +14,7 @@
 - 업무 상세 패널에서 설명·상태·공수·선행 작업·최근 체크인·완료 근거를 확인하고 저장한다.
 - 표에서 상태와 담당자를 변경하고, 보드에서도 같은 상태를 조회·변경한다. 완료는 근거 입력, 재개는 남은 시간 입력 후 확정한다.
 
-- 목표·필수 결과물·완료 기준·시작일·7일 기간을 입력해 여러 프로젝트를 만든다.
+- 목표·기능 범위·완료 기준·7일 기간을 입력해 여러 프로젝트를 만든다. 필수 결과물은 받지 않고, 혼자서도 시작할 수 있다.
 - 이메일 지정 초대 링크와 목표 확인을 통해 최대 4명이 참여한다.
 - 팀장은 업무 생성·편집·담당자 배정·선행 작업·필수/부가 여부를 설정한다.
 - 팀원은 본인 업무·가용시간, 팀장은 전체 수정·초대·최종 승인 권한을 가진다.
@@ -53,11 +53,17 @@ npm run build
 
 ## API
 
-`GET /api/projects`: 내 프로젝트 목록. `?invite=token`은 로그인 이메일을 검사한 뒤 초대 프로젝트의 목표·결과물·기준 조회.
+`GET /api/projects`: 내 프로젝트 목록. `?invite=token`은 로그인 이메일을 검사한 뒤 초대 프로젝트의 목표·기준 조회(`details.deliverables`는 2026-10-14 이전 프로젝트의 결과물만, 새 프로젝트는 `[]`).
 
-`POST /api/projects`: create(title,goal,startDate,duration,deliverables:줄바꿈 문자열,completionCriteria,agreed), invite(projectId,revision,email: 그 주소로 초대 링크 메일 발송, 응답 email=sent|failed|off, 사용자당 하루 20개), resend(projectId,revision,inviteId: 새 링크 발급·발송, 이전 링크 무효, 초대당 3회·1분 간격), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능.
+`POST /api/projects`: create(title,goal,scope,duration,completionCriteria,agreed; deliverables는 받지 않음·보내도 무시), invite(projectId,revision,email: 그 주소로 초대 링크 메일 발송, 응답 email=sent|failed|off, 사용자당 하루 20개), resend(projectId,revision,inviteId: 새 링크 발급·발송, 이전 링크 무효, 초대당 3회·1분 간격), revoke(projectId,revision,inviteId), accept(token,agreed). 초대 토큰은 SHA-256 해시로만 저장, 7일 만료, 취소 가능.
 
-`GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. 응답은 캐시하지 않는다.
+팀장 전용 추가 action: setListed(projectId,revision,listed: 공개 팀 목록 노출), decideJoin(projectId,revision,requestId,approve: 참여 신청 승인·거절. 승인은 준비 중이거나 시작 후 24시간 안, 최대 4명).
+
+`GET /api/teams`: 공개 중이고 참여 가능한 다른 팀 목록 `{ teams: [{ projectId,title,goal,scope,completionCriteria,lifecycle,goalVersion,members,maxMembers,startedAt,deadlineAt,joinUntil,joinable,requested }], requests: [내 신청 최근 20개] }`. 팀원 이름·이메일·ID는 없다.
+
+`POST /api/teams`: request(projectId,goalVersion,agreed: 참여 신청, 목표 버전이 다르면 409와 최신 목표), cancel(requestId: 본인 대기 신청 취소). 신청은 프로젝트 revision을 올리지 않는다.
+
+`GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. `completion`은 `{ ready, total, confirmed, missing, mode }`이며 `mode`는 완료 기준 항목 하나면 `criteria`, 기존 결과물 프로젝트면 `deliverables`. `listed`(목록 공개 여부)와 팀장에게만 `joinRequests`(대기 신청자 표시 이름)를 함께 준다. 응답은 캐시하지 않는다.
 
 `POST /api/sprint`: JSON `{ action, projectId, revision, ...fields }`.
 

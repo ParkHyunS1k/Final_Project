@@ -344,7 +344,7 @@ test('실제 모델 어댑터의 구조화 출력·개인정보 오류 처리·�
     delete process.env.OPENAI_API_KEY;
   }
 });
-test('프로젝트 생성 재시도는 같은 프로젝트를 반환하고 시작은 기존 팀 합의를 따른다', async () => {
+test('프로젝트 생성 재시도는 같은 프로젝트를 반환하고 최신 솔로 시작 규칙을 따른다', async () => {
   const p = await profile('creation');
   const b = {
     action: 'createProject',
@@ -377,7 +377,10 @@ test('프로젝트 생성 재시도는 같은 프로젝트를 반환하고 시�
     projectId: a.projectId,
     revision: state.revision,
   });
-  assert.equal(start.status, 400);
+  assert.equal(start.status, 200);
+  const started = await json(start);
+  assert.equal(started.lifecycle, 'active');
+  assert.equal(started.policy.minMembers, 1);
 });
 test('개인 원문은 팀에 노출하지 않으며 타인의 프로필 공유를 거절한다', async () => {
   const t = await team('sharing');

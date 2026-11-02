@@ -4,7 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
 import { ChangeReview } from '@/components/change-review';
-import { RaceHome } from '@/components/race-home';
+import { RaceHome, TeamCheckins } from '@/components/race-home';
+import { TensionLayer } from '@/components/tension-layer';
+import { TeamListing } from '@/components/team-directory';
 import {
   ProjectWorkspace,
   ProjectDetails,
@@ -43,6 +45,7 @@ type Sprint = Wire<ServerSprint>;
 type Task = Wire<ServerTask>;
 import { meetingSuggestions } from '@/lib/meeting-suggestions';
 import { apiFetch, signInWithGoogle } from '@/lib/supabase-browser';
+import { GoalEditor } from '@/components/goal-editor';
 
 export type Lifecycle = 'legacy' | 'draft' | 'active' | 'completed' | 'expired';
 export type Deliverable = {
@@ -108,7 +111,7 @@ type State = ProjectMeta & {
     created_at: string;
   }[];
 };
-type Modal = 'checkin' | 'stepBack' | 'evidence' | null;
+type Modal = 'checkin' | 'evidence' | null;
 export default function ProjectDashboard() {
   return (
     <ProjectWorkspace embedded>
@@ -407,6 +410,12 @@ function Dashboard({
           </section>
         ) : (
           <>
+            <TensionLayer
+              lifecycle={lifecycle}
+              asOf={state!.asOf}
+              tasks={tasks}
+              person={state!.me.person}
+            />
             <header className="race-bar">
               <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
               <div className="race-title">
@@ -534,14 +543,20 @@ function Dashboard({
                     startedAt={state!.policy?.startedAt ?? null}
                     deadline={deadline}
                     tasks={tasks}
-                    plan={plan ?? null}
-                    members={state!.members}
                     me={state!.me}
                     people={people}
                     onTasks={() => setTab('tasks')}
                   />
                 )}
                 <div className="race-below">
+                  <TeamCheckins
+                    members={state!.members}
+                    me={state!.me}
+                    tasks={tasks}
+                    checkins={state!.checkins}
+                    now={Date.parse(state!.asOf)}
+                    active={lifecycle === 'active'}
+                  />
                   <section>
                     <div className="section-heading task-heading">
                       <h2>회의 제안</h2>
@@ -592,38 +607,6 @@ function Dashboard({
                             만들 수 있습니다.
                           </p>
                         </>
-                      )}
-                    </div>
-                  </section>
-                  <section>
-                    <div className="section-heading task-heading">
-                      <h2>최근 진행 보고</h2>
-                    </div>
-                    <div className="task-list">
-                      {state!.checkins.length ? (
-                        state!.checkins.slice(0, 3).map((c) => (
-                          <div className="task-row" key={c.id}>
-                            <Check size={18} />
-                            <div>
-                              <b>{c.note}</b>
-                              <span>
-                                {tasks.find((t) => t.id === c.task_id)?.title} ·
-                                남은 {c.remaining}h ·{' '}
-                                {new Date(c.created_at).toLocaleString(
-                                  'ko-KR',
-                                  {
-                                    timeZone: 'Asia/Seoul',
-                                  },
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="empty-copy">
-                          하루 한 번 진행 보고로 완료·남은 일·막힘을 남겨주세요.
-                          보고가 없어도 완주 판정에는 영향을 주지 않습니다.
-                        </p>
                       )}
                     </div>
                   </section>
@@ -709,6 +692,23 @@ function Dashboard({
             {tab === 'project' && (
               <section className="work-section project-stack">
                 <ProjectDetails state={state!} />
+                {state!.me.role === 'owner' &&
+                  lifecycle === 'draft' &&
+                  state!.policy?.completionMode !== 'tasks' &&
+                  state!.agreement && (
+                    <GoalEditor
+                      agreement={state!.agreement}
+                      revision={state!.sprint.revision}
+                      busy={busy}
+                      onSave={(f) =>
+                        mutate(
+                          'editGoal',
+                          f,
+                          '목표를 고쳤습니다. 팀원은 다시 동의해야 합니다.',
+                        )
+                      }
+                    />
+                  )}
                 <section className="project-block">
                   <div className="section-heading">
                     <h2>팀원 · {state!.members.length}/4명</h2>
@@ -728,8 +728,9 @@ function Dashboard({
                           <b>{m.display_name}</b>
                           <span>
                             {m.role === 'owner' ? '팀장' : '팀원'} ·{' '}
+                            {/* 2026-10-15에 참여 중단 기능을 뺐다. 그 전에 남은 기록만 표시한다. */}
                             {m.left_at
-                              ? '참여 중단 보고'
+                              ? '참여 중단'
                               : m.agreed_goal_version ===
                                   state!.policy?.goalVersion
                                 ? `목표 v${m.agreed_goal_version} 동의`
@@ -738,16 +739,17 @@ function Dashboard({
                         </div>
                       </div>
                     ))}
-                    <div className="team-note">
-                      참여 중단은 당사자가 보고하고, 남은 팀 기준의 변경안은
-                      팀장이 검토합니다. 자동 재배정은 하지 않습니다.
-                    </div>
                   </div>
                   <TeamInvites
                     state={state!}
                     refresh={load}
                     link={inviteLink}
                     setLink={setInviteLink}
+                    writable={writable}
+                  />
+                  <TeamListing
+                    state={state!}
+                    refresh={load}
                     writable={writable}
                   />
                 </section>
@@ -942,18 +944,6 @@ function Dashboard({
                     >
                       내보내기
                     </button>
-                    {writable && agreedToGoal && !state!.me.leftAt && (
-                      <button
-                        className="btn"
-                        disabled={busy}
-                        onClick={() => {
-                          setNote('');
-                          setDialog('stepBack');
-                        }}
-                      >
-                        참여 중단 보고
-                      </button>
-                    )}
                   </div>
                 </section>
               </section>
@@ -998,18 +988,12 @@ function Dashboard({
       >
         <DialogContent className="demo-dialog">
           <DialogTitle>
-            {dialog === 'checkin'
-              ? '진행 보고'
-              : dialog === 'stepBack'
-                ? '참여 중단을 팀에 알립니다.'
-                : '결과물 근거 기록'}
+            {dialog === 'checkin' ? '진행 보고' : '결과물 근거 기록'}
           </DialogTitle>
           <DialogDescription>
             {dialog === 'checkin'
               ? '막힌 점과 남은 공수를 저장하면 예상 종료를 다시 계산합니다. 보고가 없어도 완주 판정은 결과물 기준입니다.'
-              : dialog === 'stepBack'
-                ? '보고만으로 담당이나 기한이 바뀌지 않습니다. 남은 팀 기준의 변경은 팀장이 검토합니다.'
-                : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
+              : '저장소와 실행 방법, 데모 또는 영상, 팀원별 기여를 남겨주세요. 팀장이 사람의 판단으로 확인합니다.'}
           </DialogDescription>
           {dialog === 'checkin' ? (
             <form
@@ -1074,38 +1058,6 @@ function Dashboard({
                 disabled={busy || !note.trim()}
               >
                 저장하고 재계산
-              </button>
-            </form>
-          ) : dialog === 'stepBack' ? (
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (
-                  await mutate(
-                    'stepBack',
-                    { note },
-                    '참여 중단 보고를 저장했습니다.',
-                  )
-                )
-                  setDialog(null);
-              }}
-            >
-              <label className="input-label" htmlFor="leave-note">
-                팀에 알릴 내용
-              </label>
-              <textarea
-                id="leave-note"
-                rows={4}
-                maxLength={1000}
-                required
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-              <button
-                className="btn primary wide"
-                disabled={busy || !note.trim()}
-              >
-                보고 저장
               </button>
             </form>
           ) : dialog === 'evidence' ? (

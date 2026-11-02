@@ -62,7 +62,7 @@ AI 출력 검증은 [OpenAI Structured Outputs 문서](https://developers.openai
 | `web/lib/career/catalog.ts` | 역량 사전·직무 참고 기준·프로젝트/과제 템플릿 |
 | `web/lib/career/profile.ts`, `model.ts`, `pdf.ts` | 근거 추출·갭·프로젝트 추천·AI·파일 읽기 |
 | `web/lib/career/roles.ts`, `store.ts` | 팀 역할 최적화·공유·실제 업무 생성·경험 연결 |
-| `web/db/migrations/0005_career_growth.sql` | 개인/팀/과제/경험/AI 한도 8개 테이블 |
+| `web/db/migrations/0006_career_growth.sql` | 개인, 팀, 과제, 경험 및 AI 한도 8개 테이블. 최초 파일명은 `0005_career_growth.sql`이었다. |
 | `web/tests/career.test.mjs` | 실제 PGlite SQL과 기존 프로젝트 API를 잇는 통합 테스트 |
 
 `GET /api/career`는 개인 프로필·역량·추천·경험을, `GET /api/career?project=ID`는 멤버십 검사 후 공유 정보·역할안·연결 업무를 반환한다. POST action은 `profile`, `createProject`, `share`, `unshare`, `recommendRoles`, `applyRoles`, `recordExperience`. 프로젝트 쓰기는 현재 `revision`, 역할 반영은 `proposalId` 및 `approved:true`, 경험 가져오기는 `taskVersion` 및 `confirmed:true`가 필요하다.

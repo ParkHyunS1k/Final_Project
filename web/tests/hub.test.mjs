@@ -12,7 +12,7 @@ const db = await setupTestDb();
 const out = join(mkdtempSync(join(tmpdir(), 'hub-test-')), 'api.mjs');
 await build({
   stdin: {
-    contents: `export {GET,POST} from './app/api/hub/route'; export {GET as sprintGET,POST as sprintPOST} from './app/api/sprint/route'; export {GET as careerGET,POST as careerPOST} from './app/api/career/route'; export {POST as projectPOST} from './app/api/projects/route'; export {TEMPLATES,scopedTemplate} from './lib/career/catalog'; export {learningStats,safeLink} from './lib/hub'; export {appDestination} from './lib/app-navigation';`,
+    contents: `export {GET,POST} from './app/api/hub/route'; export {GET as sprintGET,POST as sprintPOST} from './app/api/sprint/route'; export {GET as careerGET,POST as careerPOST} from './app/api/career/route'; export {POST as projectPOST} from './app/api/projects/route'; export {GET as teamsGET,POST as teamsPOST} from './app/api/teams/route'; export {TEMPLATES,scopedTemplate} from './lib/career/catalog'; export {learningStats,safeLink} from './lib/hub'; export {appDestination} from './lib/app-navigation';`,
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -524,4 +524,127 @@ test('연속 학습은 한국 날짜 경계를 사용하고 유효 경험만 점
     api.learningStats(records, 0, new Date('2026-10-09T15:00:01Z')).streak,
     0,
   );
+});
+
+test('old team and create links open the unified app destinations', () => {
+  assert.equal(api.appDestination({ teams: '1' }, 'work'), '/app?tab=teams');
+  assert.equal(api.appDestination({ create: '1' }, 'work'), '/app?tab=create');
+  assert.equal(
+    api.appDestination({ teams: '1', invite: 'token' }, 'work'),
+    '/app?tab=work&invite=token',
+  );
+});
+
+test('template teams share listing state and support main participation approval', async () => {
+  const owner = 'merged-template-owner',
+    applicant = 'merged-template-applicant';
+  const id = await create(owner, { mode: 'team', listed: true });
+  const listed = await json(
+    await api.teamsGET(req(applicant, null, '/api/teams')),
+  );
+  assert.ok(listed.teams.some((t) => t.projectId === id));
+  const application = await json(
+    await api.teamsPOST(
+      req(
+        applicant,
+        {
+          action: 'request',
+          projectId: id,
+          goalVersion: 1,
+          agreed: true,
+        },
+        '/api/teams',
+      ),
+    ),
+    201,
+  );
+  const before = await state(owner, id);
+  await json(
+    await api.projectPOST(
+      req(
+        owner,
+        {
+          action: 'decideJoin',
+          projectId: id,
+          revision: before.sprint.revision,
+          requestId: application.requestId,
+          approve: true,
+        },
+        '/api/projects',
+      ),
+    ),
+  );
+  assert.equal((await state(applicant, id)).me.role, 'member');
+  assert.ok(await db.one('SELECT user_id FROM project_members WHERE project_id=? AND user_id=?', id, applicant));
+  const after = await state(owner, id);
+  await json(
+    await api.projectPOST(
+      req(
+        owner,
+        {
+          action: 'setListed',
+          projectId: id,
+          revision: after.sprint.revision,
+          listed: false,
+        },
+        '/api/projects',
+      ),
+    ),
+  );
+  assert.ok(
+    !(await read('merged-visitor')).directory.some((t) => t.project_id === id),
+  );
+  assert.equal(
+    (await read(owner)).settings.find((t) => t.project_id === id).listed,
+    false,
+  );
+  assert.equal(
+    (await db.one('SELECT listed FROM hub_projects WHERE project_id=?', id))
+      .listed,
+    false,
+  );
+});
+
+test('main projects appear on the unified home and can still start solo', async () => {
+  const owner = 'merged-main-owner';
+  const { projectId: id } = await json(
+    await api.projectPOST(
+      req(
+        owner,
+        {
+          action: 'create',
+          title: 'Shared main project',
+          goal: 'Build a working service',
+          scope: 'Core API',
+          completionCriteria: 'Verify the API response',
+          duration: 7,
+          agreed: true,
+        },
+        '/api/projects',
+      ),
+    ),
+    201,
+  );
+  await json(
+    await api.projectPOST(
+      req(
+        owner,
+        {
+          action: 'setListed',
+          projectId: id,
+          revision: 0,
+          listed: true,
+        },
+        '/api/projects',
+      ),
+    ),
+  );
+  const card = (await read('merged-main-visitor')).directory.find(
+    (t) => t.project_id === id,
+  );
+  assert.ok(card);
+  assert.equal(card.template, null);
+  assert.equal(card.goal, 'Build a working service');
+  const started = await sprint(owner, id, 'start');
+  assert.equal(started.lifecycle, 'active');
 });

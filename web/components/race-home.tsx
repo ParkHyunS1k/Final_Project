@@ -1,24 +1,130 @@
 'use client';
-import { ArrowRight, TriangleAlert } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { DeadlineCalendar } from '@/components/deadline-calendar';
 import type { ProjectMeta } from '@/components/project-workspace';
 import { useServerNow } from '@/hooks/use-server-now';
-import { dueLabel, laneTask, sprintPulse } from '@/lib/race';
-import type { Plan, Task as ServerTask } from '@/lib/sprint';
+import {
+  checkedInToday,
+  dueLabel,
+  focusClock,
+  focusTask,
+  laneTask,
+  tension,
+  waitReason,
+} from '@/lib/race';
+import type { Task as ServerTask } from '@/lib/sprint';
 import type { Lifecycle } from '@/lib/sprint-policy';
 import type { Wire } from '@/lib/wire';
 
+export { DeadlineCalendar };
+
 type Task = Wire<ServerTask>;
 
-// 홈 = 팀 레이스 현황. 계산은 lib/race의 순수 함수, 표시는 서버가 준 plan·asOf만 쓴다.
+const WAIT_LABEL = {
+  done: '내 업무 모두 완료 · 대기 중',
+  undated: '마감이 정해진 내 업무 없음 · 대기 중',
+  unassigned: '배정된 내 업무 없음 · 대기 중',
+};
+
+// 내 업무 중 마감이 가장 가까운 업무를 크게 센다. now는 서버 기준 시각이다.
+export function FocusCountdown({
+  tasks,
+  person,
+  now,
+}: {
+  tasks: Task[];
+  person: number;
+  now: number;
+}) {
+  const task = focusTask(tasks, person);
+  if (!task)
+    return (
+      <section className="focus-hero" aria-label="내 업무 마감">
+        <p className="focus-label">{WAIT_LABEL[waitReason(tasks, person)]}</p>
+        <div className="focus-clock idle">대기 중</div>
+      </section>
+    );
+  const left = Date.parse(task.dueAt!) - now;
+  const { stage } = tension(left);
+  const clock = focusClock(left);
+  return (
+    <section className="focus-hero" aria-label="내 업무 마감">
+      <p className="focus-label">
+        <em>{task.title}</em> {stage === 'over' ? '마감 초과' : '마감까지'}
+      </p>
+      <div className={`focus-clock ${stage}`} role="timer">
+        {clock.slice(0, -2)}
+        <span className="focus-sec" key={clock.slice(-2)}>
+          {clock.slice(-2)}
+        </span>
+      </div>
+    </section>
+  );
+}
+
+export function TeamCheckins({
+  members,
+  me,
+  tasks,
+  checkins,
+  now,
+  active,
+}: {
+  members: ProjectMeta['members'];
+  me: ProjectMeta['me'];
+  tasks: Task[];
+  checkins: { task_id: number; created_at: string }[];
+  now: number;
+  /** 진행 중일 때만 오늘 체크인 여부를 묻는다. */
+  active: boolean;
+}) {
+  return (
+    <section>
+      <div className="section-heading task-heading">
+        <h2>팀원 체크인 현황</h2>
+        <span className="tiny muted">오늘(KST) 진행 보고 기준</span>
+      </div>
+      <div className="race-checkins">
+        {members
+          .filter((m) => !m.left_at)
+          .map((m) => {
+            // 카운트다운과 같은 업무를 보여주고, 마감 미정만 남았으면 그 업무를 보여준다.
+            const lane = focusTask(tasks, m.person) ?? laneTask(tasks, m.person);
+            const ok = checkedInToday(checkins, tasks, m.person, now);
+            return (
+              <div key={m.person} className="race-checkin-row">
+                <b>
+                  {m.display_name}
+                  {m.person === me.person && <small> 나</small>}
+                </b>
+                <span className="race-checkin-task">
+                  {lane ? lane.title : '진행 중인 업무 없음'}
+                  {lane && <small>{dueLabel(lane.dueAt)}</small>}
+                </span>
+                {active && (
+                  <span className={`race-checkin-badge${ok ? ' ok' : ''}`}>
+                    {ok ? '오늘 체크인 완료' : '아직 체크인 안 함'}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        <p className="tiny muted">
+          하루 한 번 진행 보고로 완료·남은 일·막힘을 남겨주세요. 보고가 없어도 완주 판정에는 영향을
+          주지 않습니다.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// 홈 = 내 업무 마감 카운트다운 + 일차별 마감. 체크인 현황·회의 제안은 page.tsx가 아래에 둔다.
 export function RaceHome({
   lifecycle,
   asOf,
   startedAt,
   deadline,
   tasks,
-  plan,
-  members,
   me,
   people,
   onTasks,
@@ -28,53 +134,26 @@ export function RaceHome({
   startedAt: string | null;
   deadline: string | null;
   tasks: Task[];
-  plan: Plan | null;
-  members: ProjectMeta['members'];
   me: ProjectMeta['me'];
   people: { name: string }[];
   onTasks: () => void;
 }) {
-  const live = useServerNow(lifecycle === 'active' ? asOf : null);
+  const active = lifecycle === 'active';
+  const live = useServerNow(active ? asOf : null);
   const now = live || Date.parse(asOf);
-  const pulse = sprintPulse(tasks, plan);
-  const name = (person: number) =>
-    members.find((m) => m.person === person)?.display_name ?? people[person]?.name ?? '미배정';
-  const blocked = tasks.filter((t) => pulse.bottlenecks.includes(t.id));
-  const waiting = tasks.filter(
-    (t) => !t.done && t.dependsOn.some((d) => pulse.bottlenecks.includes(d)),
-  );
   return (
     <>
       {!tasks.length ? (
         <div className="race-alert calm">
           <div>
-            <b>업무가 아직 없습니다.</b> 업무와 담당자를 등록하면 남은 공수와 병목을 계산합니다.
+            <b>업무가 아직 없습니다.</b> 업무와 담당자를 등록하면 마감까지 남은 시간을 셉니다.
             <button className="text-link" onClick={onTasks}>
               업무로 이동 <ArrowRight size={15} />
             </button>
           </div>
         </div>
       ) : (
-        plan && (
-          <div className="race-stats">
-            <div className="race-stat">
-              <b>
-                {pulse.done}/{pulse.total}
-              </b>
-              <span>완료 업무</span>
-            </div>
-            <div className={`race-stat${pulse.hoursOver > 0 ? ' bad' : ''}`}>
-              <b>
-                {pulse.hoursOver > 0 ? `+${pulse.hoursOver}h` : `${Math.abs(pulse.hoursOver)}h`}
-              </b>
-              <span>{pulse.hoursOver > 0 ? '공수 초과' : '공수 여유'}</span>
-            </div>
-            <div className={`race-stat${pulse.bottlenecks.length ? ' bad' : ' good'}`}>
-              <b>{pulse.bottlenecks.length}건</b>
-              <span>병목</span>
-            </div>
-          </div>
-        )
+        active && <FocusCountdown tasks={tasks} person={me.person} now={now} />
       )}
       <DeadlineCalendar
         startedAt={startedAt}
@@ -82,68 +161,9 @@ export function RaceHome({
         now={now}
         tasks={tasks}
         people={people}
-        bottlenecks={pulse.bottlenecks}
+        active={active}
         onPlan={onTasks}
       />
-      {blocked.length > 0 && (
-        <output className="race-alert">
-          <TriangleAlert size={18} aria-hidden="true" />
-          <div>
-            <b>병목</b> · &apos;{blocked[0].title}&apos;({name(blocked[0].person)}) 마감 안에 끝나지
-            않음{blocked.length > 1 ? ` 외 ${blocked.length - 1}건` : ''}
-            {waiting.length > 0 && ` · '${waiting[0].title}'(${name(waiting[0].person)}) 대기`}
-            <p>목표를 줄이거나 기한을 미루는 대신 담당 재배정·진행 순서·구현 방법을 바꿔주세요.</p>
-            <button className="text-link" onClick={onTasks}>
-              업무에서 조정 <ArrowRight size={15} />
-            </button>
-          </div>
-        </output>
-      )}
-      {plan && tasks.length > 0 && (
-        <section className="race-lanes" aria-label="팀 레인">
-          <h2 className="race-label">팀 레인 · 지금 붙잡고 있는 업무와 남은 공수</h2>
-          {members
-            .filter((m) => !m.left_at)
-            .map((m) => {
-              const lane = laneTask(tasks, m.person);
-              const p = plan.perPerson.find((x) => x.person === m.person);
-              const over = !!p && p.needed > p.available;
-              const pct =
-                p && p.available > 0
-                  ? Math.min(100, (p.needed / p.available) * 100)
-                  : p?.needed
-                    ? 100
-                    : 0;
-              return (
-                <div key={m.person} className={`race-lane${m.person === me.person ? ' me' : ''}`}>
-                  <b>
-                    {m.display_name}
-                    {m.person === me.person && <small> 나</small>}
-                  </b>
-                  <span className="race-lane-task">
-                    {lane ? lane.title : '진행 중인 업무 없음'}
-                    {lane && <small className="race-due">{dueLabel(lane.dueAt)}</small>}
-                    {lane && pulse.bottlenecks.includes(lane.id) && (
-                      <span className="race-tag">병목</span>
-                    )}
-                  </span>
-                  <div>
-                    <div className={`race-meter${over ? ' over' : ''}`}>
-                      <i style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="race-hours">
-                      {p?.needed ?? 0}h / {Math.round((p?.available ?? 0) * 10) / 10}h
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          <p className="tiny muted">
-            전원 하루 {plan.dailyHours}시간은 남은 기간과 공수를 비교하기 위한 계산 가정이며, 근무시간
-            기록이 아닙니다.
-          </p>
-        </section>
-      )}
     </>
   );
 }

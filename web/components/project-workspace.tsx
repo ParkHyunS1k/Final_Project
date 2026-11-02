@@ -26,6 +26,8 @@ import { viewFrom, type View } from '@/lib/race';
 import { apiFetch, signInWithGoogle, signOut } from '@/lib/supabase-browser';
 import { workspaceEntry } from '@/lib/workspace-entry';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { TeamDirectory } from '@/components/team-directory';
+import { ProjectCreate } from '@/components/project-create';
 export const workspaceViews = [
   { id: 'home' as View, label: '홈', icon: Gauge },
   { id: 'tasks' as View, label: '업무', icon: ListTodo },
@@ -41,7 +43,8 @@ function WorkspaceMenu({
   view,
   onChange,
 }: {
-  view: View;
+  // 팀 찾기를 보는 동안은 어느 메뉴도 활성으로 표시하지 않는다.
+  view: View | null;
   onChange: (view: View) => void;
 }) {
   const { setOpenMobile } = useSidebar();
@@ -219,6 +222,8 @@ export function ProjectWorkspace({
   const [mine, setMine] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [creating, setCreating] = useState(false);
+  // 사이드바 '팀 찾기'. 프로젝트 선택과 무관하게 열 수 있다(?teams=1).
+  const [browsing, setBrowsing] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [invite, setInvite] = useState('');
@@ -239,6 +244,7 @@ export function ProjectWorkspace({
         const entry = workspaceEntry(location.search, data.projects);
         setInvite(entry.invite);
         setCreating(!embedded && entry.creating);
+        setBrowsing(!entry.invite && params.get('teams') === '1');
         setProjects(data.projects);
         setSelected(entry.selected);
         if (token)
@@ -252,31 +258,6 @@ export function ProjectWorkspace({
       })
       .finally(() => setLoaded(true));
   }, [embedded]);
-  async function create(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setBusy(true);
-    setError('');
-    const f = new FormData(e.currentTarget);
-    try {
-      const result = await api('/api/projects', {
-        action: 'create',
-        title: f.get('title'),
-        goal: f.get('goal'),
-        scope: f.get('scope'),
-        duration: 7,
-        deliverables: f.get('deliverables'),
-        completionCriteria: f.get('criteria'),
-        agreed: f.get('agreed') === 'on',
-      });
-      location.assign(
-        '/workspace?project=' + encodeURIComponent(result.projectId),
-      );
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
   return (
     <SidebarProvider
       className={'workspace-shell' + (embedded ? ' hub-workspace' : '')}
@@ -397,10 +378,16 @@ export function ProjectWorkspace({
             )}
           </div>
         )}
-        {!(selected && !creating && !invite) && (
+        {!(selected && !creating && !invite && !browsing) && (
           <header className="workspace-bar">
             <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
-            <b>{creating ? '새 프로젝트' : '프로젝트'}</b>
+            <b>
+              {creating
+                ? '새 프로젝트'
+                : browsing && !invite
+                  ? '팀 찾기'
+                  : '프로젝트'}
+            </b>
           </header>
         )}
         {error && (
@@ -419,64 +406,22 @@ export function ProjectWorkspace({
           </div>
         )}
         {creating && (
-          <section className="project-panel">
-            <h1>7일 안에 완성할 프로젝트</h1>
-            <p>
-              팀이 함께 확인할 목표와 완료 기준부터 정합니다. 만들면 준비 상태로
-              저장되고, 최소 2명이 최신 목표에 동의한 뒤 팀장이 시작할 때 그
-              시각부터 7일 뒤로 기한이 확정됩니다. 준비 기간은 스프린트 기간을
-              소모하지 않습니다.
-            </p>
-            <form className="project-form" onSubmit={create}>
-              <label>
-                프로젝트 이름
-                <input name="title" required maxLength={100} />
-              </label>
-              <label>
-                이번 스프린트 목표
-                <textarea
-                  name="goal"
-                  required
-                  maxLength={1000}
-                  placeholder="누구의 어떤 문제를 해결할지"
-                />
-              </label>
-              <label>
-                기능 범위
-                <textarea
-                  name="scope"
-                  required
-                  maxLength={2000}
-                  placeholder="이번에 만들 기능과 만들지 않을 것"
-                />
-              </label>
-              <label>
-                필수 결과물
-                <textarea
-                  name="deliverables"
-                  required
-                  placeholder="한 줄에 하나씩, 최대 10개"
-                />
-              </label>
-              <label>
-                완료 기준
-                <textarea
-                  name="criteria"
-                  required
-                  maxLength={2000}
-                  placeholder="어떤 동작이나 결과를 확인하면 완성인가요?"
-                />
-              </label>
-              <label className="agreement">
-                <input type="checkbox" name="agreed" required /> 목표·기능
-                범위·결과물·완료 기준을 확인했습니다. 시작 후에는 바꿀 수 없으며
-                실제 결제는 발생하지 않습니다.
-              </label>
-              <button className="btn primary" disabled={busy}>
-                {busy ? '저장 중…' : '프로젝트 만들기'}
-              </button>
-            </form>
-          </section>
+          <ProjectCreate
+            onSubmit={async (body) => {
+              setError('');
+              try {
+                const result = await api('/api/projects', body);
+                location.assign(
+                  '/app?tab=work&project=' +
+                    encodeURIComponent(result.projectId),
+                );
+                return true;
+              } catch (e) {
+                setError((e as Error).message);
+                return false;
+              }
+            }}
+          />
         )}
         {invite ? (
           <section className="project-panel">
@@ -552,6 +497,8 @@ export function ProjectWorkspace({
               내 프로젝트로 돌아가기
             </a>
           </section>
+        ) : browsing && !creating ? (
+          <TeamDirectory />
         ) : selected && !creating ? (
           children(selected, { view, setView, mine, setMine })
         ) : loaded && !creating ? (

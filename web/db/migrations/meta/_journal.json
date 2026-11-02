@@ -40,22 +40,36 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1791291844458,
-      "tag": "0005_career_growth",
+      "when": 1792081678203,
+      "tag": "0005_team_join",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "7",
-      "when": 1791441141284,
-      "tag": "0006_unified_hub",
+      "when": 1792081678204,
+      "tag": "0006_career_growth",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "7",
-      "when": 1791448545434,
-      "tag": "0007_team_interest_invitations",
+      "when": 1792081678205,
+      "tag": "0007_unified_hub",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792081678206,
+      "tag": "0008_team_interest_invitations",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792081678207,
+      "tag": "0009_merge_project_policy",
       "breakpoints": true
     }
   ]

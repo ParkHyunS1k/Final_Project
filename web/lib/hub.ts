@@ -22,6 +22,7 @@ import {
 } from './career/profile';
 import { readProfile, readExperiences, experienceSkills } from './career/store';
 import { dateInSeoul } from './sprint';
+import { setListed } from './teams';
 
 export type HubRecord = {
   id: string;
@@ -97,18 +98,19 @@ export async function readHub(user: Identity) {
         .bind(user.id)
         .all<HubRecord>(),
       db
-        .prepare(`SELECT h.project_id,s.title,h.template,h.scope_level,p.lifecycle,p.started_at,p.deadline_at,
-      (SELECT count(*)::int FROM project_members m WHERE m.project_id=h.project_id AND m.left_at IS NULL) AS members,
-      EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=h.project_id AND m.user_id=? AND m.left_at IS NULL) AS joined,
-      EXISTS(SELECT 1 FROM hub_interests i WHERE i.project_id=h.project_id AND i.user_id=?) AS interested
-      FROM hub_projects h JOIN sprints s ON s.owner=h.project_id JOIN project_policy p ON p.project_id=h.project_id
-      WHERE h.listed=true AND h.mode='team' AND p.lifecycle IN ('draft','active') AND (p.deadline_at IS NULL OR p.deadline_at>now())
+        .prepare(`SELECT p.project_id,s.title,d.goal,h.template,h.scope_level,p.lifecycle,p.started_at,p.deadline_at,
+      (SELECT count(*)::int FROM project_members m WHERE m.project_id=p.project_id AND m.left_at IS NULL) AS members,
+      EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=p.project_id AND m.user_id=? AND m.left_at IS NULL) AS joined,
+      EXISTS(SELECT 1 FROM hub_interests i WHERE i.project_id=p.project_id AND i.user_id=?) AS interested
+      FROM project_policy p JOIN sprints s ON s.owner=p.project_id JOIN project_details d ON d.project_id=p.project_id LEFT JOIN hub_projects h ON h.project_id=p.project_id
+      WHERE p.listed=true AND EXISTS(SELECT 1 FROM project_members owner WHERE owner.project_id=p.project_id AND owner.role='owner' AND owner.left_at IS NULL) AND p.lifecycle IN ('draft','active') AND (p.deadline_at IS NULL OR p.deadline_at>now())
       ORDER BY CASE WHEN p.lifecycle='active' THEN 0 ELSE 1 END,s.updated_at DESC LIMIT 40`)
         .bind(user.id, user.id)
         .all<{
           project_id: string;
           title: string;
-          template: ProjectTemplate;
+          goal: string;
+          template: ProjectTemplate | null;
           scope_level: number;
           lifecycle: string;
           started_at: Date | null;
@@ -134,7 +136,7 @@ export async function readHub(user: Identity) {
     ]);
   const settings = await db
     .prepare(
-      `SELECT h.project_id,h.mode,h.listed FROM hub_projects h JOIN project_members m ON m.project_id=h.project_id WHERE m.user_id=? AND m.role='owner' AND m.left_at IS NULL`,
+      `SELECT h.project_id,h.mode,p.listed FROM hub_projects h JOIN project_policy p ON p.project_id=h.project_id JOIN project_members m ON m.project_id=p.project_id WHERE m.user_id=? AND m.role='owner' AND m.left_at IS NULL`,
     )
     .bind(user.id)
     .all<{ project_id: string; mode: string; listed: boolean }>();
@@ -222,6 +224,9 @@ export async function createTemplateProject(
             b.mode,
             b.mode === 'team' && b.listed,
           ),
+        db
+          .prepare('UPDATE project_policy SET listed=? WHERE project_id=?')
+          .bind(b.mode === 'team' && b.listed, id),
         ...template.tasks.flatMap((task, i) => [
           db
             .prepare(
@@ -323,7 +328,7 @@ export async function hubAction(
       throw new CareerError('팀 초대를 받을 로그인 이메일이 필요합니다.');
     const result = await db
       .prepare(
-        `INSERT INTO hub_interests(project_id,user_id,display_name,email) SELECT h.project_id,?,?,? FROM hub_projects h JOIN project_policy p ON p.project_id=h.project_id WHERE h.project_id=? AND h.listed=true AND h.mode='team' AND p.lifecycle IN ('draft','active') AND (p.deadline_at IS NULL OR p.deadline_at>now()) AND (SELECT count(*) FROM project_members m WHERE m.project_id=h.project_id AND m.left_at IS NULL)<4 AND NOT EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=h.project_id AND m.user_id=? AND m.left_at IS NULL) ON CONFLICT(project_id,user_id) DO UPDATE SET display_name=excluded.display_name,email=excluded.email`,
+        `INSERT INTO hub_interests(project_id,user_id,display_name,email) SELECT h.project_id,?,?,? FROM hub_projects h JOIN project_policy p ON p.project_id=h.project_id WHERE h.project_id=? AND p.listed=true AND h.mode='team' AND p.lifecycle IN ('draft','active') AND (p.deadline_at IS NULL OR p.deadline_at>now()) AND (SELECT count(*) FROM project_members m WHERE m.project_id=h.project_id AND m.left_at IS NULL)<4 AND NOT EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=h.project_id AND m.user_id=? AND m.left_at IS NULL) ON CONFLICT(project_id,user_id) DO UPDATE SET display_name=excluded.display_name,email=excluded.email`,
       )
       .bind(user.id, user.name, user.email, String(b.projectId), user.id)
       .run();
@@ -393,14 +398,13 @@ export async function hubAction(
       throw new CareerError('공개 여부를 선택해주세요.');
     if (!sprint || sprint.revision !== b.revision)
       throw new CareerError('프로젝트가 바뀌었습니다. 새로고침해주세요.', 409);
-    const result = await db
-      .prepare(
-        `UPDATE hub_projects h SET listed=? WHERE project_id=? AND mode='team' AND EXISTS(SELECT 1 FROM project_members m JOIN project_policy p ON p.project_id=m.project_id JOIN sprints s ON s.owner=p.project_id WHERE m.project_id=h.project_id AND m.user_id=? AND m.role='owner' AND m.left_at IS NULL AND m.agreed_goal_version=p.goal_version AND p.lifecycle IN ('draft','active') AND (p.deadline_at IS NULL OR p.deadline_at>now()) AND s.revision=?)`,
-      )
-      .bind(b.listed, id, user.id, b.revision)
-      .run();
-    if (!result.meta.changes)
-      throw new CareerError('모집 상태를 바꿀 수 없습니다.', 409);
+    const setting = await db
+      .prepare('SELECT mode FROM hub_projects WHERE project_id=?')
+      .bind(id)
+      .first<{ mode: string }>();
+    if (setting?.mode !== 'team')
+      throw new CareerError('팀 프로젝트만 공개할 수 있습니다.', 409);
+    await setListed(id, user, Number(b.revision), b.listed);
     return { saved: true };
   }
   throw new CareerError('지원하지 않는 요청입니다.');
