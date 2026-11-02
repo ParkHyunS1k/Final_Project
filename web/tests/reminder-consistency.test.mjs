@@ -14,7 +14,7 @@ const outfile = join(dir, 'route.mjs');
 await build({
   stdin: {
     contents:
-      "export * from './app/api/sprint/route'; export { initialize } from './lib/sprint-store'; export { GET as projectsGET,POST as projectsPOST } from './app/api/projects/route'; export { dispatchReminders } from './lib/reminder-dispatch'; export { GET as sourcesGET,POST as sourcesPOST } from './app/api/sources/route'; export { POST as proposalsPOST,useModel } from './app/api/change-proposals/route'; export { recordingSender, senderFrom } from './lib/email'; export { POST as runnerPOST } from './app/api/internal/reminders/route';",
+      "export * from './app/api/sprint/route'; export { initialize } from './lib/sprint-store'; export { GET as projectsGET,POST as projectsPOST } from './app/api/projects/route'; export { dispatchReminders } from './lib/reminder-dispatch'; export { GET as sourcesGET,POST as sourcesPOST } from './app/api/sources/route'; export { POST as proposalsPOST } from './app/api/change-proposals/route'; export { useModel } from './lib/ai-model-selection'; export { recordingSender, senderFrom } from './lib/email'; export { POST as runnerPOST } from './app/api/internal/reminders/route';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },

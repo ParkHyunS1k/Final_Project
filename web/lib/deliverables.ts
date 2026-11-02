@@ -56,6 +56,26 @@ export function completionCheck(list: Deliverable[]) {
   };
 }
 
+// New template projects need no separately entered deliverables/criteria.
+// Deferred work is excluded, but an empty project cannot earn completion.
+export function taskCompletionCheck(
+  tasks: {
+    title: string;
+    done: boolean;
+    deferred: boolean;
+    evidence: string;
+  }[],
+) {
+  const active = tasks.filter((t) => !t.deferred);
+  const missing = active.filter((t) => !t.done || t.evidence.trim().length < 5);
+  return {
+    ready: active.length > 0 && !missing.length,
+    total: active.length,
+    confirmed: active.length - missing.length,
+    missing: missing.map((t) => t.title),
+  };
+}
+
 export function assertEvidence(value: unknown) {
   if (
     typeof value !== 'string' ||

@@ -12,7 +12,7 @@ import {
 } from '@/lib/landing-race.mjs';
 import './landing.css';
 
-const START = '/workspace?create=1';
+const START = '/app';
 
 // 설계 구간의 앞 58%는 화면 세 개, 나머지는 모니터가 가운데로 와서 빨갛게 경고하는 체크인 장면.
 const SETUP_PANES_SHARE = 0.58;
@@ -60,7 +60,9 @@ export function LandingPage() {
     const cursor = screen.querySelector<SVGElement>('.cursor')!;
     const items = [...setup.querySelectorAll<HTMLElement>('.feat-list li')];
     const panes = [...setup.querySelectorAll<HTMLElement>('.pane')];
-    const menu = [...setup.querySelectorAll<HTMLElement>('.app-side [data-pane]')];
+    const menu = [
+      ...setup.querySelectorAll<HTMLElement>('.app-side [data-pane]'),
+    ];
     // 고정 구간(data-pin)마다 진행률 --p를 주고, 안쪽 [data-on] 요소를 켜고 끈다.
     const pins = [...root.querySelectorAll<HTMLElement>('[data-pin]')];
     const monitor = setup.querySelector<HTMLElement>('.monitor')!;
@@ -74,7 +76,9 @@ export function LandingPage() {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const phone = matchMedia('(max-width: 767px)');
     const finePointer = matchMedia('(pointer: fine)');
-    const videos = [...root.querySelectorAll<HTMLVideoElement>('video[data-src]')];
+    const videos = [
+      ...root.querySelectorAll<HTMLVideoElement>('video[data-src]'),
+    ];
     // 휴대폰·동작 줄이기에서는 영상을 받지 않고 포스터만 보여 준다.
     if (!reduced.matches && !phone.matches) {
       for (const v of videos) v.src = v.dataset.src!;
@@ -96,15 +100,16 @@ export function LandingPage() {
       reduced.matches
         ? 1
         : sceneProgress(
-          sec.getBoundingClientRect().top,
-          sec.offsetHeight,
-          stageOf(sec).offsetHeight,
-          vh,
-        );
+            sec.getBoundingClientRect().top,
+            sec.offsetHeight,
+            stageOf(sec).offsetHeight,
+            vh,
+          );
     const toggleOn = (el: HTMLElement, p: number) =>
       el.classList.toggle(
         'on',
-        p >= Number(el.dataset.on) && !(el.dataset.off && p >= Number(el.dataset.off)),
+        p >= Number(el.dataset.on) &&
+          !(el.dataset.off && p >= Number(el.dataset.off)),
       );
     // 화면(.screen) 안에서 요소 가운데의 위치(%). 3D 기울기와 무관한 배치 좌표를 쓴다.
     function spot(k: string) {
@@ -125,22 +130,40 @@ export function LandingPage() {
     function syncSetup(vh: number) {
       const rect = setup.getBoundingClientRect();
       setupStage.style.setProperty('--enter', String(clamp(1 - rect.top / vh)));
-      const raw = sceneProgress(rect.top, setup.offsetHeight, setupStage.offsetHeight, vh);
-      const { item, t } = featureAt(Math.min(1, raw / SETUP_PANES_SHARE), panes.length);
+      const raw = sceneProgress(
+        rect.top,
+        setup.offsetHeight,
+        setupStage.offsetHeight,
+        vh,
+      );
+      const { item, t } = featureAt(
+        Math.min(1, raw / SETUP_PANES_SHARE),
+        panes.length,
+      );
       // 체크인 단계: 모니터가 가운데로 오는 거리(--dx)와 진행률(--a). 동작 줄이기에서는 건너뛴다.
-      const a = reduced.matches ? 0 : clamp((raw - SETUP_PANES_SHARE) / (1 - SETUP_PANES_SHARE));
+      const a = reduced.matches
+        ? 0
+        : clamp((raw - SETUP_PANES_SHARE) / (1 - SETUP_PANES_SHARE));
       setupStage.style.setProperty('--a', String(a));
       setupStage.style.setProperty(
         '--dx',
-        setupStage.clientWidth / 2 - (monitor.offsetLeft + monitor.offsetWidth / 2) + 'px',
+        setupStage.clientWidth / 2 -
+          (monitor.offsetLeft + monitor.offsetWidth / 2) +
+          'px',
       );
-      for (const el of alarmEls) el.classList.toggle('on', a > 0 && a >= Number(el.dataset.alarm));
+      for (const el of alarmEls)
+        el.classList.toggle('on', a > 0 && a >= Number(el.dataset.alarm));
       cursor.classList.toggle('gone', a > 0);
       items.forEach((li, i) => {
         li.classList.toggle('active', i === item);
-        li.style.setProperty('--t', i < item ? '1' : i === item ? String(t) : '0');
+        li.style.setProperty(
+          '--t',
+          i < item ? '1' : i === item ? String(t) : '0',
+        );
       });
-      menu.forEach((m) => m.classList.toggle('on', Number(m.dataset.pane) === item));
+      menu.forEach((m) =>
+        m.classList.toggle('on', Number(m.dataset.pane) === item),
+      );
       panes.forEach((pane, i) => {
         pane.classList.toggle('active', i === item);
         pane
@@ -162,11 +185,14 @@ export function LandingPage() {
     function syncPin(sec: HTMLElement, vh: number) {
       const p = progressOf(sec, vh);
       stageOf(sec).style.setProperty('--p', String(p));
-      sec.querySelectorAll<HTMLElement>('[data-on]').forEach((el) => toggleOn(el, p));
+      sec
+        .querySelectorAll<HTMLElement>('[data-on]')
+        .forEach((el) => toggleOn(el, p));
       sec.querySelectorAll<HTMLElement>('[data-roll]').forEach((el) => {
         const v = rollAt(p, parseRoll(el.dataset.roll!));
         const unit = el.dataset.unit ?? '';
-        el.textContent = el.dataset.sign === undefined ? v + unit : signed(v, unit);
+        el.textContent =
+          el.dataset.sign === undefined ? v + unit : signed(v, unit);
       });
       const v = sec.querySelector<HTMLVideoElement>('video[data-src]');
       if (v) {
@@ -189,7 +215,8 @@ export function LandingPage() {
       // 시계는 규칙 섹션에서 168:00:00으로 나타나고, 설계가 끝나 체크인 장면이 시작되면 흐른다.
       const top = (el: HTMLElement) => el.getBoundingClientRect().top + scrollY;
       const start =
-        top(setup) + (setup.offsetHeight - setupStage.offsetHeight) * SETUP_PANES_SHARE;
+        top(setup) +
+        (setup.offsetHeight - setupStage.offsetHeight) * SETUP_PANES_SHARE;
       const end = top(finish) + finish.offsetHeight - vh;
       const lap = (scrollY - start) / (end - start);
       const clock = raceClock(lap);
@@ -197,7 +224,8 @@ export function LandingPage() {
       hud.classList.toggle('done', lap >= 1);
       hud.style.setProperty('--lap', String(clamp(lap)));
       hudDay.textContent = `DAY ${String(clock.day).padStart(2, '0')} / 07`;
-      hudClock.textContent = lap >= 1 ? `완주 · ${clock.text} 남김` : clock.text;
+      hudClock.textContent =
+        lap >= 1 ? `완주 · ${clock.text} 남김` : clock.text;
     }
     function onScroll() {
       if (!frame) frame = requestAnimationFrame(sync);
@@ -215,7 +243,10 @@ export function LandingPage() {
     // 첫 화면 시계: 페이지를 연 순간부터 168시간이 실제로 줄어든다.
     const openedAt = Date.now();
     function tick() {
-      const left = Math.max(0, SPRINT_SECONDS - Math.floor((Date.now() - openedAt) / 1000));
+      const left = Math.max(
+        0,
+        SPRINT_SECONDS - Math.floor((Date.now() - openedAt) / 1000),
+      );
       const pad = (v: number) => String(v).padStart(2, '0');
       heroHours.textContent = String(Math.floor(left / 3600));
       heroRest.textContent = `${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
@@ -244,8 +275,11 @@ export function LandingPage() {
         <a className="rl-brand" href="#top">
           ProjectMate
         </a>
+        <Link className="rl-link" href="/app?tab=profile" prefetch={false}>
+          이력서로 프로젝트 찾기
+        </Link>
         <Link className="rl-btn small" href={START} prefetch={false}>
-          스프린트 시작하기
+          시작하기
         </Link>
       </header>
 
@@ -268,12 +302,13 @@ export function LandingPage() {
                 <span className="line">한 곳에.</span>
               </h1>
               <p className="lead">
-                공고가 원하는 경험, 7일 팀 프로젝트로 채웁니다.
-                <br />기한은 7일. 목표는 고정, 연장은 없습니다.
+                이력서와 포트폴리오에서 찾은 다음 경험.
+                <br />
+                20개 템플릿으로, 혼자서도 팀과 함께도 시작하세요.
               </p>
               <div className="hero-actions">
                 <Link className="rl-btn" href={START} prefetch={false}>
-                  스프린트 시작하기
+                  나의 성장 공간 열기
                 </Link>
                 <a className="rl-link" href="#diagnose">
                   스크롤해서 출발 ↓
@@ -291,9 +326,7 @@ export function LandingPage() {
         <section className="pin duo" id="diagnose" data-pin>
           <div className="pin-stage duo-stage">
             <div className="duo-copy">
-              <p className="kicker">
-                진단 <span className="soon">준비 중인 기능</span>
-              </p>
+              <p className="kicker">나의 역량 비교</p>
               {/* 첫 줄만 먼저 보이고, 더 내리면 둘째 줄 → 설명 → 비교표 순서로 나온다. */}
               <h2>
                 이력서와 공고를 넣으면,
@@ -325,7 +358,9 @@ export function LandingPage() {
                 >
                   <b>{skill}</b>
                   <small>{kind}</small>
-                  <span className="cmp-tag">{quote ? '근거 있음' : '근거 없음'}</span>
+                  <span className="cmp-tag">
+                    {quote ? '근거 있음' : '근거 없음'}
+                  </span>
                   <q>{quote || '이력서에서 근거를 찾지 못했습니다'}</q>
                 </div>
               ))}
@@ -348,8 +383,8 @@ export function LandingPage() {
                 팀으로 채웁니다.
               </h2>
               <p className="lead">
-                이력서에서 기술스택과 포지션을 읽어, 서로의 빈자리를 채우는 2–4인
-                팀으로 묶습니다.
+                이력서에서 기술스택과 포지션을 읽어, 서로의 빈자리를 채우는
+                2–4인 팀으로 묶습니다.
               </p>
             </div>
             <div className="mt">
@@ -438,7 +473,7 @@ export function LandingPage() {
                 <li data-on="0.38">
                   <strong>목표 잠금</strong>
                   <span>
-                    출발 후에는 목표·범위·결과물을
+                    출발 후에는 합의한 목표와 범위를
                     <br />
                     누구도, 어떤 경로로도 바꿀 수 없습니다.
                   </span>
@@ -471,19 +506,23 @@ export function LandingPage() {
                 <li>
                   <b>전원이 동의해야 출발</b>
                   <p>
-                    목표와 결과물에 팀 전원이 동의하고 팀장이 시작을 누르는 순간,
-                    168시간이 흐릅니다.
+                    선택한 목표와 범위를 확인하고 시작을 누르는 순간, 168시간이
+                    흐릅니다.
                   </p>
                   <i className="bar" />
                 </li>
                 <li>
                   <b>빈칸 없는 배정</b>
-                  <p>업무마다 담당자와 마감. 미정으로 남은 칸은 바로 드러납니다.</p>
+                  <p>
+                    업무마다 담당자와 마감. 미정으로 남은 칸은 바로 드러납니다.
+                  </p>
                   <i className="bar" />
                 </li>
                 <li>
                   <b>7일 마감 캘린더</b>
-                  <p>승인된 마감을 일차별로. 오늘 끝내야 할 일이 먼저 보입니다.</p>
+                  <p>
+                    승인된 마감을 일차별로. 오늘 끝내야 할 일이 먼저 보입니다.
+                  </p>
                   <i className="bar" />
                 </li>
               </ol>
@@ -508,7 +547,7 @@ export function LandingPage() {
                       <div className="goal">
                         <small>목표</small>
                         <b>우리 동네 러닝 모임 찾기 MVP</b>
-                        <small>필수 결과물 2개 · 작동하는 웹, 3분 데모</small>
+                        <small>템플릿 선택 · 슬라이더로 기능 범위 조절</small>
                       </div>
                       {[
                         ['민', '민서', '팀장', 0.12],
@@ -530,7 +569,11 @@ export function LandingPage() {
                         <small className="ready" data-on="0.5">
                           전원 동의 · 시작할 수 있습니다
                         </small>
-                        <span className="s-btn swap" data-k="start" data-on="0.8">
+                        <span
+                          className="s-btn swap"
+                          data-k="start"
+                          data-on="0.8"
+                        >
                           <span className="before">스프린트 시작</span>
                           <span className="after">진행 중 · 168:00:00</span>
                         </span>
@@ -581,7 +624,9 @@ export function LandingPage() {
                       </p>
                     </div>
                     <div className="pane">
-                      <small className="s-eyebrow">러닝크루 MVP · 최종 마감 D-4</small>
+                      <small className="s-eyebrow">
+                        러닝크루 MVP · 최종 마감 D-4
+                      </small>
                       <h3>우리 팀의 7일</h3>
                       <div className="cal">
                         {[
@@ -677,11 +722,17 @@ export function LandingPage() {
               </div>
               <div className="tele-big" data-on="0.35">
                 <small>로그인 구현 · 마감 대비</small>
-                <strong data-roll="0,2,0.35,0.5|2,-1,0.66,0.8" data-unit="h" data-sign>
+                <strong
+                  data-roll="0,2,0.35,0.5|2,-1,0.66,0.8"
+                  data-unit="h"
+                  data-sign
+                >
                   0h
                 </strong>
                 <span className="verdict swap" data-on="0.8">
-                  <span className="before">마감보다 2시간 초과 · 배치 불가</span>
+                  <span className="before">
+                    마감보다 2시간 초과 · 배치 불가
+                  </span>
                   <span className="after">재배정 후 마감 1시간 전 도착</span>
                 </span>
               </div>
@@ -735,8 +786,8 @@ export function LandingPage() {
                 </p>
               </div>
               <p className="radio-note" data-on="0.72">
-                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안하는 기능을 준비하고
-                있습니다. 적용은 사람이 승인해야만 됩니다.
+                단톡방 대화를 붙여넣으면 바뀔 업무만 골라 제안하는 기능을
+                준비하고 있습니다. 적용은 사람이 승인해야만 됩니다.
               </p>
             </div>
           </div>
@@ -752,7 +803,7 @@ export function LandingPage() {
                 결과물로.
               </h2>
               <p className="lead">
-                처음 약속한 결과물마다 근거를 남기고, 팀장이 확인하면 완주.
+                선택한 업무를 마치고 수행 근거를 남기면, 다음 경험의 시작.
               </p>
             </div>
             <div className="panel finish">
@@ -779,17 +830,15 @@ export function LandingPage() {
         <section className="pin duo" id="proof" data-pin>
           <div className="pin-stage duo-stage">
             <div className="duo-copy">
-              <p className="kicker">
-                증명 <span className="soon">준비 중인 기능</span>
-              </p>
+              <p className="kicker">나의 경험 기록</p>
               <h2>
                 완주한 결과물이,
                 <br />
                 이력서의 다음 줄.
               </h2>
               <p className="lead">
-                팀장이 확인한 결과물과 근거가 그대로 이력서 항목이 됩니다. 같은
-                공고와 다시 비교하면 빈칸이 줄어듭니다.
+                완료한 내 업무와 근거를 확인해 이력서 초안으로 가져오세요. 같은
+                공고와 다시 비교해 다음에 채울 경험을 찾아갑니다.
               </p>
             </div>
             <div className="pf">
@@ -831,13 +880,18 @@ export function LandingPage() {
                 <em>실행하세요.</em>
               </h2>
               <p className="lead" data-on="0.15">
-                팀을 만들고 목표를 정하면, 7일 스프린트가 시작됩니다.
+                템플릿을 고르고, 혼자서도 팀과 함께도 다음 경험을 시작하세요.
               </p>
-              <Link className="rl-btn big" href={START} prefetch={false} data-on="0.25">
+              <Link
+                className="rl-btn big"
+                href={START}
+                prefetch={false}
+                data-on="0.25"
+              >
                 스프린트 시작하기 <span aria-hidden="true">→</span>
               </Link>
               <p className="final-note" data-on="0.3">
-                Google 계정으로 바로 로그인 · 2–4인 팀 · 연장 없는 7일
+                Google 계정으로 바로 로그인 · 솔로 또는 팀 · 7일의 도전
               </p>
             </div>
           </div>
@@ -851,7 +905,7 @@ export function LandingPage() {
       </div>
 
       <footer className="rl-foot">
-        <span>ProjectMate · 2–4인 팀의 7일 스프린트</span>
+        <span>ProjectMate · 혼자서도 함께도, 경험을 만드는 7일</span>
         <span>
           화면 속 팀·업무·시간은 예시입니다. AI 변경안은 준비 중입니다.
         </span>

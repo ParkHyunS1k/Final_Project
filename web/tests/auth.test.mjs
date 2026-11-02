@@ -245,7 +245,7 @@ test('화면 문구에 이전 ChatGPT 로그인 안내가 남지 않는다', () 
   for (const file of [
     'components/landing-page.tsx',
     'components/project-workspace.tsx',
-    'app/workspace/page.tsx',
+    'components/project-dashboard.tsx',
     'README.md',
   ])
     assert.doesNotMatch(readFileSync(file, 'utf8'), /ChatGPT[^\n]{0,12}로그인|signin-with-chatgpt/, file);
@@ -299,7 +299,7 @@ test('초대 안내에 더 이상 쓰지 않는 사이트 접근 권한 설명�
 });
 
 test('Google 로그인 버튼은 실패를 버리지 않고 화면 오류로 보여준다', () => {
-  for (const file of ['app/workspace/page.tsx', 'components/project-workspace.tsx']) {
+  for (const file of ['components/project-dashboard.tsx', 'components/project-workspace.tsx']) {
     const src = readFileSync(file, 'utf8');
     assert.doesNotMatch(src, /void signInWithGoogle\(\)/, file);
     assert.match(src, /signInWithGoogle\(\)\.catch\(/, file);

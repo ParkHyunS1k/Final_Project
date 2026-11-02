@@ -25,7 +25,9 @@ export class GoalChanged extends Error {
   details: unknown;
   status = 409;
   constructor(details: unknown) {
-    super('목표가 바뀌었습니다. 최신 목표와 완료 기준을 확인한 뒤 다시 수락해주세요.');
+    super(
+      '목표가 바뀌었습니다. 최신 목표와 완료 기준을 확인한 뒤 다시 수락해주세요.',
+    );
     this.details = details;
   }
 }
@@ -38,7 +40,11 @@ export class AccessError extends Error {
   }
 }
 import type { Identity } from './auth';
-import { DAILY_INVITE_LIMIT, deliverInvite, INVITE_SEND_LIMIT } from './invite-email';
+import {
+  DAILY_INVITE_LIMIT,
+  deliverInvite,
+  INVITE_SEND_LIMIT,
+} from './invite-email';
 export { identity, AuthUnavailable, type Identity } from './auth';
 export async function adoptLegacy(user: Identity) {
   // Only the identity that owns a v2 row can import it. Never copy another user's data.
@@ -222,13 +228,15 @@ export function textField(value: unknown, label: string, max: number) {
     throw new Error(`${label}: 1~${max}자로 입력해주세요.`);
   return value.trim();
 }
-export function goalInput(b: Record<string, unknown>) {
+export function goalInput(b: Record<string, unknown>, simple = false) {
   return {
     title: textField(b.title, '프로젝트 이름', 100),
     goal: textField(b.goal, '목표', 1000),
     scope: textField(b.scope, '기능 범위', 2000),
-    completion: textField(b.completionCriteria, '완료 기준', 2000),
-    deliverables: parseDeliverables(b.deliverables),
+    completion: simple
+      ? ''
+      : textField(b.completionCriteria, '완료 기준', 2000),
+    deliverables: simple ? [] : parseDeliverables(b.deliverables),
     duration: assertDuration(b.duration),
   };
 }
@@ -262,8 +270,11 @@ function deliverableStatements(
 export async function createProject(
   user: Identity,
   b: Record<string, unknown>,
+  // Internal extensions participate in the same transaction as project creation.
+  related: (projectId: string) => import('./db').Statement[] = () => [],
+  options?: { simple: boolean },
 ) {
-  const v = goalInput(b);
+  const v = goalInput(b, options?.simple);
   if (b.agreed !== true) throw new Error('목표와 완료 기준을 확인해주세요.');
   const id = 'p_' + crypto.randomUUID();
   const db = database();
@@ -271,26 +282,26 @@ export async function createProject(
   await db.batch([
     db
       .prepare(
-        "INSERT INTO sprints(owner,title,start_date,deadline,joined,updated_at) VALUES(?,?,NULL,NULL,false,?)",
+        'INSERT INTO sprints(owner,title,start_date,deadline,joined,updated_at) VALUES(?,?,NULL,NULL,false,?)',
       )
       .bind(id, v.title, now),
     db
       .prepare(
         'INSERT INTO project_details(project_id,created_by,goal,deliverables,completion_criteria,created_at) VALUES(?,?,?,?,?,?)',
       )
-      .bind(
-        id,
-        user.id,
-        v.goal,
-        v.deliverables,
-        v.completion,
-        now,
-      ),
+      .bind(id, user.id, v.goal, v.deliverables, v.completion, now),
     db
       .prepare(
-        'INSERT INTO project_policy(project_id,lifecycle,goal_version,duration_days,created_at) VALUES(?,?,1,?,?)',
+        'INSERT INTO project_policy(project_id,lifecycle,goal_version,duration_days,created_at,min_members,completion_mode) VALUES(?,?,1,?,?,?,?)',
       )
-      .bind(id, 'draft', v.duration, now),
+      .bind(
+        id,
+        'draft',
+        v.duration,
+        now,
+        options?.simple ? 1 : 2,
+        options?.simple ? 'tasks' : 'deliverables',
+      ),
     db
       .prepare(
         'INSERT INTO project_agreement(project_id,goal_version,title,goal,scope,completion_criteria,fixed_at) VALUES(?,1,?,?,?,?,?)',
@@ -302,6 +313,7 @@ export async function createProject(
       )
       .bind(id, user.id, user.name, now, now, user.email || null),
     ...deliverableStatements(id, null, v.deliverables),
+    ...related(id),
   ]);
   return id;
 }
@@ -320,6 +332,12 @@ export async function createInvite(
   revision: number,
   email: unknown,
   origin: string,
+  related: (
+    token: string,
+    id: string,
+    hash: string,
+    mutation: string,
+  ) => import('./db').Statement[] = () => [],
 ) {
   const me = await member(project, user);
   const policy = await readPolicy(project);
@@ -332,7 +350,9 @@ export async function createInvite(
   if (
     typeof email !== 'string' ||
     // 주소 하나만. 쉼표·세미콜론·꺾쇠·공백이 있으면 메일 라이브러리가 여러 수신자로 읽는다.
-    !/^[^\s@,;<>"'()[\]\\]+@[^\s@,;<>"'()[\]\\]+\.[^\s@,;<>"'()[\]\\]+$/.test(email.trim()) ||
+    !/^[^\s@,;<>"'()[\]\\]+@[^\s@,;<>"'()[\]\\]+\.[^\s@,;<>"'()[\]\\]+$/.test(
+      email.trim(),
+    ) ||
     email.length > 254
   )
     throw new Error('팀원의 로그인 이메일을 입력해주세요.');
@@ -349,7 +369,10 @@ export async function createInvite(
     .bind(user.id, DAILY_INVITE_LIMIT)
     .first();
   if (!quota)
-    throw new AccessError(`초대는 하루 ${DAILY_INVITE_LIMIT}개까지 만들 수 있습니다(한국 시간 0시에 초기화).`, 429);
+    throw new AccessError(
+      `초대는 하루 ${DAILY_INVITE_LIMIT}개까지 만들 수 있습니다(한국 시간 0시에 초기화).`,
+      429,
+    );
   const token = crypto.randomUUID() + crypto.randomUUID();
   const hash = await tokenHash(token);
   const id = crypto.randomUUID();
@@ -374,8 +397,13 @@ export async function createInvite(
           project,
           m,
         ),
+      ...related(token, id, hash, m),
     ],
     ['draft', 'active'],
+    {
+      sql: "EXISTS(SELECT 1 FROM project_members m JOIN project_policy p ON p.project_id=m.project_id WHERE m.project_id=? AND m.user_id=? AND m.role='owner' AND m.left_at IS NULL AND m.agreed_goal_version=p.goal_version)",
+      args: [project, user.id],
+    },
   );
   const mail = await deliverInvite({
     inviteId: id,
@@ -404,16 +432,31 @@ export async function resendInvite(
     action: 'resendInvite',
     now: new Date(),
   });
-  if (typeof inviteId !== 'string') throw new Error('다시 보낼 초대를 선택해주세요.');
+  if (typeof inviteId !== 'string')
+    throw new Error('다시 보낼 초대를 선택해주세요.');
   const invite = await database()
-    .prepare('SELECT email,status,email_sends,email_sent_at FROM project_invites WHERE project_id=? AND id=?')
+    .prepare(
+      'SELECT email,status,email_sends,email_sent_at FROM project_invites WHERE project_id=? AND id=?',
+    )
     .bind(project, inviteId)
-    .first<{ email: string; status: string; email_sends: number; email_sent_at: Date | null }>();
+    .first<{
+      email: string;
+      status: string;
+      email_sends: number;
+      email_sent_at: Date | null;
+    }>();
   if (!invite) throw new AccessError('초대를 찾을 수 없습니다.', 404);
-  if (invite.status !== 'pending') throw new Error('대기 중인 초대만 다시 보낼 수 있습니다.');
+  if (invite.status !== 'pending')
+    throw new Error('대기 중인 초대만 다시 보낼 수 있습니다.');
   if (invite.email_sends >= INVITE_SEND_LIMIT)
-    throw new AccessError(`초대 메일은 ${INVITE_SEND_LIMIT}번까지 보낼 수 있습니다. 링크를 직접 전달해주세요.`, 429);
-  if (invite.email_sent_at && Date.now() - invite.email_sent_at.getTime() < 60_000)
+    throw new AccessError(
+      `초대 메일은 ${INVITE_SEND_LIMIT}번까지 보낼 수 있습니다. 링크를 직접 전달해주세요.`,
+      429,
+    );
+  if (
+    invite.email_sent_at &&
+    Date.now() - invite.email_sent_at.getTime() < 60_000
+  )
     throw new AccessError('1분 뒤에 다시 보낼 수 있습니다.', 429);
   const s = await readSprint(project);
   if (!s) throw new AccessError();
@@ -506,7 +549,8 @@ export async function acceptInvite(
   const policy = await readPolicy(project);
   if (!s || !policy) throw new AccessError();
   // 확인한 버전과 지금 저장하려는 버전이 다르면 최신 목표를 다시 보여준다.
-  if (policy.goalVersion !== confirmedGoalVersion) throw new GoalChanged(details);
+  if (policy.goalVersion !== confirmedGoalVersion)
+    throw new GoalChanged(details);
   const rows = await readMembers(project);
   if (rows.length >= MAX_MEMBERS)
     throw new Error(`팀은 최대 ${MAX_MEMBERS}명입니다.`);
@@ -570,4 +614,10 @@ export async function acceptInvite(
   );
   return project;
 }
-export { assertEvidence, parseDeliverables, startReadiness, PolicyError, deadlineFrom };
+export {
+  assertEvidence,
+  parseDeliverables,
+  startReadiness,
+  PolicyError,
+  deadlineFrom,
+};

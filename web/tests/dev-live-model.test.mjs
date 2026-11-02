@@ -112,14 +112,17 @@ function liveCreate(over = {}) {
 
 test('route는 live-model 값을 process.env에서 읽고 저장소에 키를 두지 않는다', () => {
   const route = readFileSync('app/api/change-proposals/route.ts', 'utf8');
-  assert.match(route, /liveModelFromEnv\(process\.env\)/);
-  assert.doesNotMatch(route, /cloudflare:workers/);
-  assert.doesNotMatch(route, /sk-[A-Za-z0-9_-]{10,}/);
+  const selection = readFileSync('lib/ai-model-selection.ts', 'utf8');
+  assert.match(route, /import \{ model \} from '@\/lib\/ai-model-selection'/);
+  assert.doesNotMatch(route, /export function useModel/);
+  assert.match(selection, /liveModelFromEnv\(process\.env\)/);
+  assert.doesNotMatch(route + selection, /cloudflare:workers/);
+  assert.doesNotMatch(route + selection, /sk-[A-Za-z0-9_-]{10,}/);
 });
 
 test('live-model binding이 없을 때 route 기본 모델은 기존 fakeModel이다', async () => {
-  const route = readFileSync('app/api/change-proposals/route.ts', 'utf8');
-  assert.match(route, /let model: Model = liveModelFromEnv\(process\.env\) \?\? fakeModel\(\);/);
+  const selection = readFileSync('lib/ai-model-selection.ts', 'utf8');
+  assert.match(selection, /let model: Model = liveModelFromEnv\(process\.env\) \?\? fakeModel\(\);/);
   const adapter = readFileSync('lib/dev-live-model.ts', 'utf8');
   assert.doesNotMatch(adapter, /node:(fs|path|url)/);
   const model = api.fakeModel();
