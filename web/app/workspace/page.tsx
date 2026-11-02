@@ -549,6 +549,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                     tasks={tasks}
                     checkins={state!.checkins}
                     now={Date.parse(state!.asOf)}
+                    active={lifecycle === 'active'}
                   />
                   <section>
                   <div className="section-heading task-heading">

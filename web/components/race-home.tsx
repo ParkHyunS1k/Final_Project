@@ -68,12 +68,15 @@ export function TeamCheckins({
   tasks,
   checkins,
   now,
+  active,
 }: {
   members: ProjectMeta['members'];
   me: ProjectMeta['me'];
   tasks: Task[];
   checkins: { task_id: number; created_at: string }[];
   now: number;
+  /** 진행 중일 때만 오늘 체크인 여부를 묻는다. */
+  active: boolean;
 }) {
   return (
     <section>
@@ -85,7 +88,8 @@ export function TeamCheckins({
         {members
           .filter((m) => !m.left_at)
           .map((m) => {
-            const lane = laneTask(tasks, m.person);
+            // 카운트다운과 같은 업무를 보여주고, 마감 미정만 남았으면 그 업무를 보여준다.
+            const lane = focusTask(tasks, m.person) ?? laneTask(tasks, m.person);
             const ok = checkedInToday(checkins, tasks, m.person, now);
             return (
               <div key={m.person} className="race-checkin-row">
@@ -97,9 +101,11 @@ export function TeamCheckins({
                   {lane ? lane.title : '진행 중인 업무 없음'}
                   {lane && <small>{dueLabel(lane.dueAt)}</small>}
                 </span>
-                <span className={`race-checkin-badge${ok ? ' ok' : ''}`}>
-                  {ok ? '오늘 체크인 완료' : '아직 체크인 안 함'}
-                </span>
+                {active && (
+                  <span className={`race-checkin-badge${ok ? ' ok' : ''}`}>
+                    {ok ? '오늘 체크인 완료' : '아직 체크인 안 함'}
+                  </span>
+                )}
               </div>
             );
           })}
