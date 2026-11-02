@@ -2488,3 +2488,48 @@ textarea {
     grid-row: 2;
   }
 }
+
+/* 내 업무 마감에 따라 달아오르는 작업 화면. 클릭을 막지 않고 글자 뒤에 깔린다. */
+.workspace-body .app-shell > .work-main {
+  isolation: isolate;
+}
+.tension-tint {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at center,
+      transparent 35%,
+      color-mix(in srgb, var(--red-500) calc(var(--tint) * 55%), transparent) 100%
+    ),
+    color-mix(in srgb, var(--red-500) calc(var(--tint) * 10%), transparent);
+}
+.tension-edge {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+.tension-edge.tension-critical {
+  box-shadow: inset 0 0 40px color-mix(in srgb, var(--red-500) 45%, transparent);
+  animation: tension-breathe 2.4s ease-in-out infinite;
+}
+.tension-edge.tension-final,
+.tension-edge.tension-over {
+  border: 4px solid var(--red-500);
+  box-shadow: inset 0 0 50px color-mix(in srgb, var(--red-500) 55%, transparent);
+}
+.tension-edge.tension-final {
+  animation: tension-blink 1s steps(2, jump-none) infinite;
+}
+@keyframes tension-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}

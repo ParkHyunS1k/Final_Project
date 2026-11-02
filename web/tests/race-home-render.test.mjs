@@ -25,6 +25,19 @@ const { FocusCountdown, TeamCheckins, DeadlineCalendar } = await import(
   pathToFileURL(outfile).href
 );
 
+const layerFile = join(mkdtempSync(join(cache, 'pm-tension-')), 'tension-layer.mjs');
+await build({
+  entryPoints: ['components/tension-layer.tsx'],
+  outfile: layerFile,
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  jsx: 'automatic',
+  packages: 'external',
+  alias: { '@': process.cwd() },
+});
+const { TensionLayer } = await import(pathToFileURL(layerFile).href);
+
 const NOW = Date.parse('2026-11-02T03:00:00.000Z');
 const H = 3600000;
 const task = (id, person, title, dueMs, over = {}) => ({
@@ -101,4 +114,29 @@ void test('캘린더: 진행 중에만 칩 단계, 오늘 aria-current, 병목 �
   assert.doesNotMatch(on, /병목/);
   const off = renderToString(createElement(DeadlineCalendar, { ...props, active: false }));
   assert.doesNotMatch(off, /chip-|마감 지남/);
+});
+
+const layer = (lifecycle, tasks) =>
+  renderToString(
+    createElement(TensionLayer, {
+      lifecycle,
+      asOf: new Date(NOW).toISOString(),
+      tasks,
+      person: 0,
+    }),
+  );
+
+void test('긴장 레이어: 내 업무 마감 기준 단계, 장식이라 스크린리더에서 숨김', () => {
+  const html = layer('active', [task(1, 0, 'A', NOW + 20 * H), task(2, 1, '남의 업무', NOW + 60000)]);
+  assert.match(html, /tension-critical/);
+  assert.doesNotMatch(html, /tension-final/);
+  assert.match(html, /aria-hidden="true"/);
+  assert.match(html, /--tint:0\.\d+/);
+});
+
+void test('긴장 레이어: 여유·대기 중·진행 중이 아닐 때는 아무것도 없다', () => {
+  assert.equal(layer('active', [task(1, 0, 'A', NOW + 100 * H)]), '');
+  assert.equal(layer('active', [task(1, 0, 'A', NOW + H, { done: true })]), '');
+  for (const s of ['draft', 'completed', 'expired', 'legacy'])
+    assert.equal(layer(s, [task(1, 0, 'A', NOW + 60000)]), '');
 });

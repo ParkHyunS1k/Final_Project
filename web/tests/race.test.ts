@@ -21,12 +21,6 @@ import {
 function t(id: number, over: Partial<RaceTask> = {}): RaceTask {
   return { id, person: 0, done: false, deferred: false, dependsOn: [], ...over };
 }
-const plan = (needed: number, available: number, unscheduled: number[] = []) => ({
-  needed,
-  available,
-  unscheduled,
-});
-
 void test('countdown: 총 시간 HH:MM:SS, 100시간 이상도 그대로', () => {
   assert.equal(countdown((52 * 3600 + 14 * 60 + 8) * 1000).text, '52:14:08');
   assert.equal(countdown(168 * 3600 * 1000).text, '168:00:00');
