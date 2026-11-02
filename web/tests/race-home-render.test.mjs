@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
-import { mkdirSync, mkdtempSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createElement } from 'react';
@@ -37,6 +37,25 @@ await build({
   alias: { '@': process.cwd() },
 });
 const { TensionLayer } = await import(pathToFileURL(layerFile).href);
+
+const clockFile = join(mkdtempSync(join(cache, 'pm-clock-')), 'race-clock.mjs');
+await build({
+  entryPoints: ['components/race-clock.tsx'],
+  outfile: clockFile,
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  jsx: 'automatic',
+  packages: 'external',
+  alias: { '@': process.cwd() },
+});
+const { RaceClock } = await import(pathToFileURL(clockFile).href);
+const css = readFileSync('app/globals.css', 'utf8');
+const rule = (selector) => {
+  const at = css.indexOf(`${selector} {`);
+  assert.notEqual(at, -1, selector);
+  return css.slice(at, css.indexOf('}', at));
+};
 
 const NOW = Date.parse('2026-11-02T03:00:00.000Z');
 const H = 3600000;
@@ -161,4 +180,34 @@ void test('긴장 레이어: 여유·대기 중·진행 중이 아닐 때는 아
   assert.equal(layer('active', [task(1, 0, 'A', NOW + H, { done: true })]), '');
   for (const s of ['draft', 'completed', 'expired', 'legacy'])
     assert.equal(layer(s, [task(1, 0, 'A', NOW + 60000)]), '');
+});
+
+void test('끝난 프로젝트: 상단 시계와 캘린더 현재 막대가 움직이지 않는다', () => {
+  const clock = renderToString(
+    createElement(RaceClock, {
+      lifecycle: 'expired',
+      deadline: new Date(NOW - H).toISOString(),
+      asOf: new Date(NOW).toISOString(),
+      durationDays: 7,
+      onZero: () => {},
+    }),
+  );
+  assert.match(text(clock), /기한 종료/);
+  assert.doesNotMatch(clock, /critical/);
+  const props = {
+    startedAt: new Date(NOW - H).toISOString(),
+    deadline: new Date(NOW - H + 168 * H).toISOString(),
+    now: NOW,
+    tasks: [],
+    people: [],
+    onPlan: () => {},
+  };
+  assert.doesNotMatch(renderToString(createElement(DeadlineCalendar, { ...props, active: false })), /calendar-now/);
+  assert.match(renderToString(createElement(DeadlineCalendar, { ...props, active: true })), /calendar-now/);
+});
+
+void test('캘린더 칩: 마감 초과는 빨강, 완료는 취소선', () => {
+  assert.match(rule('.deadline-card.late'), /--red-/);
+  assert.doesNotMatch(rule('.deadline-card.late'), /--heat-/);
+  assert.match(rule('.deadline-card.done .deadline-title'), /line-through/);
 });

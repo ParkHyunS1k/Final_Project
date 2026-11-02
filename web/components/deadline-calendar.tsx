@@ -63,7 +63,7 @@ export function DeadlineCalendar({
                   className={'calendar-day' + when}
                   aria-current={when === ' today' ? 'date' : undefined}
                 >
-                  {when === ' today' && (
+                  {active && when === ' today' && (
                     <span
                       className="calendar-now"
                       style={{ left: `${dayProgress(d.start, now) * 100}%` }}

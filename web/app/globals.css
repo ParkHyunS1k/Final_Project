@@ -1955,9 +1955,13 @@ textarea {
   box-shadow: inset 0 0 0 1px var(--border);
   color: var(--gray-600);
 }
+.deadline-card.done .deadline-title {
+  text-decoration: line-through;
+}
 .deadline-card.late {
-  background: var(--heat-100);
-  color: var(--heat-700);
+  background: var(--red-50);
+  color: var(--red-700);
+  box-shadow: inset 3px 0 var(--red-500);
 }
 .deadline-card.final {
   background: var(--heat-500);
@@ -2085,6 +2089,9 @@ textarea {
 .race-clock.critical {
   color: var(--red-500);
   animation: race-blink 2s ease-in-out infinite;
+}
+.race-clock.expired {
+  color: var(--red-500);
 }
 .race-clock.idle {
   font-size: 16px;
