@@ -32,7 +32,7 @@ export function RaceClock({
     return <span className="race-clock idle">{durationDays}일 · 시작 전</span>;
   if (lifecycle === 'completed') return <span className="race-clock done">완주</span>;
   if (lifecycle === 'expired')
-    return <span className="race-clock critical">00:00:00 · 기한 종료</span>;
+    return <span className="race-clock expired">00:00:00 · 기한 종료</span>;
   if (!running || !now) return null;
   const c = countdown(left);
   return (

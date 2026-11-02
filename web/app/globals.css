@@ -1955,9 +1955,13 @@ textarea {
   box-shadow: inset 0 0 0 1px var(--border);
   color: var(--gray-600);
 }
+.deadline-card.done .deadline-title {
+  text-decoration: line-through;
+}
 .deadline-card.late {
-  background: var(--heat-100);
-  color: var(--heat-700);
+  background: var(--red-50);
+  color: var(--red-700);
+  box-shadow: inset 3px 0 var(--red-500);
 }
 .deadline-card.final {
   background: var(--heat-500);
@@ -2086,6 +2090,9 @@ textarea {
   color: var(--red-500);
   animation: race-blink 2s ease-in-out infinite;
 }
+.race-clock.expired {
+  color: var(--red-500);
+}
 .race-clock.idle {
   font-size: 16px;
   opacity: 0.6;
@@ -2151,57 +2158,6 @@ textarea {
   pointer-events: none;
   animation: race-blink 1.2s ease-in-out infinite;
 }
-.deadline-card.blocked {
-  box-shadow: inset 3px 0 var(--red-500);
-}
-.deadline-card.blocked svg {
-  color: var(--red-500);
-}
-.race-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.race-stat {
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--gray-50);
-  animation: race-rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-.race-stat:nth-child(2) {
-  animation-delay: 0.05s;
-}
-.race-stat:nth-child(3) {
-  animation-delay: 0.1s;
-}
-.race-stat b {
-  display: block;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-.race-stat span {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--gray-600);
-}
-.race-stat.bad b {
-  color: var(--red-500);
-}
-.race-stat.good b {
-  color: var(--good);
-}
-@keyframes race-rise {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
 .race-alert {
   display: flex;
   gap: 10px;
@@ -2233,60 +2189,6 @@ textarea {
   font-size: 13px;
   color: var(--gray-700);
 }
-.race-label {
-  margin: 0 0 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gray-600);
-}
-.race-lanes {
-  margin: 24px 0 32px;
-}
-.race-lane {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 140px;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid var(--border);
-  font-size: 14px;
-}
-.race-lane.me {
-  margin: 0 -10px;
-  padding: 10px;
-  border-radius: var(--radius-md);
-  background: var(--heat-50);
-}
-.race-lane small {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--heat-700);
-}
-.race-lane-task {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.race-meter {
-  height: 6px;
-  overflow: hidden;
-  border-radius: 3px;
-  background: var(--gray-200);
-}
-.race-meter i {
-  display: block;
-  height: 100%;
-  background: var(--gray-900);
-}
-.race-meter.over i {
-  background: var(--red-500);
-}
-.race-hours {
-  display: block;
-  margin-top: 3px;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 12px;
-  color: var(--gray-600);
-}
 .race-tag {
   display: inline-block;
   margin-left: 6px;
@@ -2308,23 +2210,6 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
-@media (max-width: 600px) {
-  .race-stats {
-    gap: 6px;
-  }
-  .race-stat {
-    padding: 10px;
-  }
-  .race-stat b {
-    font-size: 22px;
-  }
-  .race-lane {
-    grid-template-columns: 64px minmax(0, 1fr);
-  }
-  .race-lane > :last-child {
-    grid-column: 1 / -1;
-  }
-}
 /* 병목: 띠와 태그는 계속, 밀림은 클래스가 처음 붙을 때 한 번만(반복 없음). */
 .task-table tr.is-blocked td:first-child {
   box-shadow: inset 3px 0 var(--red-500);
@@ -2343,12 +2228,6 @@ textarea {
   60% {
     transform: translateX(-3px);
   }
-}
-.race-lane .race-due {
-  margin-left: 8px;
-  font-size: 12px;
-  color: var(--gray-500);
-  white-space: nowrap;
 }
 
 /* 팀 찾기(공개 팀 목록) */
@@ -2502,4 +2381,162 @@ textarea {
 }
 .goal-editor .project-form {
   margin-top: 0;
+}
+
+/* 내 업무 마감 카운트다운 */
+.focus-hero {
+  margin-bottom: 24px;
+  text-align: center;
+}
+.focus-label {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.focus-label em {
+  color: var(--heat-500);
+  font-style: normal;
+}
+.focus-clock {
+  font-size: clamp(44px, 11vw, 88px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.focus-clock.heat {
+  color: var(--heat-500);
+}
+.focus-clock.critical,
+.focus-clock.final,
+.focus-clock.over {
+  color: var(--red-500);
+}
+.focus-clock.final {
+  animation: tension-blink 1s steps(2, jump-none) infinite;
+}
+.focus-clock.idle {
+  color: var(--gray-400);
+}
+.focus-sec {
+  display: inline-block;
+  animation: focus-tick 250ms ease-out;
+}
+@keyframes focus-tick {
+  from {
+    transform: translateY(-30%);
+    opacity: 0.3;
+  }
+}
+@keyframes tension-blink {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+.deadline-card.chip-heat {
+  box-shadow: inset 3px 0 var(--heat-500);
+}
+.deadline-card.chip-critical,
+.deadline-card.chip-final {
+  box-shadow: inset 3px 0 var(--red-500);
+  background: color-mix(in srgb, var(--red-500) 14%, transparent);
+}
+.deadline-card.chip-final {
+  animation: tension-blink 1s steps(2, jump-none) infinite;
+}
+
+/* 팀원 체크인 현황 */
+.race-checkins {
+  display: grid;
+  gap: 8px;
+}
+.race-checkin-row {
+  display: grid;
+  grid-template-columns: minmax(56px, auto) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+.race-checkin-row small {
+  color: var(--gray-500);
+  font-weight: 400;
+}
+.race-checkin-task {
+  overflow-wrap: anywhere;
+}
+.race-checkin-task small {
+  display: block;
+}
+.race-checkin-badge {
+  padding: 3px 8px;
+  border: 1px solid var(--red-500);
+  border-radius: 20px;
+  color: var(--red-700);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.race-checkin-badge.ok {
+  border-color: var(--good);
+  color: var(--good);
+}
+@media (max-width: 480px) {
+  .race-checkin-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .race-checkin-task {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* 내 업무 마감에 따라 달아오르는 작업 화면. 클릭을 막지 않고 글자 뒤에 깔린다. */
+.workspace-body .app-shell > .work-main {
+  isolation: isolate;
+}
+.tension-tint {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at center,
+      transparent 35%,
+      color-mix(in srgb, var(--red-500) calc(var(--tint) * 55%), transparent) 100%
+    ),
+    color-mix(in srgb, var(--red-500) calc(var(--tint) * 10%), transparent);
+}
+.tension-edge {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+.tension-edge.tension-critical {
+  box-shadow: inset 0 0 40px color-mix(in srgb, var(--red-500) 45%, transparent);
+  animation: tension-breathe 2.4s ease-in-out infinite;
+}
+.tension-edge.tension-final,
+.tension-edge.tension-over {
+  border: 4px solid var(--red-500);
+  box-shadow: inset 0 0 50px color-mix(in srgb, var(--red-500) 55%, transparent);
+}
+.tension-edge.tension-final {
+  animation: tension-blink 1s steps(2, jump-none) infinite;
+}
+@keyframes tension-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }
