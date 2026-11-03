@@ -16,7 +16,9 @@ CREATE TABLE "learning_reviews" (
 	"gaps" jsonb,
 	"model" text NOT NULL,
 	"created_at" timestamp with time zone NOT NULL,
-	"answered_at" timestamp with time zone
+	"answered_at" timestamp with time zone,
+	"claim_id" text,
+	"claimed_at" timestamp with time zone
 );
 --> statement-breakpoint
 ALTER TABLE "learning_reviews" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint

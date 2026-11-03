@@ -440,6 +440,9 @@ export const learningReviews = pgTable(
     model: text('model').notNull(),
     createdAt: timestamp('created_at', tz).notNull(),
     answeredAt: timestamp('answered_at', tz),
+    // 채점 선점(status='grading'). 같은 확인의 동시 답변이 유료 채점을 여러 번 부르지 않게 한다.
+    claimId: text('claim_id'),
+    claimedAt: timestamp('claimed_at', tz),
   },
   (t) => [
     uniqueIndex('uq_learning_reviews_day').on(t.projectId, t.userId, t.kind, t.day),

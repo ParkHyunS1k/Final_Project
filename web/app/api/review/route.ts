@@ -33,6 +33,8 @@ import {
   readLink,
   readOwnReview,
   refundQuota,
+  claimForGrading,
+  releaseClaim,
   saveAnswer,
   saveLink,
   takeQuota,
@@ -43,6 +45,8 @@ import {
 export const dynamic = 'force-dynamic';
 // 압축+질문 두 번의 모델 호출(각 최대 40초)과 GitHub 읽기를 더한 여유.
 export const maxDuration = 90;
+// 채점 선점이 이 시간보다 오래되면 버려진 것으로 본다(함수 제한 90초보다 길게).
+const GRADING_STALE_MS = 3 * 60 * 1000;
 
 let model: ReviewModel = reviewModelFromEnv(process.env) ?? fakeReviewModel();
 // 서버의 GitHub 토큰(선택)은 호출 한도 완화용. 사용자 토큰은 받지 않는다.
@@ -298,21 +302,34 @@ async function answer(userId: string, b: Record<string, unknown>, now: Date) {
     .bind(found.projectId, userId)
     .first();
   if (!current) throw new AccessError();
-  if (found.row.status !== 'asked') throw new PolicyError('이미 답한 학습 확인입니다.', 409);
+  if (found.row.status === 'answered') throw new PolicyError('이미 답한 학습 확인입니다.', 409);
   const answers = validateAnswers(b.answers, found.row.questions);
   if (!reviewAvailable(model)) return reply({ error: 'AI 학습 확인은 준비 중입니다.' }, 503);
-  let grade: ReturnType<typeof validateGrade>;
-  try {
-    grade = validateGrade(
-      await model.grade({ digest: found.digest, questions: found.row.questions, answers }),
-      found.row.questions,
-      answers,
-    );
-  } catch (e) {
-    // 채점 실패는 답을 저장하지 않는다. 같은 확인에 다시 답할 수 있다.
-    return reply({ error: e instanceof Error ? e.message : 'AI 채점에 실패했습니다.' }, 502);
+  // 유료 채점을 부르기 전에 확인을 선점한다. 동시 답변은 하나만 채점한다.
+  const claimId = crypto.randomUUID();
+  if (!(await claimForGrading(reviewId, userId, claimId, now, new Date(now.getTime() - GRADING_STALE_MS)))) {
+    const latest = await readOwnReview(reviewId, userId);
+    if (latest?.row.status === 'answered') throw new PolicyError('이미 답한 학습 확인입니다.', 409);
+    throw new PolicyError('채점 중입니다. 잠시 후 결과를 확인해주세요.', 409);
   }
-  if (!(await saveAnswer(reviewId, userId, { ...grade, answers, now })))
-    throw new PolicyError('이미 답한 학습 확인입니다.', 409);
-  return reply({ reviewId, feedback: grade.feedback, gaps: grade.gaps });
+  let saved = false;
+  try {
+    let grade: ReturnType<typeof validateGrade>;
+    try {
+      grade = validateGrade(
+        await model.grade({ digest: found.digest, questions: found.row.questions, answers }),
+        found.row.questions,
+        answers,
+      );
+    } catch (e) {
+      // 채점 실패는 답을 저장하지 않는다. 선점을 풀어 같은 확인에 다시 답할 수 있다.
+      return reply({ error: e instanceof Error ? e.message : 'AI 채점에 실패했습니다.' }, 502);
+    }
+    if (!(await saveAnswer(reviewId, userId, claimId, { ...grade, answers, now })))
+      throw new PolicyError('이미 답한 학습 확인입니다.', 409);
+    saved = true;
+    return reply({ reviewId, feedback: grade.feedback, gaps: grade.gaps });
+  } finally {
+    if (!saved) await releaseClaim(reviewId, claimId);
+  }
 }

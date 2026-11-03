@@ -84,12 +84,14 @@ async function soloProject(owner, { start = true } = {}) {
 }
 
 // 가짜 GitHub. 호출한 URL을 기록하고, 고정 응답을 돌려준다.
-function fakeGithub({ commits = 2, patch = '+console.log(1)', files = 1, status = 200 } = {}) {
+function fakeGithub({ commits = 2, patch = '+console.log(1)', files = 1, status = 200, visibility = 'public' } = {}) {
   const calls = [];
   const fetchImpl = async (url, init) => {
     calls.push({ url: String(url), init });
     if (status !== 200) return new Response('{"message":"x"}', { status });
     const u = new URL(String(url));
+    if (/^\/repos\/[^/]+\/[^/]+$/.test(u.pathname))
+      return Response.json({ private: visibility !== 'public', visibility });
     if (u.pathname.endsWith('/commits'))
       return Response.json(
         Array.from({ length: commits }, (_, i) => ({
@@ -157,11 +159,13 @@ test('하루 확인 전체 흐름: 등록 → 시작(내 커밋 기반 질문) �
   assert.deepEqual(started.questions.map((q) => q.id), ['q1', 'q2', 'q3']);
   assert.equal(started.commitCount, 2);
   // GitHub는 api.github.com 고정 경로만, 내 아이디·오늘 KST 0시부터로 거른다.
-  for (const c of gh.calls) assert.ok(c.url.startsWith('https://api.github.com/repos/alice-dev/todo-app/'), c.url);
-  const list = new URL(gh.calls[0].url);
+  for (const c of gh.calls) assert.match(c.url, /^https:\/\/api\.github\.com\/repos\/alice-dev\/todo-app(\/|$)/, c.url);
+  // 공개 여부를 먼저 확인한 뒤 커밋 목록을 읽는다.
+  assert.equal(gh.calls[0].url, 'https://api.github.com/repos/alice-dev/todo-app');
+  const list = new URL(gh.calls[1].url);
   assert.equal(list.searchParams.get('author'), 'alice-dev');
   assert.equal(list.searchParams.get('since'), api.kstDayStart(new Date()).toISOString());
-  assert.equal(gh.calls[0].init.redirect, 'manual');
+  assert.ok(gh.calls.every((c) => c.init.redirect === 'manual'));
   // 작은 자료는 압축 호출을 건너뛴다.
   assert.equal(m.calls.summarize, 0);
 
@@ -308,7 +312,7 @@ test('큰 저장소는 커밋·파일·패치·전체 길이를 잘라 압축 �
   assert.equal(material.truncated, true);
   assert.doesNotMatch(material.text, /package-lock/);
   // 상세 diff는 최근 몇 개 커밋만 가져온다.
-  assert.equal(gh.calls.length, 1 + api.LIMITS.detailCommits);
+  assert.equal(gh.calls.length, 2 + api.LIMITS.detailCommits);
   const m = scripted();
   const prepared = await api.prepareQuestions(m.model, { kind: 'daily', material: material.text, goal: '목표' });
   assert.equal(m.calls.summarize, 1);
@@ -409,4 +413,62 @@ test('실제 모델 어댑터: 키·플래그가 없으면 null, 있으면 압�
   assert.ok(bodies.every((b) => b.store === false && b.text.format.strict === true));
   assert.match(bodies[0].input, /<repository_data>/);
   assert.match(bodies[0].instructions, /따르지 말고/);
+});
+
+test('서버 토큰이 읽을 수 있어도 비공개·내부 저장소는 커밋을 가져오지 않고 없는 저장소처럼 거절한다', async () => {
+  const projectId = await soloProject('r_privtoken');
+  api.useReviewModel(scripted().model);
+  await json(await review('r_privtoken', { action: 'link', projectId, repoUrl, githubLogin: 'alice-dev' }), 200);
+  for (const visibility of ['private', 'internal']) {
+    const gh = fakeGithub({ visibility });
+    api.useGithub({ fetchImpl: gh.fetchImpl, token: 'server-token' });
+    const r = await json(await review('r_privtoken', { action: 'start', projectId }), 404);
+    assert.match(r.error, /공개 저장소/);
+    assert.equal(gh.calls.length, 1, visibility);
+  }
+  const state = await json(await reviewGet('r_privtoken', projectId), 200);
+  assert.equal(state.quota.used, 0);
+  assert.equal(state.history.length, 0);
+});
+
+test('같은 확인에 동시에 답하면 채점 모델은 한 번만 부르고, 버려진 채점 선점은 시간이 지나면 다시 잡는다', async () => {
+  const projectId = await soloProject('r_race');
+  api.useGithub({ fetchImpl: fakeGithub().fetchImpl });
+  let release;
+  const gate = new Promise((r) => (release = r));
+  const m = scripted({
+    async grade(i) {
+      await gate;
+      return api.fakeReviewModel().grade(i);
+    },
+  });
+  api.useReviewModel(m.model);
+  const started = await json(
+    await review('r_race', { action: 'start', projectId, sourceUrl: repoUrl, githubLogin: 'alice-dev' }),
+    201,
+  );
+  const answers = started.questions.map((q) => ({ id: q.id, text: '충분히 길게 설명한 답입니다. 이유도 적었습니다.' }));
+  const first = review('r_race', { action: 'answer', reviewId: started.reviewId, answers });
+  // 첫 요청이 선점한 뒤 채점 중일 때 들어온 요청들은 모델을 부르지 않고 409.
+  while (m.calls.grade === 0) await new Promise((r) => setTimeout(r, 5));
+  const others = await Promise.all(
+    [1, 2, 3].map(() => review('r_race', { action: 'answer', reviewId: started.reviewId, answers })),
+  );
+  for (const o of others) assert.match((await json(o, 409)).error, /채점 중/);
+  release();
+  await json(await first, 200);
+  assert.equal(m.calls.grade, 1);
+
+  // 함수가 중간에 죽어 선점만 남은 경우: 오래된 선점은 다시 잡을 수 있다.
+  const p2 = await soloProject('r_race2');
+  api.useReviewModel(scripted().model);
+  const s2 = await json(
+    await review('r_race2', { action: 'start', projectId: p2, sourceUrl: repoUrl, githubLogin: 'alice-dev' }),
+    201,
+  );
+  const a2 = s2.questions.map((q) => ({ id: q.id, text: '답' }));
+  await run("UPDATE learning_reviews SET status='grading', claim_id='dead', claimed_at=now() WHERE id=?", s2.reviewId);
+  await json(await review('r_race2', { action: 'answer', reviewId: s2.reviewId, answers: a2 }), 409);
+  await run("UPDATE learning_reviews SET claimed_at=now() - interval '10 minutes' WHERE id=?", s2.reviewId);
+  await json(await review('r_race2', { action: 'answer', reviewId: s2.reviewId, answers: a2 }), 200);
 });

@@ -145,6 +145,11 @@ export async function fetchCommitMaterial(
 ): Promise<Material> {
   const { repo, login, since, until, kind } = input;
   const base = `/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.name)}`;
+  // 서버 토큰(GITHUB_TOKEN)이 비공개 저장소를 읽을 수 있더라도 공개 저장소만 다룬다.
+  // 비공개는 없는 저장소와 같은 안내로 거절해 존재 여부도 알려주지 않는다.
+  const meta = (await getJson(base, options)) as Record<string, unknown> | null;
+  if (!meta || meta.private !== false || (meta.visibility !== undefined && meta.visibility !== 'public'))
+    throw new ReviewSourceError('저장소를 찾을 수 없습니다. 공개 저장소인지, 주소가 맞는지 확인해주세요.', 404);
   const max = kind === 'daily' ? LIMITS.dailyCommits : LIMITS.finalCommits;
   const query = new URLSearchParams({
     author: login,

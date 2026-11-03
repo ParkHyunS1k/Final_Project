@@ -21,7 +21,7 @@
    - 같은 날·종류의 확인이 이미 있으면 같은 질문을 돌려준다(`repeated: true`, 모델 재호출 없음). 이미 답했으면 409.
    - 한도 한 칸을 잡고 → GitHub 읽기 → 커밋 없음/GitHub 실패/모델 실패면 한 칸을 돌려준다.
    - 응답 `201 { reviewId, kind, status:'asked', questions:[{id,text}], commitCount, truncated }` 또는 `200 { status:'no_commits', questions:[] }`.
-3. `POST /api/review {action:'answer', reviewId, answers:[{id,text}]}` → `{ reviewId, feedback:[{id, verdict:'ok'|'partial'|'missing', comment}], gaps: string[] }`. 한 번만 저장(조건부 UPDATE). 채점 실패는 저장하지 않고 다시 답할 수 있다. 빈 답은 모델 판정과 상관없이 missing.
+3. `POST /api/review {action:'answer', reviewId, answers:[{id,text}]}` → `{ reviewId, feedback:[{id, verdict:'ok'|'partial'|'missing', comment}], gaps: string[] }`. 한 번만 저장. 유료 채점 전에 확인을 `status='grading'`으로 원자적으로 선점해(claim_id·claimed_at) 동시 답변은 하나만 채점하고 나머지는 409 '채점 중'. 채점 실패 시 선점을 풀고, 3분 넘은 선점은 버려진 것으로 보고 다시 잡는다. 채점 실패는 저장하지 않고 다시 답할 수 있다. 빈 답은 모델 판정과 상관없이 missing.
 4. `GET /api/review?project=<id>` → `{ link, today:{due, done, status, reviewId}, final:{available, done, status, reviewId}, history:[...본인 기록], quota:{limit, used}, aiAvailable }`.
    - `today.due`: 진행 중(active) 프로젝트의 현재 멤버. 화면의 '오늘의 확인' 표시용.
 
@@ -47,6 +47,7 @@
 ## 보안
 
 - SSRF: 사용자 URL을 fetch하지 않는다. `https://github.com/<owner>/<repo>`만 받아 owner/repo를 정규식으로 검사한 뒤 `https://api.github.com/repos/...` 고정 경로를 서버가 만든다. 리다이렉트는 따르지 않는다(`redirect: 'manual'` → 실패). 응답 1MB 상한, 요청당 10초.
+- 커밋을 읽기 전에 `GET /repos/<owner>/<repo>`로 `private: false`(visibility public)를 확인한다. 서버 토큰이 비공개 저장소를 읽을 수 있어도 비공개·내부 저장소는 없는 저장소와 같은 안내로 거절한다(PR #17 리뷰 반영).
 - 비공개 저장소 토큰은 받지 않는다. 서버 환경값 `GITHUB_TOKEN`(선택)은 GitHub 호출 한도 완화용(공개 읽기)으로만 쓴다. 없으면 비인증 한도(IP당 시간 60회)라 운영에서는 넣는 것을 권한다.
 - 프롬프트 인젝션: 저장소 자료·digest·답은 `<repository_data>`/`<digest>`/`<answer>` 블록으로 감싸고 블록을 닫는 태그를 무력화한다. 지시문은 블록 안 명령을 따르지 말라고 한다. 출력은 strict JSON 스키마, 도구 호출 거절, 서버가 질문 수(3~5)·길이·id(q1..)·판정 enum을 다시 검사한다. 모델 출력은 DB의 다른 값을 바꾸지 못한다.
 - 범위: 기록은 본인 것만 조회·답변. 남의 reviewId는 404. 비멤버 403, 떠난 멤버는 시작·답변 불가. 저장 시점에도 현재 멤버 조건을 SQL에 건다.

@@ -17,7 +17,8 @@ export type ReviewRow = {
   reviewId: string;
   kind: ReviewKind;
   day: string;
-  status: 'asked' | 'answered';
+  // grading: 채점 중(선점). 답·채점은 answered가 될 때 한 번에 저장한다.
+  status: 'asked' | 'grading' | 'answered';
   repo: string;
   githubLogin: string;
   commitCount: number;
@@ -164,17 +165,46 @@ export async function insertReview(v: {
   return r.meta.changes === 1;
 }
 
-/** 답과 채점을 한 번만 저장한다. 이미 답한 확인(중복 요청)은 바꾸지 않고 false. */
+/** 채점 전에 확인을 선점한다. asked이거나, 선점이 staleBefore보다 오래돼 버려진 경우만 잡는다.
+ * 한 문장의 조건부 UPDATE라 동시 요청 중 하나만 true. */
+export async function claimForGrading(
+  reviewId: string,
+  userId: string,
+  claimId: string,
+  now: Date,
+  staleBefore: Date,
+) {
+  const r = await database()
+    .prepare(
+      "UPDATE learning_reviews SET status='grading',claim_id=?,claimed_at=? WHERE id=? AND user_id=? AND (status='asked' OR (status='grading' AND claimed_at < ?))",
+    )
+    .bind(claimId, now.toISOString(), reviewId, userId, staleBefore.toISOString())
+    .run();
+  return r.meta.changes === 1;
+}
+
+/** 채점 실패 시 선점을 풀어 다시 답할 수 있게 한다. 내 선점일 때만. */
+export async function releaseClaim(reviewId: string, claimId: string) {
+  await database()
+    .prepare(
+      "UPDATE learning_reviews SET status='asked',claim_id=NULL,claimed_at=NULL WHERE id=? AND claim_id=? AND status='grading'",
+    )
+    .bind(reviewId, claimId)
+    .run();
+}
+
+/** 답과 채점을 한 번만 저장한다. 내 선점이 그대로일 때만 쓰고, 아니면 false. */
 export async function saveAnswer(
   reviewId: string,
   userId: string,
+  claimId: string,
   v: { answers: Answer[]; feedback: Feedback[]; gaps: string[]; now: Date },
 ) {
   const r = await database()
     .prepare(
-      "UPDATE learning_reviews SET status='answered',answers=?,feedback=?,gaps=?,answered_at=? WHERE id=? AND user_id=? AND status='asked'",
+      "UPDATE learning_reviews SET status='answered',answers=?,feedback=?,gaps=?,answered_at=?,claim_id=NULL,claimed_at=NULL WHERE id=? AND user_id=? AND status='grading' AND claim_id=?",
     )
-    .bind(v.answers, v.feedback, v.gaps, v.now.toISOString(), reviewId, userId)
+    .bind(v.answers, v.feedback, v.gaps, v.now.toISOString(), reviewId, userId, claimId)
     .run();
   return r.meta.changes === 1;
 }
