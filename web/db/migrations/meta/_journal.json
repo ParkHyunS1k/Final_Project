@@ -43,6 +43,13 @@
       "when": 1792081678203,
       "tag": "0005_team_join",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792978040909,
+      "tag": "0006_peer_reviews",
+      "breakpoints": true
     }
   ]
 }

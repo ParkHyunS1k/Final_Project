@@ -59,6 +59,12 @@ npm run build
 
 `GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. `completion`은 `{ ready, total, confirmed, missing, mode }`이며 `mode`는 완료 기준 항목 하나면 `criteria`, 기존 결과물 프로젝트면 `deliverables`. `listed`(목록 공개 여부)와 팀장에게만 `joinRequests`(대기 신청자 표시 이름)를 함께 준다. 응답은 캐시하지 않는다.
 
+`GET /api/score?project=ID`: 본인의 동료평가 점수·등급·breakdown·뱃지와 평가 상태(`review: { status, opensAt, closesAt, submitted, reviewers, minReviewers, targets[{person,displayName}] }`). 점수·등급은 평가 기간이 끝나고 2명 이상 평가했을 때만 숫자, 아니면 `null`.
+
+`POST /api/score`: `{ action:'review', projectId, reviews:[{ person, contribution, communication, commitment }] }`. 끝난 프로젝트에서 7일 안에 1회, 다른 팀원 전원을 1~5 정수로. 중복 409, 기간 밖 400.
+
+`GET /api/score/me`: 내 프로젝트 전체의 `{ totalScore, bestGrade, projects, badges[{ id,label,description,earnedAt,count }] }`.
+
 `POST /api/sprint`: JSON `{ action, projectId, revision, ...fields }`.
 
 | action | 필드 | 동작 |

@@ -397,3 +397,36 @@ export const projectJoinRequests = pgTable(
     index('idx_join_requests_project').on(t.projectId, t.status),
   ],
 ).enableRLS();
+
+// --- 동료평가 (마이그레이션 0006) ---
+// 평가자당 1회 제출. 평가 행은 이번 제출 행이 있을 때만 들어간다(같은 트랜잭션).
+export const peerReviewSubmissions = pgTable(
+  'peer_review_submissions',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    reviewerId: text('reviewer_id').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
+  },
+  (t) => [uniqueIndex('idx_peer_submission_once').on(t.projectId, t.reviewerId)],
+).enableRLS();
+export const peerReviews = pgTable(
+  'peer_reviews',
+  {
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    reviewerId: text('reviewer_id').notNull(),
+    revieweeId: text('reviewee_id').notNull(),
+    contribution: integer('contribution').notNull(),
+    communication: integer('communication').notNull(),
+    commitment: integer('commitment').notNull(),
+    submissionId: text('submission_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.projectId, t.reviewerId, t.revieweeId] }),
+    index('idx_peer_reviews_reviewee').on(t.projectId, t.revieweeId),
+  ],
+).enableRLS();
