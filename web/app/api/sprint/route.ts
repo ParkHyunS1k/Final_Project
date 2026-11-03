@@ -181,10 +181,10 @@ export async function POST(request: Request) {
               .bind(v.title, id, id, m),
             db
               .prepare(
-                'UPDATE project_policy SET goal_version=?,duration_days=? WHERE project_id=?' +
+                'UPDATE project_policy SET goal_version=? WHERE project_id=?' +
                   gate,
               )
-              .bind(version, v.duration, id, id, m),
+              .bind(version, id, id, m),
             db
               .prepare(
                 'UPDATE project_agreement SET goal_version=?,title=?,goal=?,scope=?,completion_criteria=? WHERE project_id=?' +
