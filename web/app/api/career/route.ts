@@ -1,7 +1,7 @@
 import { identity, AuthUnavailable } from '@/lib/auth';
 import { AccessError } from '@/lib/projects';
 import { PolicyError } from '@/lib/sprint-policy';
-import { Conflict, database } from '@/lib/sprint-store';
+import { Conflict } from '@/lib/sprint-store';
 import { SKILLS, ROLES, TARGETS } from '@/lib/career/catalog';
 import {
   CareerError,
@@ -11,6 +11,10 @@ import {
   recommendations,
 } from '@/lib/career/profile';
 import { analyzeWithAI, careerAiConfigured } from '@/lib/career/model';
+import {
+  claimProfileWrite,
+  releaseProfileWrite,
+} from '@/lib/career/profile-write';
 import {
   readProfile,
   saveProfile,
@@ -115,50 +119,32 @@ export async function POST(request: Request) {
       const input = profileInput(b);
       if (!Number.isInteger(b.version) || Number(b.version) < 0)
         throw new CareerError('프로필 버전을 확인해주세요.');
-      const current = await readProfile(user.id);
-      if ((current?.version ?? 0) !== b.version)
-        throw new CareerError(
-          '프로필이 바뀌었습니다. 새로고침 후 다시 저장해주세요.',
-          409,
-        );
-      let analysis;
-      if (b.mode === 'basic') analysis = basicAnalysis(input);
-      else if (b.mode === 'ai') {
+      if (b.mode !== 'basic' && b.mode !== 'ai')
+        throw new CareerError('분석 방식을 선택해주세요.');
+      if (b.mode === 'ai') {
         if (b.consent !== true)
           throw new CareerError(
-            '이력서·목표 공고를 AI 분석에 보내는 데 동의해주세요.',
+            '이력서와 목표 공고를 AI 분석에 보내는 데 동의해주세요.',
           );
         if (!careerAiConfigured())
           throw new CareerError(
             'AI 분석 설정이 없습니다. 기본 근거 추출을 선택해주세요.',
             503,
           );
-        const quota = await database()
-          .prepare(
-            "INSERT INTO career_ai_quota(user_id,day,n) VALUES(?,(now() AT TIME ZONE 'Asia/Seoul')::date,1) ON CONFLICT(user_id,day) DO UPDATE SET n=career_ai_quota.n+1 WHERE career_ai_quota.n<10 RETURNING day",
-          )
-          .bind(user.id)
-          .first<{ day: string }>();
-        if (!quota)
-          throw new CareerError(
-            '오늘의 이력서 AI 분석 10회를 모두 사용했습니다. 기본 추출은 계속 사용할 수 있습니다.',
-            429,
-          );
-        try {
-          analysis = await analyzeWithAI(input);
-        } catch (e) {
-          await database()
-            .prepare(
-              'UPDATE career_ai_quota SET n=n-1 WHERE user_id=? AND day=? AND n>0',
-            )
-            .bind(user.id, quota.day)
-            .run();
-          throw e;
-        }
-      } else throw new CareerError('분석 방식을 선택해주세요.');
-      return reply({
-        profile: await saveProfile(user.id, Number(b.version), input, analysis),
-      });
+      }
+      const claim = await claimProfileWrite(
+        user.id,
+        Number(b.version),
+        b.mode === 'ai',
+      );
+      try {
+        const analysis =
+          b.mode === 'ai' ? await analyzeWithAI(input) : basicAnalysis(input);
+        return reply({ profile: await saveProfile(claim, input, analysis) });
+      } catch (e) {
+        await releaseProfileWrite(claim, true);
+        throw e;
+      }
     }
     if (b.action === 'createProject')
       return reply({ projectId: await createRecommendedProject(user, b) }, 201);

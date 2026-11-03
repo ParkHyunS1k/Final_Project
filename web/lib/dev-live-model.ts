@@ -103,7 +103,7 @@ const INSTRUCTIONS = [
 ].join('\n');
 
 /** OpenAI Responses API의 output 배열에서 마지막 message의 텍스트를 꺼낸다. */
-function extractOutputText(raw: Record<string, unknown>): {
+export function extractOutputText(raw: Record<string, unknown>): {
   text: string | null;
   refusal: boolean;
   usedTools: string[];
@@ -125,23 +125,44 @@ function extractOutputText(raw: Record<string, unknown>): {
   return { text: texts.length ? texts[texts.length - 1] : null, refusal, usedTools };
 }
 
-async function callResponsesApi(
+export type ResponsesRequest = {
+  instructions: string;
+  schemaName: string;
+  schema: Record<string, unknown>;
+};
+export type FailureMessages = { timeout: string; busy: string; failed: string };
+const CHANGE_REQUEST: ResponsesRequest = {
+  instructions: INSTRUCTIONS,
+  schemaName: 'projectmate_dev_change_proposal',
+  schema: SCHEMA,
+};
+const CHANGE_MESSAGES: FailureMessages = {
+  timeout: TIMEOUT_MESSAGE,
+  busy: BUSY_MESSAGE,
+  failed: FAILED_MESSAGE,
+};
+
+// 학습 확인(lib/ai-review-live.ts)도 같은 재시도·시간 제한·오류 숨김 규칙으로 부른다.
+export async function callResponsesApi(
   key: string,
   model: string,
   effort: string,
   input: string,
   timeoutMs: number,
+  request: ResponsesRequest = CHANGE_REQUEST,
+  messages: FailureMessages = CHANGE_MESSAGES,
+  fetchImpl: typeof fetch = fetch,
 ): Promise<Record<string, unknown>> {
   const body = JSON.stringify({
     model,
     reasoning: { effort },
-    instructions: INSTRUCTIONS,
+    instructions: request.instructions,
     input,
     text: {
       format: {
         type: 'json_schema',
-        name: 'projectmate_dev_change_proposal',
-        schema: SCHEMA,
+        name: request.schemaName,
+        schema: request.schema,
         strict: true,
       },
     },
@@ -152,11 +173,11 @@ async function callResponsesApi(
   const deadline = Date.now() + timeoutMs;
   for (let attempt = 0; attempt < 5; attempt++) {
     const left = deadline - Date.now();
-    if (left <= 0) throw new Error(TIMEOUT_MESSAGE);
+    if (left <= 0) throw new Error(messages.timeout);
     let status = 0;
     try {
       // 본문 읽기까지 같은 제한 시간 안에 둔다(헤더만 오고 본문이 멈추는 경우).
-      const response = await fetch(API_URL, {
+      const response = await fetchImpl(API_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${key}`,
@@ -169,17 +190,17 @@ async function callResponsesApi(
       if (response.ok) return (await response.json()) as Record<string, unknown>;
       console.error('openai responses failed', status, response.headers.get('x-request-id'));
       await response.body?.cancel().catch(() => {});
-      if (status !== 429 && status < 500) throw new Error(FAILED_MESSAGE);
+      if (status !== 429 && status < 500) throw new Error(messages.failed);
     } catch (e) {
       if (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError'))
-        throw new Error(TIMEOUT_MESSAGE);
-      if (e instanceof Error && e.message === FAILED_MESSAGE) throw e;
+        throw new Error(messages.timeout);
+      if (e instanceof Error && e.message === messages.failed) throw e;
       if (!status) console.error('openai responses network error', e instanceof Error ? e.name : 'unknown');
     }
     // 429·5xx·네트워크 오류는 남은 시간 안에서 지수 백오프로 재시도한다.
     await sleep(Math.min(2 ** attempt * 1000, Math.max(0, deadline - Date.now())));
   }
-  throw new Error(BUSY_MESSAGE);
+  throw new Error(messages.busy);
 }
 
 function sleep(ms: number) {

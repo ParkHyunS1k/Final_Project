@@ -71,6 +71,27 @@
       "when": 1792081678207,
       "tag": "0009_merge_project_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793681087661,
+      "tag": "0010_peer_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793681087662,
+      "tag": "0011_learning_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793702237556,
+      "tag": "0012_career_profile_writes",
+      "breakpoints": true
     }
   ]
 }

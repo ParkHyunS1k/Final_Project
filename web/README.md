@@ -6,7 +6,11 @@
 
 `/` 랜딩 → `/app` 통합 홈으로 들어간다. 이력서·포트폴리오·공고·프로젝트·성장 기록을 한 메뉴 안에서 사용한다. 20개 템플릿, 범위 슬라이더, 솔로 시작, 공개 팀 모집·참여 요청·초대, 일일 체크인·배지를 지원한다. `/career`와 `/workspace`는 호환 리다이렉트다. 기존 Python 자료를 자동 가져오지는 않는다.
 
-현재 구현과 실행 방법은 [통합 앱 문서](../docs/unified-app.md)를 참고한다. 새 로컬 DB에는 마이그레이션 `0000`부터 `0009`까지 필요하다. 이전 main DB와 통합 앱 DB는 개발 서버를 끄고 `npm run db:migrate`로 추가분만 적용한다. 이전 파일명 기록은 자동 인식한다. 모든 프로젝트는 혼자 시작할 수 있고, 통합 템플릿은 업무 근거로 완료를 판정한다.
+현재 구현과 실행 방법은 [통합 앱 문서](../docs/unified-app.md)를 참고한다. 새 로컬 DB에는 마이그레이션 `0000`부터 `0012`까지 필요하다. 이전 main DB와 통합 앱 DB는 개발 서버를 끄고 `npm run db:migrate`로 추가분만 적용한다. 이전 파일명 기록은 자동 인식한다. 모든 프로젝트는 혼자 시작할 수 있고, 통합 템플릿은 업무 근거로 완료를 판정한다.
+
+동료 평가와 학습 확인의 SQL은 각각 `0010_peer_reviews.sql`, `0011_learning_review.sql`로 정리했다. main에서 이전 파일명 `0006_peer_reviews.sql`, `0007_learning_review.sql`로 적용한 DB는 적용 이력과 데이터를 보존하고 같은 SQL을 다시 실행하지 않는다. `0012_career_profile_writes.sql`은 프로필 저장 선점 테이블을 추가한다. 배포 환경에서 프로필을 저장하기 전에 이 마이그레이션까지 적용해야 한다.
+
+프로필 저장은 예상 버전과 계정별 선점을 DB에서 함께 확인한다. AI 요청은 선점에 성공한 경우에만 하루 한도를 사용하며, 처리 중 같은 계정의 AI 저장과 기본 저장은 409로 거절한다. 모델 오류나 저장 실패는 선점을 해제하고 한도를 돌려준다. 중단된 요청의 선점은 120초 뒤 만료되며, 이전 요청의 늦은 응답은 새 요청의 결과를 덮어쓸 수 없다.
 
 ## 실제로 동작하는 범위
 
@@ -64,6 +68,12 @@ npm run build
 `POST /api/teams`: request(projectId,goalVersion,agreed: 참여 신청, 목표 버전이 다르면 409와 최신 목표), cancel(requestId: 본인 대기 신청 취소). 신청은 프로젝트 revision을 올리지 않는다.
 
 `GET /api/sprint?project=ID`: 멤버십 검사 후 상태·계산 결과·체크인·복구안·최근 변경 기록 조회. `completion`은 `{ ready, total, confirmed, missing, mode }`이며 `mode`는 완료 기준 항목 하나면 `criteria`, 기존 결과물 프로젝트면 `deliverables`. `listed`(목록 공개 여부)와 팀장에게만 `joinRequests`(대기 신청자 표시 이름)를 함께 준다. 응답은 캐시하지 않는다.
+
+`GET /api/score?project=ID`: 본인의 동료평가 점수·등급·breakdown·뱃지와 평가 상태(`review: { status, opensAt, closesAt, submitted, reviewers, minReviewers, targets[{person,displayName}] }`). 점수·등급은 평가 기간이 끝나고 2명 이상 평가했을 때만 숫자, 아니면 `null`.
+
+`POST /api/score`: `{ action:'review', projectId, reviews:[{ person, contribution, communication, commitment }] }`. 끝난 프로젝트에서 7일 안에 1회, 다른 팀원 전원을 1~5 정수로. 중복 409, 기간 밖 400.
+
+`GET /api/score/me`: 내 프로젝트 전체의 `{ totalScore, bestGrade, projects, badges[{ id,label,description,earnedAt,count }] }`.
 
 `POST /api/sprint`: JSON `{ action, projectId, revision, ...fields }`.
 
@@ -140,3 +150,4 @@ npm run build
 - Supabase Auth: Site URL은 운영 주소, Redirect URLs에 `https://<운영주소>/**`, `https://*-<vercel계정>.vercel.app/**`, `http://localhost:*/**`.
 - 마이그레이션은 자동으로 돌지 않는다. `db/migrations/`에 새 파일이 생기는 PR은 미리보기·운영이 같은 DB를 쓰므로, 테이블 추가 같은 호환 마이그레이션은 PR을 올리기 전에 운영 DB에 먼저 적용한다: `node --env-file=.env.local --experimental-strip-types scripts/migrate.ts`. `npm run db:migrate`는 `.env.local`을 자동으로 읽지 않으며, 셸에 `DATABASE_URL`도 없으면 로컬 PGlite에 적용된다. 미리보기도 같은 DB를 쓰므로 컬럼 삭제·이름 변경은 하지 않는다.
 - AI 변경안: Vercel 환경변수 `PROJECTMATE_LIVE_MODEL=1`과 `OPENAI_API_KEY`(Production·Preview)를 넣으면 실제 모델(`gpt-6.1-sol`, `PROJECTMATE_MODEL`로 바꿀 수 있음)을 쓴다. 없으면 '준비 중'이다(`lib/ai-extraction.ts` `aiAvailable`). 사용자당 하루 10회(`ai_quota`).
+- 학습 확인(`/api/review`): 같은 `PROJECTMATE_LIVE_MODEL`, `OPENAI_API_KEY`로 켜진다. 압축 모델 `PROJECTMATE_REVIEW_SUMMARY_MODEL`(기본 `gpt-6.1-luna`, 미확인), 질문, 채점 모델 `PROJECTMATE_REVIEW_MODEL`(기본 `gpt-6.1-sol`). 사용자당 하루 3회(`review_quota`). 공개 저장소 읽기 한도를 늘리려면 서버 전용 `GITHUB_TOKEN`(권한 없는 토큰)을 넣는다. 테이블은 마이그레이션 `0011_learning_review.sql`.

@@ -31,6 +31,7 @@ import {
   type SkillEvidence,
 } from './profile';
 import { recommendRoles, type SharedMember, type RolePlan } from './roles';
+import type { ProfileWrite } from './profile-write';
 
 const db = () => database();
 type ExperienceDependency = { id: string; version: number };
@@ -79,32 +80,68 @@ export async function readProfile(userId: string): Promise<Profile | null> {
     : null;
 }
 export async function saveProfile(
-  userId: string,
-  version: number,
+  claim: ProfileWrite,
   input: ProfileInput,
   analysis: Analysis,
 ) {
+  const { userId, version } = claim;
   if (!Number.isInteger(version) || version < 0)
     throw new CareerError('프로필 버전을 확인해주세요.');
   const id = 'cv_' + crypto.randomUUID();
   const result = await db().batch([
     db()
       .prepare(
-        'INSERT INTO career_profiles(user_id,version,snapshot_id) SELECT ?,1,? WHERE ?=0 OR EXISTS(SELECT 1 FROM career_profiles WHERE user_id=? AND version=?) ON CONFLICT(user_id) DO UPDATE SET version=career_profiles.version+1,snapshot_id=excluded.snapshot_id WHERE career_profiles.version=? AND ?>0',
+        'SELECT user_id FROM career_profile_writes WHERE user_id=? FOR UPDATE',
       )
-      .bind(userId, id, version, userId, version, version, version),
+      .bind(userId),
+    db()
+      .prepare(
+        `INSERT INTO career_profiles(user_id,version,snapshot_id)
+        SELECT ?,1,? FROM career_profile_writes WHERE user_id=? AND claim_id=?
+        AND expires_at>clock_timestamp()
+        AND (?=0 OR EXISTS(SELECT 1 FROM career_profiles WHERE user_id=? AND version=?))
+        ON CONFLICT(user_id) DO UPDATE SET version=career_profiles.version+1,snapshot_id=excluded.snapshot_id
+        WHERE career_profiles.version=? AND ?>0`,
+      )
+      .bind(
+        userId,
+        id,
+        userId,
+        claim.id,
+        version,
+        userId,
+        version,
+        version,
+        version,
+      ),
     db()
       .prepare(
         'INSERT INTO career_profile_versions(id,user_id,version,input,analysis) SELECT snapshot_id,user_id,version,?,? FROM career_profiles WHERE user_id=? AND snapshot_id=?',
       )
       .bind(input, analysis, userId, id),
+    db()
+      .prepare(
+        'SELECT created_at FROM career_profile_versions WHERE user_id=? AND id=?',
+      )
+      .bind(userId, id),
+    db()
+      .prepare(
+        'UPDATE career_profile_writes SET claim_id=NULL,expires_at=NULL WHERE user_id=? AND claim_id=?',
+      )
+      .bind(userId, claim.id),
   ]);
-  if (result[0].meta.changes !== 1)
+  if (result[1].meta.changes !== 1)
     throw new CareerError(
       '다른 화면에서 프로필이 바뀌었습니다. 새로고침 후 다시 저장해주세요.',
       409,
     );
-  return readProfile(userId);
+  return {
+    ...input,
+    id,
+    version: version + 1,
+    analysis,
+    createdAt: (result[3].results[0].created_at as Date).toISOString(),
+  } satisfies Profile;
 }
 export type Experience = {
   id: string;

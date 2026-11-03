@@ -10,6 +10,8 @@ const PRE_MERGE_NAMES: Record<string, string> = {
   '0006_career_growth.sql': '0005_career_growth.sql',
   '0007_unified_hub.sql': '0006_unified_hub.sql',
   '0008_team_interest_invitations.sql': '0007_team_interest_invitations.sql',
+  '0010_peer_reviews.sql': '0006_peer_reviews.sql',
+  '0011_learning_review.sql': '0007_learning_review.sql',
 };
 
 export async function migrate(

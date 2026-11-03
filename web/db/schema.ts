@@ -143,6 +143,12 @@ export const careerAiQuota = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.day] })],
 ).enableRLS();
 
+export const careerProfileWrites = pgTable('career_profile_writes', {
+  userId: text('user_id').primaryKey(),
+  claimId: text('claim_id'),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+}).enableRLS();
+
 const tz = { withTimezone: true, mode: 'date' } as const;
 // Private hub records never enter the public team directory.
 export const hubRecords = pgTable(
@@ -563,4 +569,100 @@ export const projectJoinRequests = pgTable(
     index('idx_join_requests_user').on(t.userId, t.status),
     index('idx_join_requests_project').on(t.projectId, t.status),
   ],
+).enableRLS();
+
+// --- 동료평가 (마이그레이션 0006) ---
+// 평가자당 1회 제출. 평가 행은 이번 제출 행이 있을 때만 들어간다(같은 트랜잭션).
+export const peerReviewSubmissions = pgTable(
+  'peer_review_submissions',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    reviewerId: text('reviewer_id').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
+  },
+  (t) => [uniqueIndex('idx_peer_submission_once').on(t.projectId, t.reviewerId)],
+).enableRLS();
+export const peerReviews = pgTable(
+  'peer_reviews',
+  {
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    reviewerId: text('reviewer_id').notNull(),
+    revieweeId: text('reviewee_id').notNull(),
+    contribution: integer('contribution').notNull(),
+    communication: integer('communication').notNull(),
+    commitment: integer('commitment').notNull(),
+    submissionId: text('submission_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.projectId, t.reviewerId, t.revieweeId] }),
+    index('idx_peer_reviews_reviewee').on(t.projectId, t.revieweeId),
+  ],
+).enableRLS();
+
+// 학습 확인(2026-10-15): 사용자가 프로젝트마다 등록한 공개 GitHub 저장소와 본인 GitHub 아이디.
+// 아이디 소유는 확인하지 않는다(OAuth 없음). 커밋 필터로만 쓴다.
+export const reviewLinks = pgTable(
+  'review_links',
+  {
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    userId: text('user_id').notNull(),
+    repoOwner: text('repo_owner').notNull(),
+    repoName: text('repo_name').notNull(),
+    githubLogin: text('github_login').notNull(),
+    updatedAt: timestamp('updated_at', tz).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.userId] })],
+).enableRLS();
+
+// 학습 확인 기록. daily=그날(KST) 내 커밋 기반, final=완주·기한 종료 뒤 프로젝트 기간 전체 커밋 기반.
+// 질문을 만든 확인만 저장한다(커밋 없음·모델 실패는 행을 남기지 않는다). 하루·종류마다 한 건.
+export const learningReviews = pgTable(
+  'learning_reviews',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    userId: text('user_id').notNull(),
+    kind: text('kind').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    status: text('status').notNull(),
+    repo: text('repo').notNull(),
+    githubLogin: text('github_login').notNull(),
+    commitCount: integer('commit_count').notNull(),
+    commits: jsonb('commits').notNull(),
+    digest: text('digest').notNull(),
+    questions: jsonb('questions').notNull(),
+    answers: jsonb('answers'),
+    feedback: jsonb('feedback'),
+    gaps: jsonb('gaps'),
+    model: text('model').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
+    answeredAt: timestamp('answered_at', tz),
+    // 채점 선점(status='grading'). 같은 확인의 동시 답변이 유료 채점을 여러 번 부르지 않게 한다.
+    claimId: text('claim_id'),
+    claimedAt: timestamp('claimed_at', tz),
+  },
+  (t) => [
+    uniqueIndex('uq_learning_reviews_day').on(t.projectId, t.userId, t.kind, t.day),
+    index('idx_learning_reviews_user').on(t.projectId, t.userId, t.createdAt),
+  ],
+).enableRLS();
+
+// 사용자별·날짜(KST)별 학습 확인 시작 수. AI 변경안 한도(ai_quota)와 따로 센다(사용자 결정 2026-10-15: 하루 3회).
+export const reviewQuota = pgTable(
+  'review_quota',
+  {
+    userId: text('user_id').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    n: integer('n').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })],
 ).enableRLS();
