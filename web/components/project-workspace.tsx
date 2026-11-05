@@ -336,7 +336,10 @@ export function ProjectWorkspace({
               <button
                 className="btn"
                 style={{ marginLeft: 'auto' }}
-                onClick={() => setCreating(true)}
+                onClick={() => {
+                  setCreating(true);
+                  setBrowsing(false);
+                }}
               >
                 + 새 프로젝트
               </button>
