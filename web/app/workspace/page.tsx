@@ -1,5 +1,6 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Sites sign-in requires top-level navigation, without router prefetch. */
+import { PeerReviewCard } from '@/components/peer-review';
 import { useEffect, useState, useCallback } from 'react';
 import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
@@ -530,6 +531,13 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
             )}
             {tab === 'home' && (
               <section className="work-section">
+                {(lifecycle === 'completed' || lifecycle === 'expired') && (
+                  <PeerReviewCard
+                    projectId={projectId}
+                    asOf={state!.asOf}
+                    solo={state!.members.filter((m) => !m.left_at).length === 1}
+                  />
+                )}
                 {lifecycle !== 'draft' && (
                   <RaceHome
                     lifecycle={lifecycle}
