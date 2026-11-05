@@ -36,6 +36,12 @@ const seoul = (iso: string) =>
     hour12: false,
   });
 
+/** 목적격 조사: 마지막 글자에 받침이 있으면 '을', 없으면 '를'. */
+function objectParticle(word: string) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code < 11172 && code % 28 ? '을' : '를';
+}
+
 function Badges({ badges }: { badges: ScoreData['badges'] }) {
   return (
     <ul className="peer-badges">
@@ -144,7 +150,8 @@ function Result({ data }: { data: ScoreData }) {
       <p className="peer-next">
         {weak ? (
           <>
-            다음 프로젝트에선 <b>{weak.label}</b>을 챙겨 보세요
+            다음 프로젝트에선 <b>{weak.label}</b>
+            {objectParticle(weak.label)} 챙겨 보세요
           </>
         ) : (
           '세 문항 모두 4.5 이상이에요'

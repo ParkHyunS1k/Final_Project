@@ -142,3 +142,21 @@ void test('2명 미만·가려짐·솔로', () => {
   assert.doesNotMatch(text(solo), /2명이 안 돼|볼 수 없어요/);
   assert.match(text(solo), /솔로 완주/);
 });
+
+void test('약한 문항 안내의 조사: 받침 없으면 를', () => {
+  const html = view(
+    data(
+      { status: 'closed', submitted: true, reviewers: 2 },
+      {
+        score: 3.7,
+        grade: 'B',
+        breakdown: [
+          { key: 'contribution', label: '기여도', average: 3 },
+          { key: 'communication', label: '소통', average: 4 },
+          { key: 'commitment', label: '약속 이행', average: 4 },
+        ],
+      },
+    ),
+  );
+  assert.match(text(html), /다음 프로젝트에선 기여도를 챙겨 보세요/);
+});
