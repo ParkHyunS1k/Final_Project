@@ -4,7 +4,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useServerNow } from '@/hooks/use-server-now';
 import { focusClock, tension } from '@/lib/race';
-import { ITEMS, nextGrade, weakestItem, type Grade, type ItemKey } from '@/lib/score';
+import {
+  ITEMS,
+  nextGrade,
+  restrictionMessage,
+  weakestItem,
+  type Grade,
+  type ItemKey,
+  type RestrictionView,
+} from '@/lib/score';
 import { apiFetch } from '@/lib/supabase-browser';
 
 export type ScoreData = {
@@ -168,11 +176,17 @@ function Result({ data }: { data: ScoreData }) {
   );
 }
 
+/** 결과가 열리기 전(평가 중)에는 다시 불러온다. 다른 팀원의 제출·마감으로 결과가 열릴 수 있다. */
+export function needsRefresh(data: ScoreData | null) {
+  return !data || data.review.status === 'open';
+}
+
 /** 렌더만 한다. now는 서버 기준 시각(ms). */
 export function PeerReviewView({
   data,
   now,
   solo,
+  restriction = null,
   busy,
   error,
   onSubmit,
@@ -180,6 +194,8 @@ export function PeerReviewView({
   data: ScoreData;
   now: number;
   solo: boolean;
+  /** 동료평가 미제출 금지(작업 공간이 처음 불러온 값). 결과가 가려졌을 때 함께 알린다. */
+  restriction?: RestrictionView | null;
   busy: boolean;
   error: string;
   onSubmit: (reviews: ReviewInput[]) => void;
@@ -188,7 +204,15 @@ export function PeerReviewView({
   if (r.status === 'not_open') return null;
   let body = null;
   if (solo) body = null;
-  else if (r.hidden) body = <p className="peer-note">평가를 내지 않아 이번 결과는 볼 수 없어요.</p>;
+  else if (r.hidden)
+    body = (
+      <>
+        <p className="peer-note">평가를 내지 않아 이번 결과는 볼 수 없어요.</p>
+        {restriction && (
+          <p className="peer-warning">{restrictionMessage(restriction, '새 프로젝트를 만들')}</p>
+        )}
+      </>
+    );
   else if (r.status === 'open' && !r.submitted && r.targets.length)
     body = <ReviewForm data={data} now={now} busy={busy} onSubmit={onSubmit} />;
   else if (r.status === 'open')
@@ -217,7 +241,18 @@ async function fetchScore(projectId: string): Promise<ScoreData> {
 }
 
 /** /api/score를 불러와 그린다. 제출 응답으로 다시 그리고, 실패하면 메시지를 보여주고 다시 불러온다. */
-export function PeerReviewCard({ projectId, asOf, solo }: { projectId: string; asOf: string; solo: boolean }) {
+export function PeerReviewCard({
+  projectId,
+  asOf,
+  solo,
+  restriction,
+}: {
+  projectId: string;
+  /** 부모가 재조회할 때마다 바뀐다. 결과가 열리기 전에는 이때 함께 다시 불러온다. */
+  asOf: string;
+  solo: boolean;
+  restriction: RestrictionView | null;
+}) {
   const [data, setData] = useState<ScoreData | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -227,17 +262,20 @@ export function PeerReviewCard({ projectId, asOf, solo }: { projectId: string; a
     () => fetchScore(projectId).then(setData),
     [projectId],
   );
+  const pending = needsRefresh(data);
   useEffect(() => {
+    if (!pending) return;
     fetchScore(projectId)
       .then(setData)
       .catch((e: Error) => setError(e.message));
-  }, [projectId]);
+  }, [projectId, asOf, pending]);
   if (!data) return error ? <output className="hint">{error}</output> : null;
   return (
     <PeerReviewView
       data={data}
       now={now}
       solo={solo}
+      restriction={restriction}
       busy={busy}
       error={error}
       onSubmit={async (reviews) => {

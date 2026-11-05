@@ -21,7 +21,7 @@ await build({
   packages: 'external',
   alias: { '@': process.cwd() },
 });
-const { PeerReviewView } = await import(pathToFileURL(outfile).href);
+const { PeerReviewView, needsRefresh } = await import(pathToFileURL(outfile).href);
 
 const NOW = Date.parse('2026-11-06T03:00:00.000Z');
 const H = 3600000;
@@ -54,9 +54,9 @@ const data = (review, extra = {}) => ({
   },
 });
 const text = (html) => html.replace(/<!-- -->/g, '').replace(/<[^>]+>/g, '');
-const view = (d, solo = false) =>
+const view = (d, solo = false, restriction = null) =>
   renderToString(
-    createElement(PeerReviewView, { data: d, now: NOW, solo, busy: false, error: '', onSubmit: () => {} }),
+    createElement(PeerReviewView, { data: d, now: NOW, solo, restriction, busy: false, error: '', onSubmit: () => {} }),
   );
 const count = (html, re) => (html.match(re) || []).length;
 
@@ -159,4 +159,21 @@ void test('약한 문항 안내의 조사: 받침 없으면 를', () => {
     ),
   );
   assert.match(text(html), /다음 프로젝트에선 기여도를 챙겨 보세요/);
+});
+
+void test('결과가 열리기 전에는 다시 불러오고, 열린 뒤에는 멈춘다', () => {
+  assert.equal(needsRefresh(null), true);
+  assert.equal(needsRefresh(data({ status: 'open', submitted: true })), true);
+  assert.equal(needsRefresh(data({ status: 'closed' })), false);
+});
+
+void test('결과가 가려진 미제출자에게 금지 기간을 알린다', () => {
+  const html = view(data({ status: 'closed', hidden: true }), false, {
+    until: '2026-11-13T05:00:00Z',
+    permanent: false,
+    misses: 1,
+  });
+  assert.match(text(html), /11월 13일.*14:00.*까지 새 프로젝트를 만들 수 없습니다/);
+  const forever = view(data({ status: 'closed', hidden: true }), false, { until: null, permanent: true, misses: 3 });
+  assert.match(text(forever), /3번 내지 않아 더 이상 새 프로젝트를 만들 수 없습니다/);
 });

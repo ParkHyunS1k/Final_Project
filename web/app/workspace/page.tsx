@@ -542,6 +542,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                     projectId={projectId}
                     asOf={state!.asOf}
                     solo={state!.members.filter((m) => !m.left_at).length === 1}
+                    restriction={nav.restriction}
                   />
                 )}
                 {lifecycle !== 'draft' && (
