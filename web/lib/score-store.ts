@@ -10,28 +10,31 @@ import {
   MIN_REVIEWERS,
   parseReviews,
   peerScore,
+  penaltyDays,
   reportDays,
+  resultHidden,
   reviewWindow,
   summarize,
   type Rating,
 } from './score';
+import { reviewDuties } from './sanction';
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
 // 저장 시점의 DB 시각으로 평가 기간과 현재 멤버 여부를 다시 확인한다. reviewWindow와 같은 규칙.
 const OPEN_WINDOW =
   "EXISTS(SELECT 1 FROM project_policy p WHERE p.project_id=? AND (" +
-  "(p.lifecycle='completed' AND now() < p.completed_at + interval '7 days')" +
-  " OR (p.lifecycle IN ('active','expired') AND p.deadline_at <= now() AND now() < p.deadline_at + interval '7 days')))";
+  "(p.lifecycle='completed' AND now() < p.completed_at + interval '24 hours')" +
+  " OR (p.lifecycle IN ('active','expired') AND p.deadline_at <= now() AND now() < p.deadline_at + interval '24 hours')))";
 
 async function projectScore(projectId: string, userId: string, now: Date) {
   const db = database();
   const [policy, members] = await Promise.all([readPolicy(projectId), readMembers(projectId)]);
-  const window = reviewWindow(policy, now);
-  const [mine, received, checkins] = await db.batch<Record<string, unknown>>([
+  const [submissions, received, checkins] = await db.batch<Record<string, unknown>>([
+    // 제출 시각은 전원 제출 판정과 내 '평가 완료' 시각에만 쓰고 내보내지 않는다.
     db
-      .prepare('SELECT created_at FROM peer_review_submissions WHERE project_id=? AND reviewer_id=?')
-      .bind(projectId, userId),
+      .prepare('SELECT reviewer_id,created_at FROM peer_review_submissions WHERE project_id=?')
+      .bind(projectId),
     // 받은 평가는 평균 계산에만 쓰고 그대로 내보내지 않는다.
     db
       .prepare(
@@ -42,16 +45,32 @@ async function projectScore(projectId: string, userId: string, now: Date) {
   ]);
   const me = members.find((m) => m.userId === userId);
   const active = members.filter((m) => !m.leftAt);
-  const reviewedAt = (mine.results[0]?.created_at as Date | undefined) ?? null;
+  const submittedAt = new Map(
+    submissions.results.map((r) => [String(r.reviewer_id), new Date(r.created_at as Date)]),
+  );
+  const reviewedAt = submittedAt.get(userId) ?? null;
+  // 참여 중인 전원(2명 이상)이 냈으면 마지막 제출 시각에 공개한다.
+  const allSubmittedAt =
+    active.length >= 2 && active.every((m) => submittedAt.has(m.userId))
+      ? new Date(Math.max(...active.map((m) => submittedAt.get(m.userId)!.getTime())))
+      : null;
+  const window = reviewWindow(policy, now, allSubmittedAt);
   const closed = window.status === 'closed';
+  const end = endedAt(policy, now);
+  const hidden = resultHidden({
+    closed,
+    hadTargets: Boolean(me && !me.leftAt) && active.length >= 2,
+    reviewedAt,
+    endedAt: end,
+  });
   const ratings = received.results.map((r) => ({
     contribution: Number(r.contribution),
     communication: Number(r.communication),
     commitment: Number(r.commitment),
   })) as Rating[];
-  const result = peerScore(ratings, closed);
+  // 내지 않은 사람에게는 공개 뒤에도 점수·개인 뱃지를 가린다.
+  const result = peerScore(ratings, closed && !hidden);
 
-  const end = endedAt(policy, now);
   const completedAt = policy?.lifecycle === 'completed' ? policy.completedAt : null;
   let zeroBottleneck = false;
   if (policy && completedAt) {
@@ -67,7 +86,7 @@ async function projectScore(projectId: string, userId: string, now: Date) {
   const badges = badgeList({
     completedAt,
     endedAt: end,
-    closesAt: window.closesAt,
+    revealedAt: window.revealedAt,
     active: Boolean(me && !me.leftAt),
     solo: members.length === 1,
     daily:
@@ -94,7 +113,10 @@ async function projectScore(projectId: string, userId: string, now: Date) {
       closesAt: iso(window.closesAt),
       submitted: Boolean(reviewedAt),
       // 기간 중 인원 수가 바뀌는 것을 보면 누가 평가했는지 추정할 수 있어 마감 뒤에만 알린다.
-      reviewers: closed ? result.reviewers : null,
+      reviewers: closed && !hidden ? result.reviewers : null,
+      hidden,
+      // 내지 않으면 받을 금지 일수(null은 영구). 아직 낼 수 있을 때만.
+      penaltyDays: canReview ? penaltyDays((await reviewDuties(userId, now)).misses) : null,
       minReviewers: MIN_REVIEWERS,
       targets: canReview
         ? active
