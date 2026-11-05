@@ -1,6 +1,8 @@
 // 동료평가 점수 API: 평가 기간, 1회 제출, 익명성, 계정 분리, 뱃지, 저장 시점 검사.
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
+// 테스트는 과거로 옮긴 프로젝트를 쓰므로 제재 시작 시각을 아주 이르게 둔다.
+process.env.SANCTION_FROM = '2000-01-01T00:00:00Z';
 import assert from 'node:assert/strict';
 import { setupTestDb } from './helpers/pg-db.mjs';
 import { build } from 'esbuild';
@@ -13,7 +15,7 @@ const outfile = join(mkdtempSync(join(tmpdir(), 'projectmate-score-test-')), 'ro
 await build({
   stdin: {
     contents:
-      "export { GET as sprintGET, POST as sprintPOST } from './app/api/sprint/route'; export { GET as projectsGET, POST as projectsPOST } from './app/api/projects/route'; export { GET as scoreGET, POST as scorePOST } from './app/api/score/route'; export { GET as meGET } from './app/api/score/me/route';",
+      "export { GET as sprintGET, POST as sprintPOST } from './app/api/sprint/route'; export { GET as projectsGET, POST as projectsPOST } from './app/api/projects/route'; export { GET as scoreGET, POST as scorePOST } from './app/api/score/route'; export { GET as meGET } from './app/api/score/me/route'; export { POST as teamsPOST } from './app/api/teams/route';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -37,6 +39,7 @@ await build({
 const api = await import(pathToFileURL(outfile).href);
 
 const DAY = 86400000;
+const H = 3600000;
 const headers = (user) => ({
   'oai-authenticated-user-id': user,
   'oai-authenticated-user-email': user + '@test.local',
@@ -366,4 +369,132 @@ test('병목이 남은 채 완주하면 병목 0 뱃지가 없다', async () => 
   await act('neck', projectId, 'createTask', { title: '너무 큰 업무', person: 0, remaining: 100, dependsOn: [] });
   await finish('neck', projectId);
   assert.deepEqual(earned(await score('neck', projectId)), ['finish', 'solo_finish']);
+});
+
+// ── 미제출 제재 (2026-11-06) ──
+const sprintRaw = async (user, projectId, action, fields = {}) => {
+  const s = await state(user, projectId);
+  return api.sprintPOST(
+    new Request('https://test.local/api/sprint', {
+      method: 'POST',
+      headers: headers(user),
+      body: JSON.stringify({ action, revision: s.sprint.revision, projectId, ...fields }),
+    }),
+  );
+};
+const teamsPost = (user, body) =>
+  api.teamsPOST(
+    new Request('https://test.local/api/teams', {
+      method: 'POST',
+      headers: headers(user),
+      body: JSON.stringify(body),
+    }),
+  );
+async function projectsOf(user) {
+  const r = await api.projectsGET(new Request('https://test.local/api/projects', { headers: headers(user) }));
+  assert.equal(r.status, 200, await r.clone().text());
+  return r.json();
+}
+async function draft(user) {
+  const r = await projectPost(user, goal);
+  assert.equal(r.status, 201, await r.clone().text());
+  return (await r.json()).projectId;
+}
+async function listed(user) {
+  const projectId = await draft(user);
+  const s = await state(user, projectId);
+  const r = await projectPost(user, { action: 'setListed', projectId, revision: s.sprint.revision, listed: true });
+  assert.equal(r.status, 200, await r.clone().text());
+  return projectId;
+}
+/** 3인 팀이 완주하고 lead·a만 평가를 낸 뒤 25시간이 지난다. b는 미제출 1회. */
+async function missedBy(lead, a, b) {
+  const projectId = await startedTeam(lead, [a, b]);
+  await finish(lead, projectId);
+  assert.equal((await review(lead, projectId, [rating(1, 5, 5, 5), rating(2, 5, 5, 5)])).status, 200);
+  assert.equal((await review(a, projectId, [rating(0, 5, 5, 5), rating(2, 5, 5, 5)])).status, 200);
+  await shift(projectId, 25 * H);
+  return projectId;
+}
+
+test('미제출 1회: 7일 동안 만들기·초대 수락·참여 신청·시작이 403, 진행 중 프로젝트 작업은 된다, 7일 뒤 풀린다', async () => {
+  // 제재 전에 b가 만들어 둔 준비 프로젝트와 진행 중인 솔로 프로젝트.
+  const own = await draft('x1b');
+  const running = await startedTeam('x1b', []);
+  const projectId = await missedBy('x1lead', 'x1a', 'x1b');
+
+  const mine = await projectsOf('x1b');
+  assert.equal(mine.restriction.misses, 1);
+  assert.equal(mine.restriction.permanent, false);
+  assert.ok(Date.parse(mine.restriction.until) > Date.now() + 6 * DAY);
+  assert.deepEqual(mine.reviewPending, []);
+  assert.equal((await projectsOf('x1a')).restriction, null);
+
+  const created = await projectPost('x1b', goal);
+  assert.equal(created.status, 403);
+  assert.match((await created.json()).error, /까지 새 프로젝트를 만들 수 없습니다/);
+
+  const host = await listed('x1host');
+  const hs = await state('x1host', host);
+  const invite = await projectPost('x1host', { action: 'invite', projectId: host, revision: hs.sprint.revision, email: 'x1b@test.local' });
+  assert.equal(invite.status, 201, await invite.clone().text());
+  const accepted = await projectPost('x1b', { action: 'accept', token: (await invite.json()).token, agreed: true, goalVersion: hs.policy.goalVersion });
+  assert.equal(accepted.status, 403);
+  assert.match((await accepted.json()).error, /초대를 수락할 수 없습니다/);
+
+  const request = await teamsPost('x1b', { action: 'request', projectId: host, goalVersion: hs.policy.goalVersion, agreed: true });
+  assert.equal(request.status, 403);
+  assert.match((await request.json()).error, /참여 신청할 수 없습니다/);
+
+  const start = await sprintRaw('x1b', own, 'start');
+  assert.equal(start.status, 403);
+  assert.match((await start.json()).error, /스프린트를 시작할 수 없습니다/);
+
+  // 이미 진행 중인 프로젝트의 작업은 막지 않는다.
+  assert.equal((await sprintRaw('x1b', running, 'createTask', { title: '계속', person: 0, remaining: 2, dependsOn: [] })).status, 200);
+
+  // 마감에서 7일이 지나면 풀린다.
+  await shift(projectId, 7 * DAY);
+  assert.equal((await projectsOf('x1b')).restriction, null);
+  assert.equal((await projectPost('x1b', goal)).status, 201);
+});
+
+test('제재 중인 사람의 참여 신청은 승인할 수 없고, 팀장 화면에 restricted로 보인다', async () => {
+  const host = await listed('x2host');
+  const hs = await state('x2host', host);
+  // 제재 전에 넣어 둔 신청.
+  assert.equal((await teamsPost('x2b', { action: 'request', projectId: host, goalVersion: hs.policy.goalVersion, agreed: true })).status, 201);
+  await missedBy('x2lead', 'x2a', 'x2b');
+  const s = await state('x2host', host);
+  assert.equal(s.joinRequests.length, 1);
+  assert.equal(s.joinRequests[0].restricted, true);
+  assert.equal(s.joinRequests[0].user_id, undefined);
+  const approve = await projectPost('x2host', { action: 'decideJoin', projectId: host, revision: s.sprint.revision, requestId: s.joinRequests[0].id, approve: true });
+  assert.equal(approve.status, 403);
+  assert.match((await approve.json()).error, /지금 팀에 참여할 수 없습니다/);
+  const reject = await projectPost('x2host', { action: 'decideJoin', projectId: host, revision: s.sprint.revision, requestId: s.joinRequests[0].id, approve: false });
+  assert.equal(reject.status, 200, await reject.clone().text());
+});
+
+test('솔로·2인 팀 미제출과 제출자', async () => {
+  const solo = await startedTeam('x3solo', []);
+  await finish('x3solo', solo);
+  await shift(solo, 25 * H);
+  assert.equal((await projectsOf('x3solo')).restriction, null);
+
+  const pair = await startedTeam('x3pair', ['x3mate']);
+  await finish('x3pair', pair);
+  assert.equal((await review('x3pair', pair, [rating(1, 5, 5, 5)])).status, 200);
+  await shift(pair, 25 * H);
+  assert.equal((await projectsOf('x3mate')).restriction.misses, 1);
+  assert.equal((await projectsOf('x3pair')).restriction, null);
+});
+
+test('평가 기간 중이면 reviewPending에 그 프로젝트가 있다', async () => {
+  const projectId = await startedTeam('x4lead', ['x4mate']);
+  assert.deepEqual((await projectsOf('x4mate')).reviewPending, []);
+  await finish('x4lead', projectId);
+  assert.deepEqual((await projectsOf('x4mate')).reviewPending, [projectId]);
+  assert.equal((await review('x4mate', projectId, [rating(0, 5, 5, 5)])).status, 200);
+  assert.deepEqual((await projectsOf('x4mate')).reviewPending, []);
 });
