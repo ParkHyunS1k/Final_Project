@@ -237,8 +237,7 @@ export function ProjectWorkspace({
         setMine(start.mine);
         const entry = workspaceEntry(location.search, data.projects);
         setInvite(entry.invite);
-        setCreating(entry.creating);
-        setBrowsing(!entry.invite && params.get('teams') === '1');
+        setBrowsing(entry.browsing);
         setProjects(data.projects);
         setSelected(entry.selected);
         if (token)
@@ -333,6 +332,18 @@ export function ProjectWorkspace({
           <header className="workspace-bar">
             <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
             <b>{creating ? '새 프로젝트' : browsing && !invite ? '팀 찾기' : '프로젝트'}</b>
+            {browsing && !creating && !invite && (
+              <button
+                className="btn"
+                style={{ marginLeft: 'auto' }}
+                onClick={() => {
+                  setCreating(true);
+                  setBrowsing(false);
+                }}
+              >
+                + 새 프로젝트
+              </button>
+            )}
           </header>
         )}
         {error && (
