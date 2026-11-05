@@ -3,6 +3,7 @@
 // 참여 가능 여부·인원·목표 버전은 서버가 판단한다. 화면은 받은 값을 보여주고 결과를 다시 불러온다.
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/supabase-browser';
+import { restrictionMessage, type RestrictionView } from '@/lib/score';
 
 export type Team = {
   projectId: string;
@@ -65,7 +66,7 @@ async function call<T>(path: string, body?: Record<string, unknown>) {
   return data;
 }
 
-export function TeamDirectory() {
+export function TeamDirectory({ restriction = null }: { restriction?: RestrictionView | null } = {}) {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [open, setOpen] = useState('');
@@ -119,6 +120,11 @@ export function TeamDirectory() {
         팀장이 공개한 팀 중 지금 합류할 수 있는 팀입니다. 준비 중인 팀과 시작 후 24시간이 지나지 않은
         팀이 보입니다. 참여 신청 후 팀장이 승인하면 팀원이 됩니다.
       </p>
+      {restriction && (
+        <output className="hint">
+          {restrictionMessage(restriction, '참여 신청할')}
+        </output>
+      )}
       {message && <output className="hint">{message}</output>}
       {teams === null ? (
         <p className="tiny muted">팀 목록을 불러오는 중입니다.</p>
@@ -201,7 +207,7 @@ export function TeamDirectory() {
                   <div className="team-entry-actions">
                     <button
                       className="btn primary"
-                      disabled={!t.joinable || busy}
+                      disabled={!t.joinable || busy || Boolean(restriction)}
                       onClick={() => {
                         setOpen(t.projectId);
                         setAgreed(false);
@@ -277,7 +283,7 @@ export function TeamListing({
     me: { role: string };
     sprint: { revision: number };
     listed?: boolean;
-    joinRequests?: { id: string; display_name: string; goal_version: number; created_at: string }[];
+    joinRequests?: { id: string; display_name: string; goal_version: number; created_at: string; restricted?: boolean }[];
     policy?: { goalVersion: number } | null;
   };
   refresh: () => Promise<unknown>;
@@ -322,10 +328,11 @@ export function TeamListing({
           {requests.map((r) => (
             <li key={r.id}>
               {r.display_name} · {kst(r.created_at)} 신청
-              {state.policy && r.goal_version !== state.policy.goalVersion && ' · 이전 목표에 동의(승인 후 재동의 필요)'}{' '}
+              {state.policy && r.goal_version !== state.policy.goalVersion && ' · 이전 목표에 동의(승인 후 재동의 필요)'}
+              {r.restricted && ' · 이 사람은 지금 참여할 수 없어요'}{' '}
               <button
                 className="btn primary"
-                disabled={busy || !writable}
+                disabled={busy || !writable || Boolean(r.restricted)}
                 onClick={() => void run({ action: 'decideJoin', requestId: r.id, approve: true }, `${r.display_name}님을 팀원으로 받았습니다.`)}
               >
                 승인

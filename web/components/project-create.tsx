@@ -3,6 +3,7 @@
 // 설계: docs/superpowers/specs/2026-10-29-idea-dice-create-design.md
 import { useState } from 'react';
 import { Dices, Lock, LockOpen } from 'lucide-react';
+import { restrictionMessage, type RestrictionView } from '@/lib/score';
 import {
   DEFAULT_LEVEL,
   SCOPE_LEVELS,
@@ -49,9 +50,12 @@ export function ScopeSlider({
 
 export function ProjectCreate({
   onSubmit,
+  restriction = null,
 }: {
   // true면 이동 중이므로 버튼을 계속 잠가 둔다(연타로 중복 생성 방지).
   onSubmit: (body: CreateBody) => Promise<boolean>;
+  /** 동료평가 미제출 금지. 있으면 만들기 버튼을 끈다(서버도 403으로 막는다). */
+  restriction?: RestrictionView | null;
 }) {
   // 만들기 패널은 클라이언트에서 목록을 불러온 뒤에만 열리므로 첫 굴림이 SSR과 어긋나지 않는다.
   const [words, setWords] = useState(() => roll(['', '', ''], [false, false, false]));
@@ -136,7 +140,12 @@ export function ProjectCreate({
           목표·기능 범위·완료 기준을 확인했습니다. 시작 후에는 바꿀 수 없으며
           실제 결제는 발생하지 않습니다.
         </label>
-        <button className="btn primary" disabled={busy}>
+        {restriction && (
+          <output className="hint">
+            {restrictionMessage(restriction, '새 프로젝트를 만들')}
+          </output>
+        )}
+        <button className="btn primary" disabled={busy || Boolean(restriction)}>
           {busy ? '저장 중…' : '프로젝트 만들기'}
         </button>
       </form>

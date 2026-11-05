@@ -46,3 +46,13 @@ void test('열린 프로젝트가 없어도 프로젝트 선택 메뉴에는 최
   assert.equal(workspaceEntry('', [done]).selected, 'p_done');
   assert.equal(workspaceEntry('', []).selected, '');
 });
+
+void test('평가를 아직 낼 수 있는 프로젝트가 있으면 진행 중인 프로젝트보다 먼저 연다', () => {
+  assert.deepEqual(workspaceEntry('', [active, done], ['p_done']), {
+    invite: '',
+    browsing: false,
+    selected: 'p_done',
+  });
+  assert.equal(workspaceEntry('?teams=1', [active, done], ['p_done']).browsing, true);
+  assert.equal(workspaceEntry('?project=p_active', [active, done], ['p_done']).selected, 'p_active');
+});

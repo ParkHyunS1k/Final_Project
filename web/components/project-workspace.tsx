@@ -1,5 +1,6 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Project switching clears invitation and dashboard state via full navigation. */
+import type { RestrictionView } from '@/lib/score';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -35,6 +36,8 @@ export type WorkspaceNav = {
   setView: (view: View) => void;
   mine: boolean;
   setMine: (mine: boolean) => void;
+  /** 동료평가 미제출 금지. 처음 불러올 때의 값이며 서버가 다시 확인한다. */
+  restriction: RestrictionView | null;
 };
 function WorkspaceMenu({
   view,
@@ -188,6 +191,8 @@ async function api(path: string, body?: Record<string, unknown>) {
   const data = (await res.json()) as {
     error?: string;
     projects: { id: string; title: string; role: string; lifecycle: string }[];
+    restriction: RestrictionView | null;
+    reviewPending: string[];
     projectId: string;
     token?: string;
     email?: 'sent' | 'failed' | 'off';
@@ -221,6 +226,7 @@ export function ProjectWorkspace({
   const [browsing, setBrowsing] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [restriction, setRestriction] = useState<RestrictionView | null>(null);
   const [invite, setInvite] = useState('');
   const [preview, setPreview] = useState<{ details: InvitePreview } | null>(
     null,
@@ -235,7 +241,8 @@ export function ProjectWorkspace({
         const start = viewFrom(params.get('view'));
         setView(start.view);
         setMine(start.mine);
-        const entry = workspaceEntry(location.search, data.projects);
+        const entry = workspaceEntry(location.search, data.projects, data.reviewPending);
+        setRestriction(data.restriction);
         setInvite(entry.invite);
         setBrowsing(entry.browsing);
         setProjects(data.projects);
@@ -361,6 +368,7 @@ export function ProjectWorkspace({
         )}
         {creating && (
           <ProjectCreate
+            restriction={restriction}
             onSubmit={async (body) => {
               setError('');
               try {
@@ -446,9 +454,9 @@ export function ProjectWorkspace({
             </a>
           </section>
         ) : browsing && !creating ? (
-          <TeamDirectory />
+          <TeamDirectory restriction={restriction} />
         ) : selected && !creating ? (
-          children(selected, { view, setView, mine, setMine })
+          children(selected, { view, setView, mine, setMine, restriction })
         ) : loaded && !creating ? (
           <section className="project-panel">
             <h1>첫 스프린트를 만들어보세요.</h1>

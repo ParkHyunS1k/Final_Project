@@ -130,6 +130,8 @@ export function dutiesFrom(rows: DutyRow[], now: Date, from: Date = SANCTION_FRO
 }
 
 export type Restriction = { until: Date | null; permanent: boolean; misses: number };
+/** 화면이 받는 금지 상태(GET /api/projects). */
+export type RestrictionView = { until: string | null; permanent: boolean; misses: number };
 /** 미제출 마감 시각들 → 지금의 금지. k번째 미제출은 그 마감부터 PENALTY_DAYS[k]일, 3번째부터 영구. */
 export function restrictionOf(missCloses: Date[], now: Date): Restriction | null {
   const sorted = [...missCloses].sort((a, b) => a.getTime() - b.getTime());

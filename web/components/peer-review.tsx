@@ -202,6 +202,13 @@ export function PeerReviewView({
   );
 }
 
+async function fetchScore(projectId: string): Promise<ScoreData> {
+  const res = await apiFetch('/api/score?project=' + encodeURIComponent(projectId), { cache: 'no-store' });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || '동료평가를 불러오지 못했습니다.');
+  return body;
+}
+
 /** /api/score를 불러와 그린다. 제출 응답으로 다시 그리고, 실패하면 메시지를 보여주고 다시 불러온다. */
 export function PeerReviewCard({ projectId, asOf, solo }: { projectId: string; asOf: string; solo: boolean }) {
   const [data, setData] = useState<ScoreData | null>(null);
@@ -209,15 +216,15 @@ export function PeerReviewCard({ projectId, asOf, solo }: { projectId: string; a
   const [error, setError] = useState('');
   const live = useServerNow(asOf);
   const now = live || Date.parse(asOf);
-  const load = useCallback(async () => {
-    const res = await apiFetch('/api/score?project=' + encodeURIComponent(projectId), { cache: 'no-store' });
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.error || '동료평가를 불러오지 못했습니다.');
-    setData(body);
-  }, [projectId]);
+  const load = useCallback(
+    () => fetchScore(projectId).then(setData),
+    [projectId],
+  );
   useEffect(() => {
-    load().catch((e) => setError((e as Error).message));
-  }, [load]);
+    fetchScore(projectId)
+      .then(setData)
+      .catch((e: Error) => setError(e.message));
+  }, [projectId]);
   if (!data) return error ? <output className="hint">{error}</output> : null;
   return (
     <PeerReviewView
