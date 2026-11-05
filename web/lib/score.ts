@@ -1,11 +1,20 @@
 // 동료평가 점수·등급·뱃지 규칙. 서버 기록만 읽는 순수 계산이며 저장하지 않는다.
-// 규칙 근거: docs/superpowers/specs/2026-10-20-peer-score-badges-design.md (사용자 결정 2026-10-20)
+// 규칙 근거: docs/superpowers/specs/2026-10-20-peer-score-badges-design.md (2026-10-20),
+// 기간·척도·등급·공개·제재는 docs/superpowers/specs/2026-11-06-peer-review-ui-design.md (2026-11-06)
 // 개인 점수는 동료평가만 쓴다. 체크인·변경 기록에는 작성자가 없어 개인 활동 점수로 쓰지 않는다.
 import { PolicyError, type Lifecycle } from './sprint-policy.ts';
 
 const DAY_MS = 86400000;
-/** 프로젝트가 끝난 뒤 평가를 받는 기간. */
-export const REVIEW_DAYS = 7;
+const HOUR_MS = 3600000;
+/** 프로젝트가 끝난 뒤 평가를 받는 기간(사용자 결정 2026-11-06, 이전 7일). */
+export const REVIEW_HOURS = 24;
+/**
+ * 이 시각 이후에 끝난 프로젝트만 미제출 제재·결과 숨김을 적용한다. 평가 화면이 생기기 전에 끝난
+ * 프로젝트는 낼 방법이 없었다. 배포 시각보다 늦어야 한다. 테스트는 SANCTION_FROM 환경변수로 바꾼다.
+ */
+export const SANCTION_FROM = new Date(process.env.SANCTION_FROM || '2026-11-09T00:00:00+09:00');
+/** 미제출 1회째·2회째 금지 일수. 3회째부터 영구. */
+export const PENALTY_DAYS = [7, 30] as const;
 /** 이 인원보다 적게 평가하면 누가 몇 점을 줬는지 드러나므로 점수를 보여주지 않는다. */
 export const MIN_REVIEWERS = 2;
 /** 매일 보고 뱃지에 필요한 최소 일차. 하루 안에 시작·완주해 받는 것을 막는다. */
@@ -20,16 +29,33 @@ export const ITEMS = [
 ] as const;
 export type ItemKey = (typeof ITEMS)[number]['key'];
 export type Rating = Record<ItemKey, number>;
-export type Grade = 'S' | 'A' | 'B' | 'C';
+export type Grade = 'S' | 'A' | 'B' | 'C' | 'D';
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export function gradeOf(score: number | null): Grade | null {
   if (score === null) return null;
-  if (score >= 90) return 'S';
-  if (score >= 75) return 'A';
-  if (score >= 60) return 'B';
-  return 'C';
+  for (const [grade, min] of GRADE_FLOORS) if (score >= min) return grade;
+  return 'D';
+}
+/** 등급 하한(반올림한 5점 점수). 사용자 결정 2026-11-06. */
+const GRADE_FLOORS: [Grade, number][] = [
+  ['S', 4.8],
+  ['A', 4.0],
+  ['B', 3.0],
+  ['C', 2.0],
+];
+
+/** 바로 위 등급과 남은 점수. S면 null. */
+export function nextGrade(score: number): { grade: Grade; gap: number } | null {
+  const above = GRADE_FLOORS.filter(([, min]) => min > score).at(-1);
+  return above ? { grade: above[0], gap: round1(above[1] - score) } : null;
+}
+
+/** 가장 낮은 문항(같으면 앞 문항). 세 문항 모두 개인 뱃지 기준 이상이면 null. */
+export function weakestItem<T extends { average: number }>(breakdown: T[]): T | null {
+  if (breakdown.every((b) => b.average >= PEER_BADGE_AVERAGE)) return null;
+  return breakdown.reduce((low, b) => (b.average < low.average ? b : low));
 }
 
 /** 받은 평가 → 점수. 평가 기간이 끝나고 MIN_REVIEWERS명 이상일 때만 공개한다. */
@@ -41,34 +67,106 @@ export function peerScore(ratings: Rating[], closed: boolean) {
     ITEMS.map(({ key }) => [key, ratings.reduce((sum, r) => sum + r[key], 0) / reviewers]),
   ) as Rating;
   const mean = ITEMS.reduce((sum, { key }) => sum + averages[key], 0) / ITEMS.length;
-  const score = round1(mean * 20);
+  const score = round1(mean);
   return {
     score,
     grade: gradeOf(score),
-    breakdown: ITEMS.map(({ key, label }) => ({
-      key,
-      label,
-      points: round1((averages[key] * 20) / ITEMS.length),
-    })),
+    breakdown: ITEMS.map(({ key, label }) => ({ key, label, average: round1(averages[key]) })),
     averages,
     reviewers,
   };
 }
 
 export type ReviewStatus = 'not_open' | 'open' | 'closed';
-/** 끝난 시각(완주 시각, 없으면 최종 기한)부터 REVIEW_DAYS일. 서버 시각 기준. */
+/**
+ * 끝난 시각(완주 시각, 없으면 최종 기한)부터 REVIEW_HOURS시간. 서버 시각 기준.
+ * 결과 공개(closed)는 마감 시각과 전원 제출 시각(allSubmittedAt) 중 빠른 쪽. closesAt은 그대로 둔다.
+ */
 export function reviewWindow(
   policy: { lifecycle: Lifecycle; deadlineAt: Date | null; completedAt: Date | null } | null,
   now: Date,
-): { status: ReviewStatus; opensAt: Date | null; closesAt: Date | null } {
+  allSubmittedAt: Date | null = null,
+): { status: ReviewStatus; opensAt: Date | null; closesAt: Date | null; revealedAt: Date | null } {
   const end = endedAt(policy, now);
-  if (!end) return { status: 'not_open', opensAt: null, closesAt: null };
-  const closesAt = new Date(end.getTime() + REVIEW_DAYS * DAY_MS);
+  if (!end) return { status: 'not_open', opensAt: null, closesAt: null, revealedAt: null };
+  const closesAt = new Date(end.getTime() + REVIEW_HOURS * HOUR_MS);
+  const reveal =
+    allSubmittedAt && allSubmittedAt.getTime() < closesAt.getTime() ? allSubmittedAt : closesAt;
+  const closed = now.getTime() >= reveal.getTime();
+  return { status: closed ? 'closed' : 'open', opensAt: end, closesAt, revealedAt: closed ? reveal : null };
+}
+
+/** 공개 뒤에도 내 결과를 가린다: 평가할 대상이 있었는데 내지 않았고, 제재 시작 뒤에 끝난 프로젝트. */
+export function resultHidden(
+  f: { closed: boolean; hadTargets: boolean; reviewedAt: Date | null; endedAt: Date | null },
+  from: Date = SANCTION_FROM,
+) {
+  return Boolean(
+    f.closed && f.hadTargets && !f.reviewedAt && f.endedAt && f.endedAt.getTime() >= from.getTime(),
+  );
+}
+
+export type DutyRow = {
+  projectId: string;
+  lifecycle: Lifecycle | null;
+  deadlineAt: Date | null;
+  completedAt: Date | null;
+  /** 참여 중인 다른 멤버 수. */
+  others: number;
+  submitted: boolean;
+};
+/** 내 평가 의무: 아직 낼 수 있는 프로젝트와, 시간이 지나 미제출이 된 프로젝트의 평가 마감 시각. */
+export function dutiesFrom(rows: DutyRow[], now: Date, from: Date = SANCTION_FROM) {
+  const pending: string[] = [];
+  const missCloses: Date[] = [];
+  for (const row of rows) {
+    const end = row.lifecycle ? endedAt({ ...row, lifecycle: row.lifecycle }, now) : null;
+    if (!end || row.others < 1 || row.submitted) continue;
+    const closes = new Date(end.getTime() + REVIEW_HOURS * HOUR_MS);
+    if (now.getTime() < closes.getTime()) pending.push(row.projectId);
+    else if (end.getTime() >= from.getTime()) missCloses.push(closes);
+  }
+  return { pending, missCloses };
+}
+
+export type Restriction = { until: Date | null; permanent: boolean; misses: number };
+/** 미제출 마감 시각들 → 지금의 금지. k번째 미제출은 그 마감부터 PENALTY_DAYS[k]일, 3번째부터 영구. */
+export function restrictionOf(missCloses: Date[], now: Date): Restriction | null {
+  const sorted = [...missCloses].sort((a, b) => a.getTime() - b.getTime());
+  let end = -Infinity;
+  sorted.forEach((c, i) => {
+    const until = i < PENALTY_DAYS.length ? c.getTime() + PENALTY_DAYS[i] * DAY_MS : Infinity;
+    if (c.getTime() <= now.getTime() && now.getTime() < until) end = Math.max(end, until);
+  });
+  if (end === -Infinity) return null;
   return {
-    status: now.getTime() < closesAt.getTime() ? 'open' : 'closed',
-    opensAt: end,
-    closesAt,
+    until: end === Infinity ? null : new Date(end),
+    permanent: end === Infinity,
+    misses: sorted.length,
   };
+}
+
+/** 지금까지 misses번 미제출한 사람이 한 번 더 내지 않으면 받을 금지 일수. null은 영구. */
+export function penaltyDays(misses: number): number | null {
+  return PENALTY_DAYS[misses] ?? null;
+}
+
+/** 금지 안내 문구. 서버 거절과 화면 안내가 같은 문장을 쓴다. doing 예: '새 프로젝트를 만들'. */
+export function restrictionMessage(
+  r: { until: Date | string | null; permanent: boolean; misses: number },
+  doing: string,
+) {
+  if (r.permanent || !r.until)
+    return `동료평가를 ${r.misses}번 내지 않아 더 이상 ${doing} 수 없습니다.`;
+  const when = new Date(r.until).toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return `동료평가를 내지 않아 ${when}까지 ${doing} 수 없습니다.`;
 }
 
 /** 프로젝트가 끝난 시각. 끝나지 않았거나 이전 규칙 기록이면 null. */
@@ -139,8 +237,8 @@ export type BadgeFacts = {
   completedAt: Date | null;
   /** 끝난 시각(완주 또는 기한). 진행 중이면 null. */
   endedAt: Date | null;
-  /** 평가 마감 시각. */
-  closesAt: Date | null;
+  /** 결과가 공개된 시각(마감 또는 전원 제출). 개인 뱃지의 받은 시각. */
+  revealedAt: Date | null;
   /** 참여 중단하지 않은 멤버인가. */
   active: boolean;
   /** 가입한 멤버가 1명인가. */
@@ -178,7 +276,7 @@ export function badgeList(f: BadgeFacts): Badge[] {
     reviewer: f.reviewedAt,
   };
   for (const [id, key] of Object.entries(PEER_BADGES) as [BadgeId, ItemKey][])
-    when[id] = f.averages && f.averages[key] >= PEER_BADGE_AVERAGE ? f.closesAt : null;
+    when[id] = f.averages && f.averages[key] >= PEER_BADGE_AVERAGE ? f.revealedAt : null;
   return BADGES.map((b) => ({ ...b, earnedAt: when[b.id] }));
 }
 
@@ -209,7 +307,7 @@ export function parseReviews(value: unknown, targets: number[]) {
   return [...targets].sort((a, b) => a - b).map((person) => ({ person, ...byPerson.get(person)! }));
 }
 
-const GRADE_ORDER: Grade[] = ['S', 'A', 'B', 'C'];
+const GRADE_ORDER: Grade[] = ['S', 'A', 'B', 'C', 'D'];
 /** 내 프로젝트별 결과 → 확정 점수 합, 최고 등급, 뱃지별 처음 받은 시각과 횟수. */
 export function summarize(
   projects: { score: number | null; grade: Grade | null; badges: Badge[] }[],
@@ -218,7 +316,8 @@ export function summarize(
   const grades = scored.map((p) => p.grade).filter((g): g is Grade => g !== null);
   return {
     totalScore: round1(scored.reduce((sum, p) => sum + (p.score ?? 0), 0)),
-    bestGrade: GRADE_ORDER.find((g) => grades.includes(g)) ?? null,
+    // 공개된 점수가 하나도 없으면 E(사용자 결정 2026-11-06).
+    bestGrade: (GRADE_ORDER.find((g) => grades.includes(g)) ?? 'E') as Grade | 'E',
     projects: scored.length,
     badges: BADGES.map((b) => {
       const times = projects
