@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get('project');
   if (!id) return reply({ error: '프로젝트를 지정해주세요.' }, 400);
   try {
-    return reply(await readScore(id, user));
+    return reply({ ...(await readScore(id, user)), asOf: new Date().toISOString() });
   } catch (error) {
     return failure(error, 'score read failed');
   }

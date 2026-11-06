@@ -543,6 +543,8 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                     asOf={state!.asOf}
                     solo={state!.members.filter((m) => !m.left_at).length === 1}
                     restriction={nav.restriction}
+                    owed={nav.reviewPending.includes(projectId)}
+                    onOwe={nav.requireReview}
                   />
                 )}
                 {lifecycle !== 'draft' && (

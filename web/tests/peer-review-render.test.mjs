@@ -21,7 +21,7 @@ await build({
   packages: 'external',
   alias: { '@': process.cwd() },
 });
-const { PeerReviewView, needsRefresh } = await import(pathToFileURL(outfile).href);
+const { PeerReviewView, ReviewCards, needsRefresh, owesReview } = await import(pathToFileURL(outfile).href);
 
 const NOW = Date.parse('2026-11-06T03:00:00.000Z');
 const H = 3600000;
@@ -56,12 +56,15 @@ const data = (review, extra = {}) => ({
 const text = (html) => html.replace(/<!-- -->/g, '').replace(/<[^>]+>/g, '');
 const view = (d, solo = false, restriction = null) =>
   renderToString(
-    createElement(PeerReviewView, { data: d, now: NOW, solo, restriction, busy: false, error: '', onSubmit: () => {} }),
+    createElement(PeerReviewView, { data: d, solo, restriction }),
   );
 const count = (html, re) => (html.match(re) || []).length;
 
-void test('평가 폼: 팀원마다 세 문항 1~5 라디오, 다 채우기 전엔 제출 불가, 다음 제재 안내', () => {
-  const html = view(
+const cards = (d, title = '동료평가 확인 스프린트') =>
+  renderToString(createElement(ReviewCards, { title, data: d, now: NOW, busy: false, error: '', onSubmit: () => {} }));
+
+void test('평가 카드: 한 번에 팀원 한 명, 세 문항 1~5, 다 고르기 전엔 다음 불가, 다음 제재 안내', () => {
+  const html = cards(
     data({
       targets: [
         { person: 1, displayName: '서연' },
@@ -70,14 +73,26 @@ void test('평가 폼: 팀원마다 세 문항 1~5 라디오, 다 채우기 전�
       penaltyDays: 7,
     }),
   );
-  assert.equal(count(html, /role="radiogroup"/g), 6);
-  assert.equal(count(html, /type="radio"/g), 30);
+  const t = text(html);
+  assert.equal(count(html, /role="radiogroup"/g), 3);
+  assert.equal(count(html, /type="radio"/g), 15);
   assert.match(html, /aria-label="서연 기여도"/);
-  assert.match(html, /<button[^>]*disabled=""[^>]*>[^<]*제출/);
-  assert.match(text(html), /24시간 안에 내지 않으면 7일 동안 새 프로젝트를 시작할 수 없어요/);
-  assert.match(text(html), /22:00:00/);
-  const forever = view(data({ targets: [{ person: 1, displayName: '서연' }], penaltyDays: null }));
-  assert.match(text(forever), /더 이상 새 프로젝트를 시작할 수 없어요/);
+  assert.doesNotMatch(t, /민준/);
+  assert.match(t, /1 \/ 2/);
+  assert.match(t, /동료평가 확인 스프린트/);
+  assert.match(html, /<button[^>]*disabled=""[^>]*>[^<]*다음/);
+  assert.doesNotMatch(t, /평가 제출/);
+  assert.match(t, /24시간 안에 내지 않으면 7일 동안 새 프로젝트를 시작할 수 없어요/);
+  assert.match(t, /22:00:00/);
+  const last = cards(data({ targets: [{ person: 1, displayName: '서연' }], penaltyDays: null }));
+  assert.match(text(last), /더 이상 새 프로젝트를 시작할 수 없어요/);
+  assert.match(last, /<button[^>]*disabled=""[^>]*>[^<]*평가 제출/);
+});
+
+void test('작업 공간 홈 카드는 폼 대신 안내만 보인다(폼은 모달 카드)', () => {
+  const html = view(data({ targets: [{ person: 1, displayName: '서연' }], penaltyDays: 7 }));
+  assert.equal(count(html, /type="radio"/g), 0);
+  assert.match(text(html), /평가 카드를 채워야 결과를 볼 수 있어요/);
 });
 
 void test('제출함: 결과가 열리는 조건 안내', () => {
@@ -176,4 +191,12 @@ void test('결과가 가려진 미제출자에게 금지 기간을 알린다', (
   assert.match(text(html), /11월 13일.*14:00.*까지 새 프로젝트를 만들 수 없습니다/);
   const forever = view(data({ status: 'closed', hidden: true }), false, { until: null, permanent: true, misses: 3 });
   assert.match(text(forever), /3번 내지 않아 더 이상 새 프로젝트를 만들 수 없습니다/);
+});
+
+void test('모달은 낼 평가가 남았을 때만: 열림·미제출·대상 있음·가려지지 않음', () => {
+  const one = [{ person: 1, displayName: '서연' }];
+  assert.equal(owesReview(data({ targets: one })), true);
+  assert.equal(owesReview(data({ targets: one, submitted: true })), false);
+  assert.equal(owesReview(data({ targets: [] })), false);
+  assert.equal(owesReview(data({ targets: one, status: 'closed' })), false);
 });

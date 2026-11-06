@@ -2675,3 +2675,74 @@ textarea {
   border-color: var(--gray-200);
   opacity: 0.55;
 }
+/* 동료평가 모달: 낼 평가가 남은 동안 작업 공간을 흐리게 막는다. */
+.peer-dialog {
+  margin: auto;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 28px 24px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--gray-0);
+  color: inherit;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.25);
+}
+.peer-dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(8px);
+}
+.peer-dialog h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.peer-project {
+  margin: 0;
+  color: var(--gray-600);
+  font-size: 14px;
+}
+.peer-target legend {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  font-size: 18px;
+}
+.peer-target legend small {
+  color: var(--gray-600);
+  font-weight: 400;
+}
+.peer-scale {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.peer-scale label {
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.peer-scale input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.peer-scale label:has(:checked) {
+  border-color: var(--heat-500);
+  background: var(--heat-500);
+  color: var(--heat-ink);
+}
+.peer-scale label:has(:focus-visible) {
+  outline: 2px solid var(--heat-500);
+  outline-offset: 2px;
+}
+.peer-actions {
+  display: flex;
+  gap: 8px;
+}
+.peer-actions .btn {
+  flex: 1;
+}

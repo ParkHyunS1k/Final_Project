@@ -262,7 +262,9 @@ test('완주한 팀: 기간 중 1회 제출, 익명 평균은 공개 뒤에만, 
   assert.equal(m2.grade, 'B');
   assert.ok(!earned(m2).includes('top_contributor'));
   // 같은 기록이면 다시 조회해도 같은 점수.
-  assert.deepEqual(await score('m2', projectId), m2);
+  const { asOf: _a, ...again } = await score('m2', projectId);
+  const { asOf: _b, ...first } = m2;
+  assert.deepEqual(again, first);
   // 참여 중단자는 평가받지 않아 점수가 없다.
   assert.equal((await score('m3', projectId)).score, null);
 

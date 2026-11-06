@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Project switching clears invitation and dashboard state via full navigation. */
 import type { RestrictionView } from '@/lib/score';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   SidebarProvider,
@@ -26,6 +26,7 @@ import { workspaceEntry } from '@/lib/workspace-entry';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { TeamDirectory } from '@/components/team-directory';
 import { ProjectCreate } from '@/components/project-create';
+import { PeerReviewGate } from '@/components/peer-review';
 export const workspaceViews = [
   { id: 'home' as View, label: '홈', icon: Gauge },
   { id: 'tasks' as View, label: '업무', icon: ListTodo },
@@ -38,6 +39,10 @@ export type WorkspaceNav = {
   setMine: (mine: boolean) => void;
   /** 동료평가 미제출 금지. 처음 불러올 때의 값이며 서버가 다시 확인한다. */
   restriction: RestrictionView | null;
+  /** 아직 낼 동료평가가 있는 프로젝트. 있으면 PeerReviewGate 모달이 작업 공간을 막는다. */
+  reviewPending: string[];
+  /** 이 화면에서 프로젝트가 끝나 평가할 차례가 되면 모달에 더한다. */
+  requireReview: (projectId: string) => void;
 };
 function WorkspaceMenu({
   view,
@@ -227,6 +232,12 @@ export function ProjectWorkspace({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [restriction, setRestriction] = useState<RestrictionView | null>(null);
+  const [reviewPending, setReviewPending] = useState<string[]>([]);
+  const requireReview = useCallback(
+    (id: string) => setReviewPending((p) => (p.includes(id) ? p : [...p, id])),
+    [],
+  );
+  const reviewed = useCallback((id: string) => setReviewPending((p) => p.filter((x) => x !== id)), []);
   const [invite, setInvite] = useState('');
   const [preview, setPreview] = useState<{ details: InvitePreview } | null>(
     null,
@@ -243,6 +254,7 @@ export function ProjectWorkspace({
         setMine(start.mine);
         const entry = workspaceEntry(location.search, data.projects, data.reviewPending);
         setRestriction(data.restriction);
+        setReviewPending(data.reviewPending);
         setInvite(entry.invite);
         setBrowsing(entry.browsing);
         setProjects(data.projects);
@@ -456,7 +468,7 @@ export function ProjectWorkspace({
         ) : browsing && !creating ? (
           <TeamDirectory restriction={restriction} />
         ) : selected && !creating ? (
-          children(selected, { view, setView, mine, setMine, restriction })
+          children(selected, { view, setView, mine, setMine, restriction, reviewPending, requireReview })
         ) : loaded && !creating ? (
           <section className="project-panel">
             <h1>첫 스프린트를 만들어보세요.</h1>
@@ -482,6 +494,15 @@ export function ProjectWorkspace({
           </section>
         ) : null}
       </SidebarInset>
+      {reviewPending.length > 0 && (
+        <PeerReviewGate
+          projects={reviewPending.map((id) => ({
+            id,
+            title: projects.find((p) => p.id === id)?.title ?? '',
+          }))}
+          onDone={reviewed}
+        />
+      )}
     </SidebarProvider>
   );
 }

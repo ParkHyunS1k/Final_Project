@@ -1,7 +1,9 @@
 'use client';
-// 끝난 프로젝트 홈의 동료평가 카드. 규칙: docs/superpowers/specs/2026-11-06-peer-review-ui-design.md
-// 평가 중이면 폼, 공개 뒤에는 '다음엔 이걸 챙기자' 결과. 판단은 서버 응답(/api/score)과 서버 시각으로 한다.
-import { useCallback, useEffect, useState } from 'react';
+// 동료평가. 규칙: docs/superpowers/specs/2026-11-06-peer-review-ui-design.md
+// 낼 평가가 있으면 작업 공간 전체를 막는 모달(PeerReviewGate)에서 팀원 한 명씩 카드로 낸다.
+// 끝난 프로젝트 홈 카드(PeerReviewCard)는 상태 안내와 공개 뒤 '다음엔 이걸 챙기자' 결과를 보인다.
+// 판단은 서버 응답(/api/score)과 서버 시각으로 한다.
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useServerNow } from '@/hooks/use-server-now';
 import { focusClock, tension } from '@/lib/race';
 import {
@@ -16,6 +18,8 @@ import {
 import { apiFetch } from '@/lib/supabase-browser';
 
 export type ScoreData = {
+  /** GET이 주는 서버 시각. 모달의 남은 시간 계산에 쓴다. */
+  asOf?: string;
   score: number | null;
   grade: Grade | null;
   breakdown: { key: ItemKey; label: string; average: number }[];
@@ -63,32 +67,40 @@ function Badges({ badges }: { badges: ScoreData['badges'] }) {
   );
 }
 
-function ReviewForm({
+/** 팀원 한 명씩 카드로 평가한다. 세 문항을 다 고르면 다음 사람, 마지막 카드에서 한 번에 제출. */
+export function ReviewCards({
+  title,
   data,
   now,
   busy,
+  error,
   onSubmit,
 }: {
+  title: string;
   data: ScoreData;
   now: number;
   busy: boolean;
+  error: string;
   onSubmit: (reviews: ReviewInput[]) => void;
 }) {
   const [picked, setPicked] = useState<Record<string, number>>({});
+  const [step, setStep] = useState(0);
   const { targets, closesAt, penaltyDays } = data.review;
+  const t = targets[step];
   const left = Date.parse(closesAt!) - now;
-  const clock = focusClock(left);
-  const complete = targets.every((t) => ITEMS.every(({ key }) => picked[`${t.person}:${key}`]));
+  const done = ITEMS.every(({ key }) => picked[`${t.person}:${key}`]);
+  const last = step === targets.length - 1;
   return (
     <form
       className="peer-form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!complete) return;
+        if (!done) return;
+        if (!last) return setStep(step + 1);
         onSubmit(
-          targets.map((t) => ({
-            person: t.person,
-            ...(Object.fromEntries(ITEMS.map(({ key }) => [key, picked[`${t.person}:${key}`]])) as Record<
+          targets.map((x) => ({
+            person: x.person,
+            ...(Object.fromEntries(ITEMS.map(({ key }) => [key, picked[`${x.person}:${key}`]])) as Record<
               ItemKey,
               number
             >),
@@ -96,20 +108,26 @@ function ReviewForm({
         );
       }}
     >
-      <p className="focus-label">동료평가 마감까지</p>
+      <p className="peer-project">{title}</p>
+      <h2>동료평가</h2>
       <div className={`focus-clock ${tension(left).stage}`} role="timer">
-        {clock}
+        {focusClock(left)}
       </div>
       <p className="peer-warning">
         24시간 안에 내지 않으면{' '}
         {penaltyDays ? `${penaltyDays}일 동안` : '더 이상'} 새 프로젝트를 시작할 수 없어요
       </p>
-      {targets.map((t) => (
-        <fieldset key={t.person} className="peer-target">
-          <legend>{t.displayName}</legend>
-          {ITEMS.map(({ key, label }) => (
-            <div key={key} className="peer-item" role="radiogroup" aria-label={`${t.displayName} ${label}`}>
-              <span>{label}</span>
+      <fieldset key={t.person} className="peer-target">
+        <legend>
+          {t.displayName}
+          <small>
+            {step + 1} / {targets.length}
+          </small>
+        </legend>
+        {ITEMS.map(({ key, label }) => (
+          <div key={key} className="peer-item" role="radiogroup" aria-label={`${t.displayName} ${label}`}>
+            <span>{label}</span>
+            <div className="peer-scale">
               {[1, 2, 3, 4, 5].map((n) => (
                 <label key={n}>
                   <input
@@ -123,12 +141,20 @@ function ReviewForm({
                 </label>
               ))}
             </div>
-          ))}
-        </fieldset>
-      ))}
-      <button className="btn primary" disabled={!complete || busy}>
-        {busy ? '제출 중…' : '평가 제출'}
-      </button>
+          </div>
+        ))}
+      </fieldset>
+      {error && <output className="hint">{error}</output>}
+      <div className="peer-actions">
+        {step > 0 && (
+          <button type="button" className="btn" onClick={() => setStep(step - 1)}>
+            이전
+          </button>
+        )}
+        <button className="btn primary" disabled={!done || busy}>
+          {!last ? '다음' : busy ? '제출 중…' : '평가 제출'}
+        </button>
+      </div>
     </form>
   );
 }
@@ -181,24 +207,18 @@ export function needsRefresh(data: ScoreData | null) {
   return !data || data.review.status === 'open';
 }
 
-/** 렌더만 한다. now는 서버 기준 시각(ms). */
+/** 렌더만 한다. 평가 폼은 여기 없고 PeerReviewGate 모달이 띄운다. */
 export function PeerReviewView({
   data,
-  now,
   solo,
   restriction = null,
-  busy,
-  error,
-  onSubmit,
+  error = '',
 }: {
   data: ScoreData;
-  now: number;
   solo: boolean;
   /** 동료평가 미제출 금지(작업 공간이 처음 불러온 값). 결과가 가려졌을 때 함께 알린다. */
   restriction?: RestrictionView | null;
-  busy: boolean;
-  error: string;
-  onSubmit: (reviews: ReviewInput[]) => void;
+  error?: string;
 }) {
   const r = data.review;
   if (r.status === 'not_open') return null;
@@ -214,7 +234,7 @@ export function PeerReviewView({
       </>
     );
   else if (r.status === 'open' && !r.submitted && r.targets.length)
-    body = <ReviewForm data={data} now={now} busy={busy} onSubmit={onSubmit} />;
+    body = <p className="peer-note">평가 카드를 채워야 결과를 볼 수 있어요.</p>;
   else if (r.status === 'open')
     body = (
       <p className="peer-note">
@@ -240,42 +260,90 @@ async function fetchScore(projectId: string): Promise<ScoreData> {
   return body;
 }
 
-/** /api/score를 불러와 그린다. 제출 응답으로 다시 그리고, 실패하면 메시지를 보여주고 다시 불러온다. */
+/** 지금 낼 평가가 남았는지. 모달을 띄우거나 닫는 기준. */
+export function owesReview(data: ScoreData) {
+  const r = data.review;
+  return r.status === 'open' && !r.submitted && r.targets.length > 0 && !r.hidden;
+}
+
+/**
+ * 끝난 프로젝트 홈의 동료평가 카드. 결과가 열리기 전에는 부모 재조회(asOf)·모달 제출(owed 변화) 때 다시 불러온다.
+ * 낼 평가가 보이는데 모달 목록에 없으면 onOwe로 알린다(이 화면에서 프로젝트가 끝난 경우).
+ */
 export function PeerReviewCard({
   projectId,
   asOf,
   solo,
   restriction,
+  owed,
+  onOwe,
 }: {
   projectId: string;
-  /** 부모가 재조회할 때마다 바뀐다. 결과가 열리기 전에는 이때 함께 다시 불러온다. */
   asOf: string;
   solo: boolean;
   restriction: RestrictionView | null;
+  /** 모달 목록에 이 프로젝트가 있는지. */
+  owed: boolean;
+  onOwe: (projectId: string) => void;
 }) {
   const [data, setData] = useState<ScoreData | null>(null);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const live = useServerNow(asOf);
-  const now = live || Date.parse(asOf);
-  const load = useCallback(
-    () => fetchScore(projectId).then(setData),
-    [projectId],
-  );
   const pending = needsRefresh(data);
   useEffect(() => {
     if (!pending) return;
     fetchScore(projectId)
       .then(setData)
       .catch((e: Error) => setError(e.message));
-  }, [projectId, asOf, pending]);
+  }, [projectId, asOf, pending, owed]);
+  const owe = Boolean(data && !solo && owesReview(data));
+  useEffect(() => {
+    if (owe && !owed) onOwe(projectId);
+  }, [owe, owed, onOwe, projectId]);
   if (!data) return error ? <output className="hint">{error}</output> : null;
+  return <PeerReviewView data={data} solo={solo} restriction={restriction} error={error} />;
+}
+
+function GateProject({
+  project,
+  onDone,
+}: {
+  project: { id: string; title: string };
+  onDone: (projectId: string) => void;
+}) {
+  const [data, setData] = useState<ScoreData | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const live = useServerNow(data?.asOf ?? null);
+  useEffect(() => {
+    let current = true;
+    fetchScore(project.id)
+      .then((d) => {
+        if (!current) return;
+        if (owesReview(d)) setData(d);
+        else onDone(project.id);
+      })
+      .catch((e: Error) => current && setError(e.message));
+    return () => {
+      current = false;
+    };
+  }, [project.id, attempt, onDone]);
+  if (!data)
+    return error ? (
+      <div className="peer-form">
+        <output className="hint">{error}</output>
+        <button className="btn" onClick={() => (setError(''), setAttempt((n) => n + 1))}>
+          다시 불러오기
+        </button>
+      </div>
+    ) : (
+      <p className="peer-note">동료평가를 불러오는 중…</p>
+    );
   return (
-    <PeerReviewView
+    <ReviewCards
+      title={project.title}
       data={data}
-      now={now}
-      solo={solo}
-      restriction={restriction}
+      now={live || Date.parse(data.asOf!)}
       busy={busy}
       error={error}
       onSubmit={async (reviews) => {
@@ -286,18 +354,48 @@ export function PeerReviewCard({
           const res = await apiFetch('/api/score', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'review', projectId, reviews }),
+            body: JSON.stringify({ action: 'review', projectId: project.id, reviews }),
           });
           const body = await res.json();
           if (!res.ok) throw new Error(body.error || '제출하지 못했습니다.');
-          setData(body);
+          onDone(project.id);
         } catch (e) {
           setError((e as Error).message);
-          await load().catch(() => undefined);
         } finally {
           setBusy(false);
         }
       }}
     />
+  );
+}
+
+/**
+ * 낼 평가가 남은 동안 작업 공간 전체를 막는 모달. 프로젝트를 하나씩, 팀원을 한 명씩 카드로 띄운다.
+ * Esc·뒤로 닫히지 않는다(닫히면 다시 연다). 서버 강제는 미제출 제재(lib/sanction.ts)가 한다.
+ */
+export function PeerReviewGate({
+  projects,
+  onDone,
+}: {
+  projects: { id: string; title: string }[];
+  onDone: (projectId: string) => void;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const reopen = useCallback(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+  }, []);
+  useEffect(reopen);
+  return (
+    <dialog
+      ref={ref}
+      className="peer-dialog"
+      aria-label="동료평가"
+      onCancel={(e) => e.preventDefault()}
+      onClose={reopen}
+    >
+      <GateProject key={projects[0].id} project={projects[0]} onDone={onDone} />
+      {projects.length > 1 && <p className="tiny muted">이 프로젝트 다음에 {projects.length - 1}개 더 남았어요</p>}
+    </dialog>
   );
 }
