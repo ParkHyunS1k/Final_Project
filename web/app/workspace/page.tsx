@@ -1,6 +1,10 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Sites sign-in requires top-level navigation, without router prefetch. */
 import { PeerReviewCard } from '@/components/peer-review';
+import {
+  CheckinCelebration,
+  celebrationFor,
+} from '@/components/checkin-celebration';
 import { restrictionMessage } from '@/lib/score';
 import { useEffect, useState, useCallback } from 'react';
 import { TaskEditor } from '@/components/task-editor';
@@ -160,6 +164,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [celebration, setCelebration] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [note, setNote] = useState('');
   const [taskId, setTaskId] = useState(1);
@@ -291,6 +296,13 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
       }
       setState(body);
       setNotice(message);
+      setCelebration(
+        celebrationFor(
+          action,
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+          Math.random(),
+        ),
+      );
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장하지 못했습니다.');
@@ -915,6 +927,12 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
               '업무를 저장하고 예상 일정을 다시 계산했습니다.',
             )
           }
+        />
+      )}
+      {celebration && (
+        <CheckinCelebration
+          src={celebration}
+          onDone={() => setCelebration(null)}
         />
       )}
       <Dialog
