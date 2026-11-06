@@ -286,9 +286,15 @@ export function owesReview(data: ScoreData) {
   return r.status === 'open' && !r.submitted && r.targets.length > 0 && !r.hidden;
 }
 
+/** 서버 시각 now(ms)로 평가 마감이 지났는지. 지나면 모달이 서버에 다시 물어 닫힌다. now가 0이면 아직 모른다. */
+export function reviewExpired(data: ScoreData, now: number) {
+  return now > 0 && data.review.closesAt !== null && Date.parse(data.review.closesAt) <= now;
+}
+
 /**
  * 끝난 프로젝트 홈의 동료평가 카드. 결과가 열리기 전에는 부모 재조회(asOf)·모달 제출(owed 변화) 때 다시 불러온다.
- * 낼 평가가 보이는데 모달 목록에 없으면 onOwe로 알린다(이 화면에서 프로젝트가 끝난 경우).
+ * 낼 평가가 보이는데 모달 목록에 없으면 onOwe로 서버 목록을 다시 받게 한다(이 화면에서 프로젝트가 끝난 경우).
+ * 목록에 직접 넣지 않는다. 제출 직후의 오래된 응답으로 방금 낸 프로젝트를 다시 넣지 않도록 서버가 정한다.
  */
 export function PeerReviewCard({
   projectId,
@@ -304,7 +310,7 @@ export function PeerReviewCard({
   restriction: RestrictionView | null;
   /** 모달 목록에 이 프로젝트가 있는지. */
   owed: boolean;
-  onOwe: (projectId: string) => void;
+  onOwe: () => void;
 }) {
   const [data, setData] = useState<ScoreData | null>(null);
   const [error, setError] = useState('');
@@ -317,8 +323,8 @@ export function PeerReviewCard({
   }, [projectId, asOf, pending, owed]);
   const owe = Boolean(data && !solo && owesReview(data));
   useEffect(() => {
-    if (owe && !owed) onOwe(projectId);
-  }, [owe, owed, onOwe, projectId]);
+    if (owe && !owed) onOwe();
+  }, [owe, owed, onOwe]);
   if (!data) return error ? <output className="hint">{error}</output> : null;
   return <PeerReviewView data={data} solo={solo} restriction={restriction} error={error} />;
 }
@@ -335,6 +341,13 @@ function GateProject({
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const live = useServerNow(data?.asOf ?? null);
+  // 마감이 지나거나 창으로 돌아오면(다른 탭에서 냈을 수 있다) 서버에 다시 묻는다. 더 낼 게 없으면 닫힌다.
+  const expired = data ? reviewExpired(data, live) : false;
+  useEffect(() => {
+    const again = () => setAttempt((n) => n + 1);
+    window.addEventListener('focus', again);
+    return () => window.removeEventListener('focus', again);
+  }, []);
   useEffect(() => {
     let current = true;
     fetchScore(project.id)
@@ -347,7 +360,7 @@ function GateProject({
     return () => {
       current = false;
     };
-  }, [project.id, attempt, onDone]);
+  }, [project.id, attempt, expired, onDone]);
   if (!data)
     return error ? (
       <div className="peer-form">
@@ -381,6 +394,7 @@ function GateProject({
           onDone(project.id);
         } catch (e) {
           setError((e as Error).message);
+          setAttempt((n) => n + 1); // 이미 냈거나 기간이 끝났으면 다시 물어 닫는다.
         } finally {
           setBusy(false);
         }

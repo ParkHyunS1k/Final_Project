@@ -41,8 +41,8 @@ export type WorkspaceNav = {
   restriction: RestrictionView | null;
   /** 아직 낼 동료평가가 있는 프로젝트. 있으면 PeerReviewGate 모달이 작업 공간을 막는다. */
   reviewPending: string[];
-  /** 이 화면에서 프로젝트가 끝나 평가할 차례가 되면 모달에 더한다. */
-  requireReview: (projectId: string) => void;
+  /** 서버에서 낼 평가 목록을 다시 받는다(이 화면에서 프로젝트가 끝난 경우). */
+  refreshReviews: () => void;
 };
 function WorkspaceMenu({
   view,
@@ -233,10 +233,25 @@ export function ProjectWorkspace({
   const [busy, setBusy] = useState(false);
   const [restriction, setRestriction] = useState<RestrictionView | null>(null);
   const [reviewPending, setReviewPending] = useState<string[]>([]);
-  const requireReview = useCallback(
-    (id: string) => setReviewPending((p) => (p.includes(id) ? p : [...p, id])),
-    [],
-  );
+  // 낼 평가 목록은 서버가 정한다. 처음 불러올 때, 30초마다, 창으로 돌아올 때, 홈 카드가 알릴 때 다시 받는다.
+  // 업무·팀 찾기 화면을 보는 중에 프로젝트가 끝나도 모달이 뜬다.
+  const refreshReviews = useCallback(() => {
+    api('/api/projects')
+      .then((data) => {
+        setProjects(data.projects);
+        setRestriction(data.restriction);
+        setReviewPending(data.reviewPending);
+      })
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    const id = setInterval(refreshReviews, 30000);
+    window.addEventListener('focus', refreshReviews);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('focus', refreshReviews);
+    };
+  }, [refreshReviews]);
   const reviewed = useCallback((id: string) => setReviewPending((p) => p.filter((x) => x !== id)), []);
   const [invite, setInvite] = useState('');
   const [preview, setPreview] = useState<{ details: InvitePreview } | null>(
@@ -468,7 +483,7 @@ export function ProjectWorkspace({
         ) : browsing && !creating ? (
           <TeamDirectory restriction={restriction} />
         ) : selected && !creating ? (
-          children(selected, { view, setView, mine, setMine, restriction, reviewPending, requireReview })
+          children(selected, { view, setView, mine, setMine, restriction, reviewPending, refreshReviews })
         ) : loaded && !creating ? (
           <section className="project-panel">
             <h1>첫 스프린트를 만들어보세요.</h1>

@@ -21,7 +21,7 @@ await build({
   packages: 'external',
   alias: { '@': process.cwd() },
 });
-const { PeerReviewView, ReviewCards, needsRefresh, owesReview } = await import(pathToFileURL(outfile).href);
+const { PeerReviewView, ReviewCards, needsRefresh, owesReview, reviewExpired } = await import(pathToFileURL(outfile).href);
 
 const NOW = Date.parse('2026-11-06T03:00:00.000Z');
 const H = 3600000;
@@ -204,4 +204,11 @@ void test('모달은 낼 평가가 남았을 때만: 열림·미제출·대상 �
   assert.equal(owesReview(data({ targets: one, submitted: true })), false);
   assert.equal(owesReview(data({ targets: [] })), false);
   assert.equal(owesReview(data({ targets: one, status: 'closed' })), false);
+});
+
+void test('모달은 마감 시각이 지나면 서버에 다시 묻는다(제출할 수 없어진 모달에 갇히지 않게)', () => {
+  const d = data({ targets: [{ person: 1, displayName: '서연' }] });
+  assert.equal(reviewExpired(d, NOW), false);
+  assert.equal(reviewExpired(d, NOW + 22 * H), true);
+  assert.equal(reviewExpired(d, 0), false);
 });

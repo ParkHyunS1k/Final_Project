@@ -544,7 +544,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                     solo={state!.members.filter((m) => !m.left_at).length === 1}
                     restriction={nav.restriction}
                     owed={nav.reviewPending.includes(projectId)}
-                    onOwe={nav.requireReview}
+                    onOwe={nav.refreshReviews}
                   />
                 )}
                 {lifecycle !== 'draft' && (
