@@ -141,7 +141,7 @@ export function ProjectCreate({
           실제 결제는 발생하지 않습니다.
         </label>
         {restriction && (
-          <output className="hint">
+          <output className="hint restriction-hint">
             {restrictionMessage(restriction, '새 프로젝트를 만들')}
           </output>
         )}

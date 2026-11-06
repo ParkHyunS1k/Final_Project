@@ -121,7 +121,7 @@ export function TeamDirectory({ restriction = null }: { restriction?: Restrictio
         팀이 보입니다. 참여 신청 후 팀장이 승인하면 팀원이 됩니다.
       </p>
       {restriction && (
-        <output className="hint">
+        <output className="hint restriction-hint">
           {restrictionMessage(restriction, '참여 신청할')}
         </output>
       )}

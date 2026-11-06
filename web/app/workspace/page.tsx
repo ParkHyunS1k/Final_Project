@@ -514,7 +514,7 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                   없습니다.
                 </p>
                 {isOwner && nav.restriction && (
-                  <output className="hint">
+                  <output className="hint restriction-hint">
                     {restrictionMessage(nav.restriction, '스프린트를 시작할')}
                   </output>
                 )}
