@@ -23,15 +23,15 @@ await build({
 });
 const { CELEBRATIONS, celebrationFor, CheckinCelebration } = await import(pathToFileURL(outfile).href);
 
-test('영상 5개가 모두 public/에 있다', () => {
-  assert.equal(CELEBRATIONS.length, 5);
+test('영상 6개가 모두 public/에 있다', () => {
+  assert.equal(CELEBRATIONS.length, 6);
   for (const src of CELEBRATIONS) assert.ok(existsSync(join('public', src)), src);
 });
 
-test('진행 보고 저장이면 난수로 5개 중 하나를 고른다', () => {
+test('진행 보고 저장이면 난수로 6개 중 하나를 고른다', () => {
   assert.equal(celebrationFor('checkin', false, 0), CELEBRATIONS[0]);
-  assert.equal(celebrationFor('checkin', false, 0.5), CELEBRATIONS[2]);
-  assert.equal(celebrationFor('checkin', false, 0.9999), CELEBRATIONS[4]);
+  assert.equal(celebrationFor('checkin', false, 0.5), CELEBRATIONS[3]);
+  assert.equal(celebrationFor('checkin', false, 0.9999), CELEBRATIONS[5]);
 });
 
 test('다른 저장이나 동작 줄이기 설정이면 재생하지 않는다', () => {

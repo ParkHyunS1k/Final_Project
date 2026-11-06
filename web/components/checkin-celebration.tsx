@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 
-// 진행 보고 저장 직후 재생하는 4초 축하 영상. 사람만 다른 같은 장면 5개 중 하나를 고른다.
-export const CELEBRATIONS = [1, 2, 3, 4, 5].map((n) => `/checkin/${n}.mp4`);
+// 진행 보고 저장 직후 재생하는 4초 축하 영상. 사람만 다른 같은 장면 6개 중 하나를 고른다(6번은 무표정 포니테일).
+export const CELEBRATIONS = [1, 2, 3, 4, 5, 6].map((n) => `/checkin/${n}.mp4`);
 
 export function celebrationFor(
   action: string,
