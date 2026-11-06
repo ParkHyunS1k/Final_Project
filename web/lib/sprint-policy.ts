@@ -18,6 +18,7 @@ export type Policy = {
   goalVersion: number;
   durationDays: number;
   dailyHours: number;
+  completionMode?: 'deliverables' | 'tasks';
   startedAt: Date | null;
   deadlineAt: Date | null;
   completedAt: Date | null;
@@ -48,6 +49,7 @@ export function policyRow(row: Record<string, unknown> | null | undefined) {
     goalVersion: Number(row.goal_version),
     durationDays: Number(row.duration_days),
     dailyHours: Number(row.daily_hours),
+    completionMode: row.completion_mode === 'tasks' ? 'tasks' : 'deliverables',
     startedAt: (row.started_at as Date | null) ?? null,
     deadlineAt: (row.deadline_at as Date | null) ?? null,
     completedAt: (row.completed_at as Date | null) ?? null,
@@ -56,7 +58,10 @@ export function policyRow(row: Record<string, unknown> | null | undefined) {
 
 // 저장된 상태가 진행 중이어도 서버 시각이 마감에 도달했으면 유효 상태는 종료다.
 // 종료 처리 작업이 늦어져도 쓰기가 열리지 않는다.
-export function effectiveLifecycle(policy: Policy | null, now: Date): Lifecycle {
+export function effectiveLifecycle(
+  policy: Policy | null,
+  now: Date,
+): Lifecycle {
   if (!policy) return 'legacy';
   if (policy.lifecycle !== 'active') return policy.lifecycle;
   if (policy.deadlineAt && now.getTime() >= policy.deadlineAt.getTime())
@@ -127,7 +132,13 @@ export const RULES: Record<string, Rule> = {
 };
 
 // 목표·최종 기한은 시작 뒤 어떤 경로로도 바꿀 수 없다. 되돌리기·AI 승인도 같다.
-export const FIXED_AFTER_START = ['goal', 'scope', 'completionCriteria', 'deliverables', 'deadline'];
+export const FIXED_AFTER_START = [
+  'goal',
+  'scope',
+  'completionCriteria',
+  'deliverables',
+  'deadline',
+];
 
 function stateMessage(state: Lifecycle) {
   if (state === 'legacy')
@@ -195,9 +206,14 @@ export type StartCheck = {
 // 시작 자격: 팀장 권한, 실제 가입한 최소 1명, 현재 멤버 전원의 최신 목표 동의.
 // 초대만 보낸 사람은 가입 인원으로 세지 않는다.
 export function startReadiness(
-  members: { agreedGoalVersion: number; displayName: string; leftAt: Date | null }[],
+  members: {
+    agreedGoalVersion: number;
+    displayName: string;
+    leftAt: Date | null;
+  }[],
   goalVersion: number,
   deliverables: number,
+  options?: Pick<Policy, 'completionMode'>,
 ): StartCheck {
   const active = members.filter((m) => !m.leftAt);
   const agreed = active.filter((m) => m.agreedGoalVersion === goalVersion);
@@ -211,8 +227,8 @@ export function startReadiness(
         .map((m) => m.displayName)
         .join(', ')}`,
     );
-  // 새 프로젝트는 완료 기준 행을 항상 가진다. 행이 없으면 데이터 손상으로 보고 막는다.
-  if (!deliverables) missing.push('완료 기준 항목이 없습니다. 목표를 다시 저장해주세요.');
+  if (!deliverables && options?.completionMode !== 'tasks')
+    missing.push('완료 기준 항목이 없습니다. 목표를 다시 저장해주세요.');
   return {
     ready: !missing.length,
     joined: active.length,

@@ -18,8 +18,11 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Zap, ListTodo, FileText, Gauge, LogOut, Users } from 'lucide-react';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Zap, ListTodo, FileText, Gauge, LogOut } from 'lucide-react';
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from '@/components/ui/native-select';
 import { viewFrom, type View } from '@/lib/race';
 import { apiFetch, signInWithGoogle, signOut } from '@/lib/supabase-browser';
 import { workspaceEntry } from '@/lib/workspace-entry';
@@ -216,8 +219,10 @@ async function api(path: string, body?: Record<string, unknown>) {
 }
 export function ProjectWorkspace({
   children,
+  embedded = false,
 }: {
   children: (id: string, nav: WorkspaceNav) => ReactNode;
+  embedded?: boolean;
 }) {
   const [projects, setProjects] = useState<
     { id: string; title: string; role: string; lifecycle: string }[]
@@ -241,15 +246,19 @@ export function ProjectWorkspace({
         setProjects(data.projects);
         setRestriction(data.restriction);
         setReviewPending(data.reviewPending);
+        // 통합 앱의 PendingReviewGate도 곧바로 다시 받게 한다.
+        dispatchEvent(new Event('pm:reviews'));
       })
       .catch(() => undefined);
   }, []);
   useEffect(() => {
     const id = setInterval(refreshReviews, 30000);
     window.addEventListener('focus', refreshReviews);
+    window.addEventListener('pm:reviewed', refreshReviews);
     return () => {
       clearInterval(id);
       window.removeEventListener('focus', refreshReviews);
+      window.removeEventListener('pm:reviewed', refreshReviews);
     };
   }, [refreshReviews]);
   const reviewed = useCallback((id: string) => setReviewPending((p) => p.filter((x) => x !== id)), []);
@@ -258,6 +267,7 @@ export function ProjectWorkspace({
     null,
   );
   const [agreed, setAgreed] = useState(false);
+  const Body = embedded ? 'section' : SidebarInset;
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get('invite') || '';
@@ -271,7 +281,8 @@ export function ProjectWorkspace({
         setRestriction(data.restriction);
         setReviewPending(data.reviewPending);
         setInvite(entry.invite);
-        setBrowsing(entry.browsing);
+        // 통합 앱(embedded)에서는 팀 찾기가 따로 있다.
+        setBrowsing(!embedded && entry.browsing);
         setProjects(data.projects);
         setSelected(entry.selected);
         if (token)
@@ -284,84 +295,127 @@ export function ProjectWorkspace({
         setError(e.message);
       })
       .finally(() => setLoaded(true));
-  }, []);
+  }, [embedded]);
   return (
-    <SidebarProvider className="workspace-shell">
-      <Sidebar className="workspace-sidebar">
-        <SidebarHeader>
-          <div className="workspace-brand">
-            <span>
-              <Zap size={18} fill="currentColor" />
-            </span>{' '}
-            projectmate.
-          </div>
-          <ProjectSwitcher
-            projects={projects}
-            value={creating ? '__new' : selected}
-            onCreate={() => {
-              setCreating(true);
-              setBrowsing(false);
-            }}
-            onSelect={(id) => {
-              setSelected(id);
-              setCreating(false);
-              setBrowsing(false);
-              setView('home');
-              setMine(false);
-              history.replaceState(null, '', '/workspace?project=' + encodeURIComponent(id));
-            }}
-          />
-        </SidebarHeader>
-        <SidebarContent>
-          {selected && (
-            <SidebarGroup>
-              <SidebarGroupLabel>메뉴</SidebarGroupLabel>
-              <WorkspaceMenu
-                view={browsing ? null : view}
-                onChange={(v) => {
-                  setView(v);
-                  setCreating(false);
-                  setBrowsing(false);
-                  history.replaceState(null, '', '/workspace?project=' + encodeURIComponent(selected));
-                }}
-              />
-            </SidebarGroup>
-          )}
-          <SidebarGroup>
-            <SidebarGroupLabel>팀</SidebarGroupLabel>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <WorkspaceButton
-                  isActive={browsing}
-                  onClick={() => {
-                    setBrowsing(true);
+    <SidebarProvider
+      className={'workspace-shell' + (embedded ? ' hub-workspace' : '')}
+    >
+      {!embedded && (
+        <Sidebar className="workspace-sidebar">
+          <SidebarHeader>
+            <div className="workspace-brand">
+              <span>
+                <Zap size={18} fill="currentColor" />
+              </span>{' '}
+              projectmate.
+            </div>
+            <ProjectSwitcher
+              projects={projects}
+              value={creating ? '__new' : selected}
+              onCreate={() => setCreating(true)}
+              onSelect={(id) => {
+                setSelected(id);
+                setCreating(false);
+                setView('home');
+                setMine(false);
+                history.replaceState(
+                  null,
+                  '',
+                  '/workspace?project=' + encodeURIComponent(id),
+                );
+              }}
+            />
+          </SidebarHeader>
+          <SidebarContent>
+            {selected && (
+              <SidebarGroup>
+                <SidebarGroupLabel>메뉴</SidebarGroupLabel>
+                <WorkspaceMenu
+                  view={view}
+                  onChange={(v) => {
+                    setView(v);
                     setCreating(false);
-                    history.replaceState(null, '', '/workspace?teams=1');
                   }}
-                >
-                  <Users size={16} />
-                  <span>팀 찾기</span>
-                </WorkspaceButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        </SidebarContent>
-        <SidebarFooter>
-          <div className="sidebar-actions">
-            <WorkspaceButton onClick={() => void signOut()}>
-              <LogOut size={16} />
-              로그아웃
-            </WorkspaceButton>
-            <ThemeToggle />
+                />
+              </SidebarGroup>
+            )}
+          </SidebarContent>
+          <SidebarFooter>
+            <a
+              className="btn"
+              href={
+                '/career' +
+                (selected ? '?project=' + encodeURIComponent(selected) : '')
+              }
+            >
+              이력서·추천·팀 역할
+            </a>
+            <div className="sidebar-actions">
+              <WorkspaceButton onClick={() => void signOut()}>
+                <LogOut size={16} />
+                로그아웃
+              </WorkspaceButton>
+              <ThemeToggle />
+            </div>
+            <p className="sidebar-note">
+              작게 시작하고, 함께 완성하기.
+              <br />
+              7일 스프린트
+            </p>
+          </SidebarFooter>
+        </Sidebar>
+      )}
+      <Body className="workspace-body">
+        {embedded && (
+          <div className="hub-work-toolbar">
+            <label>
+              프로젝트{' '}
+              <select
+                aria-label="프로젝트 선택"
+                value={selected}
+                onChange={(e) =>
+                  location.assign(
+                    '/app?tab=work&project=' +
+                      encodeURIComponent(e.target.value),
+                  )
+                }
+              >
+                <option value="" disabled>
+                  프로젝트 선택
+                </option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <a className="btn" href="/app?tab=templates">
+              새 프로젝트
+            </a>
+            {selected && (
+              <a
+                className="btn"
+                href={'/app?tab=team&project=' + encodeURIComponent(selected)}
+              >
+                역할 추천
+              </a>
+            )}
+            {selected && (
+              <nav aria-label="프로젝트 화면">
+                {workspaceViews.map((item) => (
+                  <button
+                    key={item.id}
+                    className={'btn ' + (view === item.id ? 'primary' : '')}
+                    onClick={() => setView(item.id)}
+                  >
+                    {item.id === 'home' ? '진행 현황' : item.label}
+                  </button>
+                ))}
+              </nav>
+            )}
           </div>
-          <p className="sidebar-note">
-            작게 시작하고, 함께 완성하기.
-            <br />
-            7일 스프린트
-          </p>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="workspace-body">
+        )}
         {!(selected && !creating && !invite && !browsing) && (
           <header className="workspace-bar">
             <SidebarTrigger aria-label="사이드바 열기 또는 닫기" />
@@ -386,7 +440,9 @@ export function ProjectWorkspace({
             {error.includes('로그인') && (
               <button
                 className="btn primary"
-                onClick={() => signInWithGoogle().catch((e: Error) => setError(e.message))}
+                onClick={() =>
+                  signInWithGoogle().catch((e: Error) => setError(e.message))
+                }
               >
                 Google로 로그인
               </button>
@@ -400,7 +456,10 @@ export function ProjectWorkspace({
               setError('');
               try {
                 const result = await api('/api/projects', body);
-                location.assign('/workspace?project=' + encodeURIComponent(result.projectId));
+                location.assign(
+                  '/app?tab=work&project=' +
+                    encodeURIComponent(result.projectId),
+                );
                 return true;
               } catch (e) {
                 setError((e as Error).message);
@@ -422,7 +481,9 @@ export function ProjectWorkspace({
                     <li key={v}>{v}</li>
                   ))}
                 </ul>
-                <p>완료 기준: {preview.details.completion_criteria}</p>
+                {preview.details.completion_criteria && (
+                  <p>완료 기준: {preview.details.completion_criteria}</p>
+                )}
                 <p>
                   {preview.details.deadline_at
                     ? '마감: ' +
@@ -439,7 +500,7 @@ export function ProjectWorkspace({
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
                   />
-                  목표 v{preview.details.goal_version}와 완료 기준을 확인하고
+                  목표 v{preview.details.goal_version}와 기능 범위를 확인하고
                   참여합니다.
                 </label>
                 <button
@@ -456,7 +517,8 @@ export function ProjectWorkspace({
                         goalVersion: preview.details.goal_version,
                       });
                       location.replace(
-                        '/workspace?project=' + encodeURIComponent(result.projectId),
+                        '/workspace?project=' +
+                          encodeURIComponent(result.projectId),
                       );
                     } catch (e) {
                       const changed = (e as { details?: InvitePreview })
@@ -486,17 +548,14 @@ export function ProjectWorkspace({
           children(selected, { view, setView, mine, setMine, restriction, reviewPending, refreshReviews })
         ) : loaded && !creating ? (
           <section className="project-panel">
-            <h1>첫 스프린트를 만들어보세요.</h1>
-            <p>목표를 정하고 팀원을 초대해 7일 동안 함께 진행합니다.</p>
-            <button
-              className="btn"
-              onClick={() => {
-                setBrowsing(true);
-                history.replaceState(null, '', '/workspace?teams=1');
-              }}
-            >
-              이미 굴러가는 팀 찾기
-            </button>
+            <h1>첫 프로젝트를 골라보세요.</h1>
+            <p>
+              템플릿을 고르면 할 일이 준비됩니다. 혼자서도 팀과 함께도 시작할 수
+              있어요.
+            </p>
+            <a className="btn primary" href="/app?tab=templates">
+              프로젝트 고르기
+            </a>
           </section>
         ) : !loaded ? (
           <section className="project-panel" aria-busy="true">
@@ -508,8 +567,9 @@ export function ProjectWorkspace({
             </div>
           </section>
         ) : null}
-      </SidebarInset>
-      {reviewPending.length > 0 && (
+      </Body>
+      {/* 통합 앱(embedded)에서는 UnifiedApp이 같은 모달을 띄운다. */}
+      {!embedded && reviewPending.length > 0 && (
         <PeerReviewGate
           projects={reviewPending.map((id) => ({
             id,
@@ -539,9 +599,11 @@ export function ProjectDetails({
           <li key={v}>{v}</li>
         ))}
       </ul>
-      <p>
-        <b>완료 기준</b> {state.details.completion_criteria}
-      </p>
+      {state.details.completion_criteria && (
+        <p>
+          <b>완료 기준</b> {state.details.completion_criteria}
+        </p>
+      )}
       {!state.sprint.tasks.length && (
         <p>
           프로젝트 생성이 완료됐습니다. 업무 메뉴에서 업무와 담당자를
@@ -563,7 +625,11 @@ function inviteNotice(mail: unknown, to: string, resent: boolean) {
         : '메일 발송이 설정되지 않아 보내지 않았습니다. 아래 링크를 직접 전달해 주세요.';
   return resent ? `${head} 이전 링크는 더 이상 쓸 수 없습니다.` : head;
 }
-const MAIL_LABEL = { sent: '메일 보냄', failed: '메일 실패', off: '메일 꺼짐' } as const;
+const MAIL_LABEL = {
+  sent: '메일 보냄',
+  failed: '메일 실패',
+  off: '메일 꺼짐',
+} as const;
 // 팀장 전용 초대 관리. 프로젝트 메뉴의 팀원 구역에 그대로 둔다.
 export function TeamInvites({
   state,
@@ -597,7 +663,9 @@ export function TeamInvites({
       });
       if (result.token)
         setLink(
-          location.origin + '/workspace?invite=' + encodeURIComponent(result.token),
+          location.origin +
+            '/workspace?invite=' +
+            encodeURIComponent(result.token),
         );
       await refresh();
       setMessage(
@@ -607,7 +675,8 @@ export function TeamInvites({
               result.email,
               action === 'invite'
                 ? email
-                : (state.invites.find((i) => i.id === extra.inviteId)?.email ?? ''),
+                : (state.invites.find((i) => i.id === extra.inviteId)?.email ??
+                    ''),
               action === 'resend',
             ),
       );
@@ -638,10 +707,7 @@ export function TeamInvites({
             maxLength={254}
           />
         </label>
-        <button
-          className="btn primary"
-          disabled={busy || !writable}
-        >
+        <button className="btn primary" disabled={busy || !writable}>
           초대 링크 만들기
         </button>
       </form>

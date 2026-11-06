@@ -15,7 +15,11 @@ import {
   type Lifecycle,
   type Policy,
 } from './sprint-policy';
-import { completionCheck, deliverableRow } from './deliverables';
+import {
+  completionCheck,
+  taskCompletionCheck,
+  deliverableRow,
+} from './deliverables';
 export { database };
 export async function readSprint(owner: string): Promise<Sprint | null> {
   const db = database();
@@ -275,8 +279,16 @@ export async function responseState(owner: string, now = new Date()) {
     policy,
     agreement: agreement.results[0] ?? null,
     deliverables,
-    completion: completionCheck(deliverables),
-    readiness: startReadiness(members, policy.goalVersion, deliverables.length),
+    completion:
+      policy.completionMode === 'tasks'
+        ? taskCompletionCheck(s.tasks)
+        : completionCheck(deliverables),
+    readiness: startReadiness(
+      members,
+      policy.goalVersion,
+      deliverables.length,
+      policy,
+    ),
     plan: currentPlan(s, policy, members, now),
     legacySchedule: null,
   };
@@ -296,9 +308,9 @@ function policyGuard(states: Lifecycle[]) {
   const list = states.filter((s) => LIFECYCLES.includes(s));
   if (!list.length) throw new Error('허용 상태가 없습니다.');
   return (
-    " AND EXISTS(SELECT 1 FROM project_policy p WHERE p.project_id=sprints.owner" +
+    ' AND EXISTS(SELECT 1 FROM project_policy p WHERE p.project_id=sprints.owner' +
     ` AND p.lifecycle IN (${list.map((s) => `'${s}'`).join(',')})` +
-    " AND (p.deadline_at IS NULL OR p.deadline_at > now()))"
+    ' AND (p.deadline_at IS NULL OR p.deadline_at > now()))'
   );
 }
 
@@ -316,12 +328,11 @@ export async function save(
   const db = database();
   const mutation = crypto.randomUUID();
   const now = new Date().toISOString();
-  const head = db
-    .prepare(
-      'UPDATE sprints SET revision=revision+1,mutation=?,joined=?,finished=?,updated_at=? WHERE owner=? AND revision=?' +
-        (states ? policyGuard(states) : '') +
-        (guard ? ' AND ' + guard.sql : ''),
-    );
+  const head = db.prepare(
+    'UPDATE sprints SET revision=revision+1,mutation=?,joined=?,finished=?,updated_at=? WHERE owner=? AND revision=?' +
+      (states ? policyGuard(states) : '') +
+      (guard ? ' AND ' + guard.sql : ''),
+  );
   const headArgs: unknown[] = [
     mutation,
     s.joined,

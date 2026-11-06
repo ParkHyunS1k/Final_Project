@@ -64,6 +64,13 @@
       "when": 1793946455371,
       "tag": "0008_peer_review_half_points",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793986647211,
+      "tag": "0009_career_hub",
+      "breakpoints": true
     }
   ]
 }

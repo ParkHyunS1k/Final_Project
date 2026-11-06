@@ -8,21 +8,18 @@ import { readPolicy, database } from '@/lib/sprint-store';
 import { effectiveLifecycle, PolicyError } from '@/lib/sprint-policy';
 import {
   DAILY_REVIEW_LIMIT,
-  fakeReviewModel,
   prepareQuestions,
   reviewAvailable,
   validateAnswers,
   validateGrade,
   type ReviewKind,
-  type ReviewModel,
 } from '@/lib/ai-review';
-import { reviewModelFromEnv } from '@/lib/ai-review-live';
+import { model, github } from '@/lib/ai-review-runtime';
 import {
   fetchCommitMaterial,
   parseLogin,
   parseRepoUrl,
   ReviewSourceError,
-  type FetchOptions,
 } from '@/lib/ai-review-github';
 import {
   findReview,
@@ -47,16 +44,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 90;
 // 채점 선점이 이 시간보다 오래되면 버려진 것으로 본다(함수 제한 90초보다 길게).
 const GRADING_STALE_MS = 3 * 60 * 1000;
-
-let model: ReviewModel = reviewModelFromEnv(process.env) ?? fakeReviewModel();
-// 서버의 GitHub 토큰(선택)은 호출 한도 완화용. 사용자 토큰은 받지 않는다.
-let github: FetchOptions = { token: process.env.GITHUB_TOKEN?.trim() || undefined };
-export function useReviewModel(next: ReviewModel) {
-  model = next;
-}
-export function useGithub(next: FetchOptions) {
-  github = next;
-}
 
 function reply(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { 'Cache-Control': 'no-store' } });
