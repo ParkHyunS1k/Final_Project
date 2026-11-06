@@ -271,7 +271,7 @@ void test('뱃지 조건: 완주·솔로·매일 보고·병목 0·동료평가�
   );
 });
 
-void test('평가 입력: 대상 전원을 한 번씩, 1~5 정수만', () => {
+void test('평가 입력: 대상 전원을 한 번씩, 0.5~5 사이 0.5점 단위만', () => {
   const ok = parseReviews(
     [
       { person: 1, contribution: 5, communication: 1, commitment: 3 },
@@ -283,6 +283,15 @@ void test('평가 입력: 대상 전원을 한 번씩, 1~5 정수만', () => {
     ok.map((x) => x.person),
     [1, 2],
   );
+  const half = parseReviews(
+    [
+      { person: 1, contribution: 4.5, communication: 0.5, commitment: 3 },
+      { person: 2, contribution: 5, communication: 1.5, commitment: 2.5 },
+    ],
+    [1, 2],
+  );
+  assert.equal(half[0].contribution, 4.5);
+  assert.equal(half[0].communication, 0.5);
   const bad: unknown[] = [
     [
       { person: '1', contribution: 5, communication: 1, commitment: 3 },
@@ -309,7 +318,15 @@ void test('평가 입력: 대상 전원을 한 번씩, 1~5 정수만', () => {
       { person: 2, contribution: 5, communication: 1, commitment: 3 },
     ],
     [
-      { person: 1, contribution: 4.5, communication: 1, commitment: 3 },
+      { person: 1, contribution: 4.3, communication: 1, commitment: 3 },
+      { person: 2, contribution: 5, communication: 1, commitment: 3 },
+    ],
+    [
+      { person: 1, contribution: 5.5, communication: 1, commitment: 3 },
+      { person: 2, contribution: 5, communication: 1, commitment: 3 },
+    ],
+    [
+      { person: 1, contribution: Number.NaN, communication: 1, commitment: 3 },
       { person: 2, contribution: 5, communication: 1, commitment: 3 },
     ],
     [

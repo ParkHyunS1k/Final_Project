@@ -67,6 +67,35 @@ function Badges({ badges }: { badges: ScoreData['badges'] }) {
   );
 }
 
+/**
+ * 별 다섯 개, 별마다 왼쪽 반은 .5점·오른쪽 반은 1점. 0.5~5 열 칸짜리 라디오 그룹이라 화살표 키로도 고른다.
+ */
+function Stars({ name, value, onPick }: { name: string; value: number; onPick: (n: number) => void }) {
+  return (
+    <div className="peer-stars">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className="peer-star">
+          <span aria-hidden="true">★</span>
+          <span
+            className="peer-star-fill"
+            aria-hidden="true"
+            style={{ width: `${Math.min(Math.max(value - star + 1, 0), 1) * 100}%` }}
+          >
+            ★
+          </span>
+          {[star - 0.5, star].map((n) => (
+            <label key={n}>
+              <input type="radio" name={name} value={n} checked={value === n} onChange={() => onPick(n)} />
+              <span className="sr-only">{n}점</span>
+            </label>
+          ))}
+        </span>
+      ))}
+      <b className="peer-star-value">{value ? value.toFixed(1) : '–'}</b>
+    </div>
+  );
+}
+
 /** 팀원 한 명씩 카드로 평가한다. 세 문항을 다 고르면 다음 사람, 마지막 카드에서 한 번에 제출. */
 export function ReviewCards({
   title,
@@ -127,20 +156,11 @@ export function ReviewCards({
         {ITEMS.map(({ key, label }) => (
           <div key={key} className="peer-item" role="radiogroup" aria-label={`${t.displayName} ${label}`}>
             <span>{label}</span>
-            <div className="peer-scale">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <label key={n}>
-                  <input
-                    type="radio"
-                    name={`${t.person}:${key}`}
-                    value={n}
-                    checked={picked[`${t.person}:${key}`] === n}
-                    onChange={() => setPicked((p) => ({ ...p, [`${t.person}:${key}`]: n }))}
-                  />
-                  {n}
-                </label>
-              ))}
-            </div>
+            <Stars
+              name={`${t.person}:${key}`}
+              value={picked[`${t.person}:${key}`] ?? 0}
+              onPick={(n) => setPicked((p) => ({ ...p, [`${t.person}:${key}`]: n }))}
+            />
           </div>
         ))}
       </fieldset>

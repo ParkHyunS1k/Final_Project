@@ -283,7 +283,7 @@ export function badgeList(f: BadgeFacts): Badge[] {
 }
 
 /**
- * 요청 본문의 평가 목록. 대상 전원을 한 번씩, 문항마다 1~5 정수. 대상 순서로 돌려준다.
+ * 요청 본문의 평가 목록. 대상 전원을 한 번씩, 문항마다 0.5~5의 0.5점 단위(별 반 개). 대상 순서로 돌려준다.
  * 대상은 프로젝트 안 번호(person)로 받는다. 화면에 다른 사람의 계정 ID를 내보내지 않는다.
  */
 export function parseReviews(value: unknown, targets: number[]) {
@@ -300,8 +300,8 @@ export function parseReviews(value: unknown, targets: number[]) {
     const rating = {} as Rating;
     for (const { key, label } of ITEMS) {
       const n = (item as Record<string, unknown>)[key];
-      if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > 5)
-        throw new PolicyError(`${label} 평가는 1~5 사이 정수로 입력해주세요.`);
+      if (typeof n !== 'number' || !Number.isInteger(n * 2) || n < 0.5 || n > 5)
+        throw new PolicyError(`${label} 평가는 0.5~5 사이 0.5점 단위로 입력해주세요.`);
       rating[key] = n;
     }
     byPerson.set(person, rating);

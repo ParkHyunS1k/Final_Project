@@ -75,7 +75,12 @@ void test('평가 카드: 한 번에 팀원 한 명, 세 문항 1~5, 다 고르�
   );
   const t = text(html);
   assert.equal(count(html, /role="radiogroup"/g), 3);
-  assert.equal(count(html, /type="radio"/g), 15);
+  // 별 다섯 개, 별마다 반 개·한 개 → 문항당 0.5~5 열 칸.
+  assert.equal(count(html, /type="radio"/g), 30);
+  assert.equal(count(html, /value="0.5"/g), 3);
+  assert.equal(count(html, /value="5"/g), 3);
+  assert.match(t, /3\.5점/);
+  assert.equal(count(html, /class="peer-star"/g), 15);
   assert.match(html, /aria-label="서연 기여도"/);
   assert.doesNotMatch(t, /민준/);
   assert.match(t, /1 \/ 2/);

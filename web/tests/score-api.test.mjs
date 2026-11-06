@@ -526,6 +526,21 @@ test('전원이 제출하면 24시간 전에도 점수가 열린다', async () =
   assert.equal(s.review.reviewers, 2);
 });
 
+test('별 반 개(0.5점) 평가가 저장되고 점수에 그대로 반영된다', async () => {
+  const projectId = await startedTeam('h1lead', ['h1a', 'h1b']);
+  await finish('h1lead', projectId);
+  assert.equal((await review('h1lead', projectId, [rating(1, 3.5, 4.5, 2.5), rating(2, 4, 4, 4)])).status, 200);
+  await review('h1a', projectId, [rating(0, 4, 4, 4), rating(2, 4, 4, 4)]);
+  await review('h1b', projectId, [rating(0, 4, 4, 4), rating(1, 0.5, 5, 4)]);
+  const s = await score('h1a', projectId);
+  assert.equal(s.review.status, 'closed');
+  assert.deepEqual(
+    s.breakdown.map((b) => b.average),
+    [2, 4.8, 3.3],
+  );
+  assert.equal(s.score, 3.3);
+});
+
 test('내지 않은 사람은 결과가 가려지고 팀 뱃지는 보인다', async () => {
   const projectId = await startedTeam('y3lead', ['y3a', 'y3b', 'y3c']);
   await finish('y3lead', projectId);
