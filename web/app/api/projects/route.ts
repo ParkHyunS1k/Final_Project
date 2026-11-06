@@ -14,6 +14,7 @@ import {
   GoalChanged,
 } from '@/lib/projects';
 import { setListed, decideJoin } from '@/lib/teams';
+import { reviewDuties } from '@/lib/sanction';
 import { database, readSprint, readPolicy, save, Conflict } from '@/lib/sprint-store';
 import {
   assertProjectMutationAllowed,
@@ -60,9 +61,17 @@ export async function GET(request: Request) {
       const { details, invite } = await inspectInvite(user, token);
       return reply({ details, expiresAt: invite.expires_at });
     }
+    const [projects, duties] = await Promise.all([
+      listProjects(user),
+      reviewDuties(user.id, new Date()),
+    ]);
+    const r = duties.restriction;
     return reply({
-      projects: await listProjects(user),
+      projects,
       me: { name: user.name, email: user.email },
+      // 동료평가 미제출 금지와 아직 평가를 낼 수 있는 프로젝트(첫 화면이 먼저 연다).
+      restriction: r && { until: r.until?.toISOString() ?? null, permanent: r.permanent, misses: r.misses },
+      reviewPending: duties.pending,
     });
   } catch (e) {
     return failure(e);

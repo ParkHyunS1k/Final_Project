@@ -3,15 +3,23 @@ import assert from 'node:assert/strict';
 import {
   BADGES,
   badgeList,
+  dutiesFrom,
   gradeOf,
+  nextGrade,
   parseReviews,
   peerScore,
+  penaltyDays,
   reportDays,
+  restrictionMessage,
+  restrictionOf,
+  resultHidden,
   reviewWindow,
   summarize,
+  weakestItem,
 } from '../lib/score.ts';
 
 const DAY = 86400000;
+const H = 3600000;
 const t0 = new Date('2026-10-01T00:00:00.000Z');
 const at = (days: number) => new Date(t0.getTime() + days * DAY);
 const r = (contribution: number, communication: number, commitment: number) => ({
@@ -20,41 +28,48 @@ const r = (contribution: number, communication: number, commitment: number) => (
   commitment,
 });
 
-void test('등급 경계: S 90, A 75, B 60, 그 아래 C, 점수 없으면 null', () => {
-  assert.equal(gradeOf(100), 'S');
-  assert.equal(gradeOf(90), 'S');
-  assert.equal(gradeOf(89.9), 'A');
-  assert.equal(gradeOf(75), 'A');
-  assert.equal(gradeOf(74.9), 'B');
-  assert.equal(gradeOf(60), 'B');
-  assert.equal(gradeOf(59.9), 'C');
-  assert.equal(gradeOf(20), 'C');
+
+void test('등급 5점제: S 4.8, A 4.0, B 3.0, C 2.0, 그 아래 D', () => {
+  for (const [s, g] of [
+    [5, 'S'],
+    [4.8, 'S'],
+    [4.7, 'A'],
+    [4.0, 'A'],
+    [3.9, 'B'],
+    [3.0, 'B'],
+    [2.9, 'C'],
+    [2.0, 'C'],
+    [1.9, 'D'],
+    [1.0, 'D'],
+  ] as const)
+    assert.equal(gradeOf(s), g);
   assert.equal(gradeOf(null), null);
 });
 
-void test('점수 = 세 문항 평균의 평균 × 20, 평가 기간이 끝나고 2명 이상일 때만', () => {
-  const two = [r(5, 4, 5), r(4, 5, 4)];
-  const s = peerScore(two, true);
-  // 문항 평균 4.5, 4.5, 4.5 → 90
-  assert.equal(s.score, 90);
-  assert.equal(s.grade, 'S');
-  assert.equal(s.reviewers, 2);
+void test('점수 = 세 문항 평균의 평균, 소수 첫째 자리 반올림, 2명 이상·공개 뒤에만', () => {
+  const s = peerScore([r(5, 3, 4), r(4, 4, 5), r(5, 3, 4)], true);
+  assert.equal(s.score, 4.1);
+  assert.equal(s.grade, 'A');
+  assert.equal(s.reviewers, 3);
   assert.deepEqual(
-    s.breakdown.map((b) => b.key),
-    ['contribution', 'communication', 'commitment'],
+    s.breakdown.map((b) => [b.key, b.average]),
+    [
+      ['contribution', 4.7],
+      ['communication', 3.3],
+      ['commitment', 4.3],
+    ],
   );
-  assert.deepEqual(
-    s.breakdown.map((b) => b.points),
-    [30, 30, 30],
-  );
-  // 경계 바로 아래: 평균 40/9 → 88.9 → A
-  const below = peerScore([r(5, 5, 5), r(4, 4, 4), r(5, 4, 4)], true);
-  assert.equal(below.score, 88.9);
-  assert.equal(below.grade, 'A');
-  assert.equal(peerScore([r(1, 1, 1), r(1, 1, 1)], true).score, 20);
-  assert.equal(peerScore([r(1, 1, 1), r(1, 1, 1)], true).grade, 'C');
-  // 기간 중이거나 1명뿐이면 숨긴다.
-  for (const hidden of [peerScore(two, false), peerScore([r(5, 5, 5)], true), peerScore([], true)]) {
+  // 평균 4.75 → 4.8로 반올림해 S
+  const edge = peerScore([r(5, 5, 5), r(5, 5, 4), r(5, 5, 4), r(5, 5, 4)], true);
+  assert.equal(edge.score, 4.8);
+  assert.equal(edge.grade, 'S');
+  assert.equal(peerScore([r(1, 1, 1), r(1, 1, 1)], true).score, 1);
+  assert.equal(peerScore([r(1, 1, 1), r(1, 1, 1)], true).grade, 'D');
+  for (const hidden of [
+    peerScore([r(5, 5, 5), r(5, 5, 5)], false),
+    peerScore([r(5, 5, 5)], true),
+    peerScore([], true),
+  ]) {
     assert.equal(hidden.score, null);
     assert.equal(hidden.grade, null);
     assert.equal(hidden.averages, null);
@@ -64,13 +79,10 @@ void test('점수 = 세 문항 평균의 평균 × 20, 평가 기간이 끝나�
 
 void test('같은 평가 기록이면 순서와 관계없이 같은 점수', () => {
   const list = [r(5, 3, 4), r(2, 4, 5), r(3, 3, 3)];
-  const a = peerScore(list, true);
-  const b = peerScore([...list].reverse(), true);
-  assert.deepEqual(a, b);
-  assert.equal(a.score, Math.round(((10 / 3 + 10 / 3 + 4) / 3) * 20 * 10) / 10);
+  assert.deepEqual(peerScore(list, true), peerScore([...list].reverse(), true));
 });
 
-void test('평가 기간: 끝난 시각부터 7일, 준비·진행 중과 이전 규칙은 열리지 않는다', () => {
+void test('평가 기간: 끝난 시각부터 24시간, 준비·진행 중과 이전 규칙은 열리지 않는다', () => {
   assert.equal(reviewWindow(null, at(1)).status, 'not_open');
   assert.equal(
     reviewWindow({ lifecycle: 'draft', deadlineAt: null, completedAt: null }, at(1)).status,
@@ -78,19 +90,110 @@ void test('평가 기간: 끝난 시각부터 7일, 준비·진행 중과 이전
   );
   const active = { lifecycle: 'active' as const, deadlineAt: at(7), completedAt: null };
   assert.equal(reviewWindow(active, at(6.9)).status, 'not_open');
-  // 저장 상태가 active여도 기한이 지나면 기한 종료로 보고 연다.
   const expired = reviewWindow(active, at(7));
   assert.equal(expired.status, 'open');
   assert.deepEqual(expired.opensAt, at(7));
-  assert.deepEqual(expired.closesAt, at(14));
-  assert.equal(reviewWindow(active, at(13.99)).status, 'open');
-  assert.equal(reviewWindow(active, at(14)).status, 'closed');
+  assert.deepEqual(expired.closesAt, at(8));
+  assert.equal(expired.revealedAt, null);
   const done = { lifecycle: 'completed' as const, deadlineAt: at(7), completedAt: at(3) };
-  assert.equal(reviewWindow(done, at(3)).status, 'open');
-  assert.equal(reviewWindow(done, at(9.99)).status, 'open');
-  assert.equal(reviewWindow(done, at(10)).status, 'closed');
+  const plus = (ms: number) => new Date(at(3).getTime() + ms);
+  assert.equal(reviewWindow(done, plus(24 * H - 1)).status, 'open');
+  const end = reviewWindow(done, plus(24 * H));
+  assert.equal(end.status, 'closed');
+  assert.deepEqual(end.revealedAt, plus(24 * H));
 });
 
+void test('전원이 제출하면 24시간 전에도 공개, 마감 시각은 그대로', () => {
+  const done = { lifecycle: 'completed' as const, deadlineAt: at(7), completedAt: at(3) };
+  const plus = (ms: number) => new Date(at(3).getTime() + ms);
+  const early = reviewWindow(done, plus(2 * H), plus(H));
+  assert.equal(early.status, 'closed');
+  assert.deepEqual(early.closesAt, plus(24 * H));
+  assert.deepEqual(early.revealedAt, plus(H));
+});
+
+void test('결과 숨김: 공개 뒤, 평가할 대상이 있었고, 안 냈고, SANCTION_FROM 이후에 끝났을 때만', () => {
+  const f = { closed: true, hadTargets: true, reviewedAt: null, endedAt: at(5) };
+  assert.equal(resultHidden(f, at(1)), true);
+  assert.equal(resultHidden(f, at(6)), false);
+  assert.equal(resultHidden({ ...f, reviewedAt: at(5) }, at(1)), false);
+  assert.equal(resultHidden({ ...f, hadTargets: false }, at(1)), false);
+  assert.equal(resultHidden({ ...f, closed: false }, at(1)), false);
+});
+
+void test('평가 의무: 기간 중이면 pending, 시간으로 끝났으면 미제출, 솔로·제출·이전 규칙은 제외', () => {
+  const now = at(10);
+  const row = (projectId: string, completedAt: Date, extra = {}) => ({
+    projectId,
+    lifecycle: 'completed' as const,
+    deadlineAt: null,
+    completedAt,
+    others: 2,
+    submitted: false,
+    ...extra,
+  });
+  const d = dutiesFrom(
+    [
+      row('open', new Date(now.getTime() - H)),
+      row('miss', at(5)),
+      row('solo', at(5), { others: 0 }),
+      row('done', at(5), { submitted: true }),
+      row('old', at(1)),
+      { ...row('legacy', at(5)), lifecycle: null },
+    ],
+    now,
+    at(2),
+  );
+  assert.deepEqual(d.pending, ['open']);
+  assert.deepEqual(d.missCloses, [new Date(at(5).getTime() + 24 * H)]);
+});
+
+void test('제재: 1회 7일, 2회 30일, 3회 영구, 순서 무관', () => {
+  const now = at(100);
+  const ago = (days: number) => new Date(now.getTime() - days * DAY);
+  assert.equal(restrictionOf([], now), null);
+  assert.deepEqual(restrictionOf([ago(1)], now), {
+    until: new Date(ago(1).getTime() + 7 * DAY),
+    permanent: false,
+    misses: 1,
+  });
+  assert.equal(restrictionOf([ago(7)], now), null);
+  assert.equal(restrictionOf([ago(8)], now), null);
+  assert.deepEqual(restrictionOf([ago(1), ago(40)], now)?.until, new Date(ago(1).getTime() + 30 * DAY));
+  assert.equal(restrictionOf([ago(40), ago(31)], now), null);
+  assert.deepEqual(restrictionOf([ago(90), ago(80), ago(70)], now), {
+    until: null,
+    permanent: true,
+    misses: 3,
+  });
+  assert.deepEqual([0, 1, 2, 5].map(penaltyDays), [7, 30, null, null]);
+});
+
+void test('제재 문구는 서울 시각, 영구는 날짜 없이', () => {
+  assert.match(
+    restrictionMessage({ until: '2026-11-13T05:00:00Z', permanent: false, misses: 1 }, '새 프로젝트를 만들'),
+    /11월 13일.*14:00.*까지 새 프로젝트를 만들 수 없습니다/,
+  );
+  assert.match(
+    restrictionMessage({ until: null, permanent: true, misses: 3 }, '참여 신청할'),
+    /3번 내지 않아 더 이상 참여 신청할 수 없습니다/,
+  );
+});
+
+void test('다음 등급까지와 가장 낮은 문항', () => {
+  assert.deepEqual(nextGrade(4.1), { grade: 'S', gap: 0.7 });
+  assert.deepEqual(nextGrade(3.9), { grade: 'A', gap: 0.1 });
+  assert.deepEqual(nextGrade(1.0), { grade: 'C', gap: 1.0 });
+  assert.equal(nextGrade(4.8), null);
+  const b = (c: number, m: number, k: number) => [
+    { key: 'contribution' as const, label: '기여도', average: c },
+    { key: 'communication' as const, label: '소통', average: m },
+    { key: 'commitment' as const, label: '약속 이행', average: k },
+  ];
+  assert.equal(weakestItem(b(4.7, 3.3, 4.3))?.label, '소통');
+  assert.equal(weakestItem(b(4, 4, 5))?.label, '기여도');
+  assert.equal(weakestItem(b(4.5, 4.6, 5)), null);
+});
 void test('매일 보고: 일차마다 1회만 센다, 보고 반복으로 늘지 않는다', () => {
   const many = Array.from({ length: 30 }, (_, i) => new Date(t0.getTime() + i * 60000));
   assert.deepEqual(reportDays(t0, at(7), many), { required: 7, reported: 1 });
@@ -106,7 +209,7 @@ void test('매일 보고: 일차마다 1회만 센다, 보고 반복으로 늘�
 const ended = {
   completedAt: at(5),
   endedAt: at(5),
-  closesAt: at(12),
+  revealedAt: at(12),
   active: true,
   solo: false,
   daily: { required: 5, reported: 5 },
@@ -168,7 +271,7 @@ void test('뱃지 조건: 완주·솔로·매일 보고·병목 0·동료평가�
   );
 });
 
-void test('평가 입력: 대상 전원을 한 번씩, 1~5 정수만', () => {
+void test('평가 입력: 대상 전원을 한 번씩, 0.5~5 사이 0.5점 단위만', () => {
   const ok = parseReviews(
     [
       { person: 1, contribution: 5, communication: 1, commitment: 3 },
@@ -180,6 +283,15 @@ void test('평가 입력: 대상 전원을 한 번씩, 1~5 정수만', () => {
     ok.map((x) => x.person),
     [1, 2],
   );
+  const half = parseReviews(
+    [
+      { person: 1, contribution: 4.5, communication: 0.5, commitment: 3 },
+      { person: 2, contribution: 5, communication: 1.5, commitment: 2.5 },
+    ],
+    [1, 2],
+  );
+  assert.equal(half[0].contribution, 4.5);
+  assert.equal(half[0].communication, 0.5);
   const bad: unknown[] = [
     [
       { person: '1', contribution: 5, communication: 1, commitment: 3 },
@@ -206,7 +318,15 @@ void test('평가 입력: 대상 전원을 한 번씩, 1~5 정수만', () => {
       { person: 2, contribution: 5, communication: 1, commitment: 3 },
     ],
     [
-      { person: 1, contribution: 4.5, communication: 1, commitment: 3 },
+      { person: 1, contribution: 4.3, communication: 1, commitment: 3 },
+      { person: 2, contribution: 5, communication: 1, commitment: 3 },
+    ],
+    [
+      { person: 1, contribution: 5.5, communication: 1, commitment: 3 },
+      { person: 2, contribution: 5, communication: 1, commitment: 3 },
+    ],
+    [
+      { person: 1, contribution: Number.NaN, communication: 1, commitment: 3 },
       { person: 2, contribution: 5, communication: 1, commitment: 3 },
     ],
     [
@@ -224,11 +344,11 @@ void test('내 기록 요약: 확정 점수 합·최고 등급·뱃지별 처음
     earnedAt,
   });
   const me = summarize([
-    { score: 80, grade: 'A', badges: [badge('finish', at(5)), badge('reviewer', null)] },
+    { score: 4.1, grade: 'A', badges: [badge('finish', at(5)), badge('reviewer', null)] },
     { score: null, grade: null, badges: [badge('finish', at(2)), badge('reviewer', at(3))] },
-    { score: 91.5, grade: 'S', badges: [badge('finish', null)] },
+    { score: 4.9, grade: 'S', badges: [badge('finish', null)] },
   ]);
-  assert.equal(me.totalScore, 171.5);
+  assert.equal(me.totalScore, 9);
   assert.equal(me.bestGrade, 'S');
   assert.equal(me.projects, 2);
   const finish = me.badges.find((b) => b.id === 'finish')!;
@@ -239,6 +359,8 @@ void test('내 기록 요약: 확정 점수 합·최고 등급·뱃지별 처음
   assert.equal(solo.count, 0);
   const empty = summarize([]);
   assert.equal(empty.totalScore, 0);
-  assert.equal(empty.bestGrade, null);
+  assert.equal(empty.bestGrade, 'E');
+  assert.equal(summarize([{ score: null, grade: null, badges: [] }]).bestGrade, 'E');
+  assert.equal(summarize([{ score: 1.5, grade: 'D', badges: [] }]).bestGrade, 'D');
   assert.equal(empty.badges.length, BADGES.length);
 });

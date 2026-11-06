@@ -12,6 +12,7 @@ import {
 } from './sprint-policy';
 import { scheduleStatements } from './reminder-store';
 import { AccessError, GoalChanged, actorOf, member, type Identity } from './projects';
+import { assertNotRestricted, reviewDuties } from './sanction';
 
 /** 한 사용자가 동시에 기다릴 수 있는 신청 수. 여러 팀에 한꺼번에 뿌리지 않게 묶는다. */
 export const MAX_PENDING_REQUESTS = 5;
@@ -118,6 +119,7 @@ export async function requestJoin(user: Identity, b: Record<string, unknown>) {
   if (b.agreed !== true) throw new Error('팀의 목표와 완료 기준을 확인해주세요.');
   // 화면에서 실제로 확인한 목표 버전만 받는다. 현재 버전으로 대신 채우지 않는다.
   if (!Number.isInteger(b.goalVersion)) throw new Error('확인한 목표 버전을 함께 보내주세요.');
+  await assertNotRestricted(user.id, new Date(), '참여 신청할');
   const project = b.projectId;
   const db = database();
   const row = await db
@@ -262,6 +264,8 @@ export async function decideJoin(
   }
   if (!joinWindowOpen(policy, now))
     throw new PolicyError(`시작 후 ${JOIN_WINDOW_HOURS}시간이 지나 목록 신청은 승인할 수 없습니다. 이메일 초대를 이용해주세요.`, 410);
+  if ((await reviewDuties(req.user_id, now)).restriction)
+    throw new PolicyError('이 사람은 동료평가를 내지 않아 지금 팀에 참여할 수 없습니다.', 403);
   const rows = await readMembers(project);
   if (rows.some((r) => r.userId === req.user_id)) throw new PolicyError('이미 팀원입니다. 신청은 거절로 정리해주세요.', 409);
   if (rows.length >= MAX_MEMBERS) throw new PolicyError(`팀은 최대 ${MAX_MEMBERS}명입니다.`);

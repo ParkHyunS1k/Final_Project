@@ -29,6 +29,7 @@ import {
   startReadiness,
 } from '@/lib/sprint-policy';
 import { assertEvidence, completionCheck } from '@/lib/deliverables';
+import { assertNotRestricted } from '@/lib/sanction';
 import {
   cancelStatements,
   scheduleStatements,
@@ -211,6 +212,8 @@ export async function POST(request: Request) {
         ['draft'],
       );
     } else if (b.action === 'start') {
+      // 시작은 팀장이 한다. 동료평가 미제출로 금지 중이면 새 스프린트를 시작하지 못한다.
+      await assertNotRestricted(user.id, now, '스프린트를 시작할');
       const members = await readMembers(id);
       const deliverables = await readDeliverables(id);
       const check = startReadiness(

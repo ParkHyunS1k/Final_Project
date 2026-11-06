@@ -1,5 +1,7 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Sites sign-in requires top-level navigation, without router prefetch. */
+import { PeerReviewCard } from '@/components/peer-review';
+import { restrictionMessage } from '@/lib/score';
 import { useEffect, useState, useCallback } from 'react';
 import { TaskEditor } from '@/components/task-editor';
 import { TaskCollection } from '@/components/task-collection';
@@ -511,10 +513,15 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
                   최종 기한이며, 목표·결과물·완료 기준과 기한은 더 이상 바꿀 수
                   없습니다.
                 </p>
+                {isOwner && nav.restriction && (
+                  <output className="hint restriction-hint">
+                    {restrictionMessage(nav.restriction, '스프린트를 시작할')}
+                  </output>
+                )}
                 {isOwner && (
                   <button
                     className="btn primary"
-                    disabled={busy || !state!.readiness.ready}
+                    disabled={busy || !state!.readiness.ready || Boolean(nav.restriction)}
                     onClick={() =>
                       mutate(
                         'start',
@@ -530,6 +537,16 @@ function Dashboard({ projectId, nav }: { projectId: string; nav: WorkspaceNav })
             )}
             {tab === 'home' && (
               <section className="work-section">
+                {(lifecycle === 'completed' || lifecycle === 'expired') && (
+                  <PeerReviewCard
+                    projectId={projectId}
+                    asOf={state!.asOf}
+                    solo={state!.members.filter((m) => !m.left_at).length === 1}
+                    restriction={nav.restriction}
+                    owed={nav.reviewPending.includes(projectId)}
+                    onOwe={nav.refreshReviews}
+                  />
+                )}
                 {lifecycle !== 'draft' && (
                   <RaceHome
                     lifecycle={lifecycle}

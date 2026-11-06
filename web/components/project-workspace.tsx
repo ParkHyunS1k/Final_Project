@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable next/no-html-link-for-pages -- Project switching clears invitation and dashboard state via full navigation. */
-import { useEffect, useState, type ReactNode } from 'react';
+import type { RestrictionView } from '@/lib/score';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   SidebarProvider,
@@ -25,6 +26,7 @@ import { workspaceEntry } from '@/lib/workspace-entry';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { TeamDirectory } from '@/components/team-directory';
 import { ProjectCreate } from '@/components/project-create';
+import { PeerReviewGate } from '@/components/peer-review';
 export const workspaceViews = [
   { id: 'home' as View, label: '홈', icon: Gauge },
   { id: 'tasks' as View, label: '업무', icon: ListTodo },
@@ -35,6 +37,12 @@ export type WorkspaceNav = {
   setView: (view: View) => void;
   mine: boolean;
   setMine: (mine: boolean) => void;
+  /** 동료평가 미제출 금지. 처음 불러올 때의 값이며 서버가 다시 확인한다. */
+  restriction: RestrictionView | null;
+  /** 아직 낼 동료평가가 있는 프로젝트. 있으면 PeerReviewGate 모달이 작업 공간을 막는다. */
+  reviewPending: string[];
+  /** 서버에서 낼 평가 목록을 다시 받는다(이 화면에서 프로젝트가 끝난 경우). */
+  refreshReviews: () => void;
 };
 function WorkspaceMenu({
   view,
@@ -188,6 +196,8 @@ async function api(path: string, body?: Record<string, unknown>) {
   const data = (await res.json()) as {
     error?: string;
     projects: { id: string; title: string; role: string; lifecycle: string }[];
+    restriction: RestrictionView | null;
+    reviewPending: string[];
     projectId: string;
     token?: string;
     email?: 'sent' | 'failed' | 'off';
@@ -221,6 +231,28 @@ export function ProjectWorkspace({
   const [browsing, setBrowsing] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [restriction, setRestriction] = useState<RestrictionView | null>(null);
+  const [reviewPending, setReviewPending] = useState<string[]>([]);
+  // 낼 평가 목록은 서버가 정한다. 처음 불러올 때, 30초마다, 창으로 돌아올 때, 홈 카드가 알릴 때 다시 받는다.
+  // 업무·팀 찾기 화면을 보는 중에 프로젝트가 끝나도 모달이 뜬다.
+  const refreshReviews = useCallback(() => {
+    api('/api/projects')
+      .then((data) => {
+        setProjects(data.projects);
+        setRestriction(data.restriction);
+        setReviewPending(data.reviewPending);
+      })
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    const id = setInterval(refreshReviews, 30000);
+    window.addEventListener('focus', refreshReviews);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('focus', refreshReviews);
+    };
+  }, [refreshReviews]);
+  const reviewed = useCallback((id: string) => setReviewPending((p) => p.filter((x) => x !== id)), []);
   const [invite, setInvite] = useState('');
   const [preview, setPreview] = useState<{ details: InvitePreview } | null>(
     null,
@@ -235,7 +267,9 @@ export function ProjectWorkspace({
         const start = viewFrom(params.get('view'));
         setView(start.view);
         setMine(start.mine);
-        const entry = workspaceEntry(location.search, data.projects);
+        const entry = workspaceEntry(location.search, data.projects, data.reviewPending);
+        setRestriction(data.restriction);
+        setReviewPending(data.reviewPending);
         setInvite(entry.invite);
         setBrowsing(entry.browsing);
         setProjects(data.projects);
@@ -361,6 +395,7 @@ export function ProjectWorkspace({
         )}
         {creating && (
           <ProjectCreate
+            restriction={restriction}
             onSubmit={async (body) => {
               setError('');
               try {
@@ -446,9 +481,9 @@ export function ProjectWorkspace({
             </a>
           </section>
         ) : browsing && !creating ? (
-          <TeamDirectory />
+          <TeamDirectory restriction={restriction} />
         ) : selected && !creating ? (
-          children(selected, { view, setView, mine, setMine })
+          children(selected, { view, setView, mine, setMine, restriction, reviewPending, refreshReviews })
         ) : loaded && !creating ? (
           <section className="project-panel">
             <h1>첫 스프린트를 만들어보세요.</h1>
@@ -474,6 +509,15 @@ export function ProjectWorkspace({
           </section>
         ) : null}
       </SidebarInset>
+      {reviewPending.length > 0 && (
+        <PeerReviewGate
+          projects={reviewPending.map((id) => ({
+            id,
+            title: projects.find((p) => p.id === id)?.title ?? '',
+          }))}
+          onDone={reviewed}
+        />
+      )}
     </SidebarProvider>
   );
 }

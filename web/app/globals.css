@@ -721,6 +721,12 @@ h3 {
   font-size: 14px;
   margin: 20px 0;
 }
+/* 동료평가 미제출 금지 안내: 결과 카드의 금지 문구(.peer-warning)와 같은 강조. */
+.restriction-hint {
+  display: block;
+  color: var(--red-500);
+  font-weight: 700;
+}
 .people-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2539,4 +2545,226 @@ textarea {
   50% {
     opacity: 1;
   }
+}
+
+/* 동료평가 카드 (끝난 프로젝트 홈) */
+.peer-card {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+}
+.peer-card h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.peer-form {
+  display: grid;
+  gap: 14px;
+  text-align: center;
+}
+.peer-warning {
+  margin: 0;
+  color: var(--red-500);
+  font-weight: 700;
+}
+.peer-target {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  text-align: left;
+}
+.peer-target legend {
+  padding: 0 4px;
+  font-weight: 700;
+}
+.peer-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.peer-item > span {
+  min-width: 64px;
+  color: var(--gray-600);
+}
+.peer-note {
+  margin: 0;
+}
+.peer-result {
+  display: grid;
+  gap: 12px;
+}
+.peer-grade {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.peer-grade strong {
+  font-size: clamp(48px, 12vw, 80px);
+  line-height: 1;
+  color: var(--heat-500);
+}
+.peer-grade span {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.peer-items {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.peer-items li {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 36px;
+  gap: 10px;
+  align-items: center;
+}
+.peer-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--gray-100);
+  overflow: hidden;
+}
+.peer-bar span {
+  display: block;
+  height: 100%;
+  background: var(--gray-500);
+}
+.peer-items li.weak {
+  color: var(--red-500);
+  font-weight: 700;
+}
+.peer-items li.weak .peer-bar span {
+  background: var(--red-500);
+}
+.peer-next {
+  margin: 0;
+  font-weight: 700;
+}
+.peer-gap {
+  color: var(--heat-500);
+}
+.peer-badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.peer-badge {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--heat-500);
+  border-radius: 8px;
+}
+.peer-badge small {
+  color: var(--gray-500);
+  font-size: 12px;
+}
+.peer-badge.off {
+  border-color: var(--gray-200);
+  opacity: 0.55;
+}
+/* 동료평가 모달: 낼 평가가 남은 동안 작업 공간을 흐리게 막는다. */
+.peer-dialog {
+  margin: auto;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 28px 24px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--gray-0);
+  color: inherit;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.25);
+}
+.peer-dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(8px);
+}
+.peer-dialog h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.peer-project {
+  margin: 0;
+  color: var(--gray-600);
+  font-size: 14px;
+}
+.peer-target legend {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  font-size: 18px;
+}
+.peer-target legend small {
+  color: var(--gray-600);
+  font-weight: 400;
+}
+.peer-stars {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 2px;
+}
+.peer-star {
+  position: relative;
+  color: var(--gray-300);
+  font-size: 34px;
+  line-height: 1;
+}
+.peer-star-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+  color: var(--heat-500);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.peer-star label {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  cursor: pointer;
+}
+.peer-star label:first-of-type {
+  left: 0;
+}
+.peer-star label:last-of-type {
+  right: 0;
+}
+.peer-star input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.peer-star label:has(:focus-visible) {
+  outline: 2px solid var(--heat-500);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+.peer-star-value {
+  min-width: 2.5em;
+  margin-left: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.peer-actions {
+  display: flex;
+  gap: 8px;
+}
+.peer-actions .btn {
+  flex: 1;
 }

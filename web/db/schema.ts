@@ -10,6 +10,7 @@ import {
   primaryKey,
   index,
   uniqueIndex,
+  real,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -420,9 +421,10 @@ export const peerReviews = pgTable(
       .references(() => sprints.owner),
     reviewerId: text('reviewer_id').notNull(),
     revieweeId: text('reviewee_id').notNull(),
-    contribution: integer('contribution').notNull(),
-    communication: integer('communication').notNull(),
-    commitment: integer('commitment').notNull(),
+    // 0.5점 단위(별 반 개, 2026-11-06). real은 0.5 배수를 정확히 담는다.
+    contribution: real('contribution').notNull(),
+    communication: real('communication').notNull(),
+    commitment: real('commitment').notNull(),
     submissionId: text('submission_id').notNull(),
   },
   (t) => [

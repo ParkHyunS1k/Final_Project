@@ -38,6 +38,7 @@ export class AccessError extends Error {
   }
 }
 import type { Identity } from './auth';
+import { assertNotRestricted, reviewDuties } from './sanction';
 import { DAILY_INVITE_LIMIT, deliverInvite, INVITE_SEND_LIMIT } from './invite-email';
 export { identity, AuthUnavailable, type Identity } from './auth';
 export async function adoptLegacy(user: Identity) {
@@ -169,7 +170,7 @@ export async function projectState(project: string, user: Identity) {
     // 공개 팀 목록에서 들어온 대기 신청. 팀장에게만 표시 이름을 보여준다.
     db
       .prepare(
-        "SELECT id,display_name,goal_version,created_at FROM project_join_requests WHERE project_id=? AND status='pending' AND ?='owner' ORDER BY created_at,id LIMIT 20",
+        "SELECT id,user_id,display_name,goal_version,created_at FROM project_join_requests WHERE project_id=? AND status='pending' AND ?='owner' ORDER BY created_at,id LIMIT 20",
       )
       .bind(project, me.role),
   ]);
@@ -188,7 +189,13 @@ export async function projectState(project: string, user: Identity) {
     members: members.results,
     invites: invites.results,
     listed: Boolean(listing.results[0]?.listed),
-    joinRequests: joinRequests.results,
+    // ponytail: 신청자 수만큼 제재를 조회한다(최대 20건). 신청자 계정 ID는 내보내지 않는다.
+    joinRequests: await Promise.all(
+      joinRequests.results.map(async ({ user_id, ...r }) => ({
+        ...r,
+        restricted: Boolean((await reviewDuties(String(user_id), new Date())).restriction),
+      })),
+    ),
   };
 }
 // 멤버만 읽는 내보내기. 다른 멤버의 이메일·인증 정보는 포함하지 않는다.
@@ -276,6 +283,7 @@ export async function createProject(
 ) {
   const v = { ...goalInput(b), duration: assertDuration(b.duration) };
   if (b.agreed !== true) throw new Error('목표와 완료 기준을 확인해주세요.');
+  await assertNotRestricted(user.id, new Date(), '새 프로젝트를 만들');
   const id = 'p_' + crypto.randomUUID();
   const db = database();
   const now = new Date().toISOString();
@@ -507,6 +515,7 @@ export async function acceptInvite(
   if (!Number.isInteger(confirmedGoalVersion))
     throw new Error('확인한 목표 버전을 함께 보내주세요.');
   const { invite, details } = await inspectInvite(user, token);
+  await assertNotRestricted(user.id, new Date(), '초대를 수락할');
   const project = String(invite.project_id);
   const db = database();
   const already = await db

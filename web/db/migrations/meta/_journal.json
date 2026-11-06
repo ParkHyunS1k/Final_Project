@@ -57,6 +57,13 @@
       "when": 1793681087650,
       "tag": "0007_learning_review",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793946455371,
+      "tag": "0008_peer_review_half_points",
+      "breakpoints": true
     }
   ]
 }

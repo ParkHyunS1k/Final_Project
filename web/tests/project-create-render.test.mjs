@@ -42,3 +42,14 @@ void test('만들기 화면: 단어 3개·잠금 3개·주사위, 5단계 슬라
   assert.match(html, /maxLength="100"|maxlength="100"/);
   assert.doesNotMatch(html, /name="deliverables"|필수 결과물/);
 });
+
+void test('동료평가 미제출로 금지 중이면 만들기 버튼을 끄고 언제까지인지 알린다', () => {
+  const html = renderToString(
+    createElement(ProjectCreate, {
+      onSubmit: async () => true,
+      restriction: { until: '2026-11-13T05:00:00Z', permanent: false, misses: 1 },
+    }),
+  );
+  assert.match(html, /까지 새 프로젝트를 만들 수 없습니다/);
+  assert.match(html, /<button[^>]*disabled=""[^>]*>프로젝트 만들기/);
+});
