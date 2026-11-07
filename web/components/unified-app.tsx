@@ -169,7 +169,13 @@ export function UnifiedApp({
   const [recordKind, setRecordKind] = useState<'portfolio' | 'job'>(
     'portfolio',
   );
-  const [record, setRecord] = useState({
+  const [record, setRecord] = useState<{
+    id: string;
+    revision?: number;
+    title: string;
+    url: string;
+    text: string;
+  }>({
     id: '',
     title: '',
     url: '',
@@ -1283,6 +1289,7 @@ export function UnifiedApp({
                           setRecordKind('portfolio');
                           setRecord({
                             id: p.id,
+                            revision: p.revision,
                             title: p.payload.title || '',
                             url: p.payload.url || '',
                             text: p.payload.text || '',

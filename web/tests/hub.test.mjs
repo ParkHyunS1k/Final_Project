@@ -454,12 +454,40 @@ test('포트폴리오·공고는 계정별로 저장되며 같은 기록을 수�
       action: 'saveRecord',
       kind: 'portfolio',
       id,
+      revision: 1,
       title: '수정 제목',
       text: '수정 본문',
       url: '',
     }),
   );
   assert.equal((await read('records')).records.length, 1);
+  assert.equal((await read('records')).records[0].revision, 2);
+  // 다른 탭에서 열어둔 옛 버전(1)으로 저장하면 최신 수정을 덮어쓰지 않는다.
+  const stale = await json(
+    await post('records', {
+      action: 'saveRecord',
+      kind: 'portfolio',
+      id,
+      revision: 1,
+      title: '내 구현',
+      text: '옛 화면에서 고친 본문',
+      url: '',
+    }),
+    409,
+  );
+  assert.match(stale.error, /먼저 수정/);
+  // 같은 번호로 '새 자료'를 다시 보내도 덮어쓰지 않는다.
+  await json(
+    await post('records', {
+      action: 'saveRecord',
+      kind: 'portfolio',
+      id,
+      title: '새 자료인 척',
+      text: '',
+      url: '',
+    }),
+    409,
+  );
   assert.equal((await read('records')).records[0].payload.title, '수정 제목');
   assert.deepEqual((await read('records-other')).records, []);
   await json(

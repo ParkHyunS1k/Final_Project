@@ -114,6 +114,7 @@ CREATE TABLE "hub_records" (
 	"id" text NOT NULL,
 	"kind" text NOT NULL,
 	"payload" jsonb NOT NULL,
+	"revision" integer DEFAULT 1 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "hub_records_user_id_id_pk" PRIMARY KEY("user_id","id")
 );

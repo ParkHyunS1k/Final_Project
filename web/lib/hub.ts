@@ -35,6 +35,7 @@ export type HubRecord = {
     status?: string;
     skills?: string[];
   };
+  revision: number;
   created_at: Date;
 };
 export function safeLink(value: unknown) {
@@ -82,7 +83,7 @@ export async function readHub(user: Identity) {
       listProjects(user),
       db
         .prepare(
-          'SELECT id,kind,payload,created_at FROM hub_records WHERE user_id=? ORDER BY created_at DESC',
+          'SELECT id,kind,payload,revision,created_at FROM hub_records WHERE user_id=? ORDER BY created_at DESC',
         )
         .bind(user.id)
         .all<HubRecord>(),
@@ -286,17 +287,39 @@ export async function hubAction(
         b.kind === 'job' ? 20000 : 20000,
       ),
     };
+    // 수정은 화면이 읽은 revision이 최신일 때만 반영한다. 새 자료는 같은 번호가 있으면 덮어쓰지 않는다.
+    if (b.revision !== undefined) {
+      const result = await db
+        .prepare(
+          'UPDATE hub_records SET payload=?, revision=revision+1 WHERE user_id=? AND id=? AND kind=? AND revision=?',
+        )
+        .bind(payload, user.id, id, b.kind, Number(b.revision))
+        .run();
+      if (!result.meta.changes)
+        throw new CareerError(
+          '다른 화면에서 먼저 수정된 자료입니다. 새로고침한 뒤 다시 고쳐주세요.',
+          409,
+        );
+      return { saved: true };
+    }
     const result = await db
       .prepare(
-        `INSERT INTO hub_records(user_id,id,kind,payload) SELECT ?,?,?,? WHERE (SELECT count(*) FROM hub_records WHERE user_id=? AND kind=?)<100 OR EXISTS(SELECT 1 FROM hub_records WHERE user_id=? AND id=?) ON CONFLICT(user_id,id) DO UPDATE SET payload=excluded.payload WHERE hub_records.kind=excluded.kind`,
+        `INSERT INTO hub_records(user_id,id,kind,payload) SELECT ?,?,?,? WHERE (SELECT count(*) FROM hub_records WHERE user_id=? AND kind=?)<100 ON CONFLICT(user_id,id) DO NOTHING`,
       )
-      .bind(user.id, id, b.kind, payload, user.id, b.kind, user.id, id)
+      .bind(user.id, id, b.kind, payload, user.id, b.kind)
       .run();
-    if (!result.meta.changes)
+    if (!result.meta.changes) {
+      const exists = await db
+        .prepare('SELECT 1 FROM hub_records WHERE user_id=? AND id=?')
+        .bind(user.id, id)
+        .first();
       throw new CareerError(
-        '기록 종류별 최대 100개까지 저장할 수 있습니다.',
+        exists
+          ? '이미 저장된 자료입니다. 새로고침한 뒤 다시 고쳐주세요.'
+          : '기록 종류별 최대 100개까지 저장할 수 있습니다.',
         409,
       );
+    }
     return { saved: true };
   }
   if (b.action === 'interest') {

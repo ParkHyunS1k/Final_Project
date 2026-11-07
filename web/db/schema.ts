@@ -159,6 +159,8 @@ export const hubRecords = pgTable(
     id: text('id').notNull(),
     kind: text('kind').notNull(),
     payload: jsonb('payload').notNull(),
+    // 포트폴리오·공고 수정 충돌 감지용. 옛 화면의 저장은 409로 거절한다.
+    revision: integer('revision').notNull().default(1),
     createdAt: timestamp('created_at', tz).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.id] })],
