@@ -15,7 +15,7 @@ const outfile = join(mkdtempSync(join(tmpdir(), 'projectmate-score-test-')), 'ro
 await build({
   stdin: {
     contents:
-      "export { GET as sprintGET, POST as sprintPOST } from './app/api/sprint/route'; export { GET as projectsGET, POST as projectsPOST } from './app/api/projects/route'; export { GET as scoreGET, POST as scorePOST } from './app/api/score/route'; export { GET as meGET } from './app/api/score/me/route'; export { POST as teamsPOST } from './app/api/teams/route';",
+      "export { GET as sprintGET, POST as sprintPOST } from './app/api/sprint/route'; export { GET as projectsGET, POST as projectsPOST } from './app/api/projects/route'; export { GET as scoreGET, POST as scorePOST } from './app/api/score/route'; export { GET as meGET } from './app/api/score/me/route'; export { POST as teamsPOST } from './app/api/teams/route'; export { POST as hubPOST } from './app/api/hub/route';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -394,6 +394,14 @@ const teamsPost = (user, body) =>
       body: JSON.stringify(body),
     }),
   );
+const hubPost = (user, body) =>
+  api.hubPOST(
+    new Request('https://test.local/api/hub', {
+      method: 'POST',
+      headers: headers(user),
+      body: JSON.stringify(body),
+    }),
+  );
 async function projectsOf(user) {
   const r = await api.projectsGET(new Request('https://test.local/api/projects', { headers: headers(user) }));
   assert.equal(r.status, 200, await r.clone().text());
@@ -449,6 +457,11 @@ test('미제출 1회: 7일 동안 만들기·초대 수락·참여 신청·시�
   const request = await teamsPost('x1b', { action: 'request', projectId: host, goalVersion: hs.policy.goalVersion, agreed: true });
   assert.equal(request.status, 403);
   assert.match((await request.json()).error, /참여 신청할 수 없습니다/);
+
+  // 통합 앱의 '관심 표시'도 참여 신청과 같이 막는다.
+  const interest = await hubPost('x1b', { action: 'interest', projectId: host, consent: true });
+  assert.equal(interest.status, 403);
+  assert.match((await interest.json()).error, /참여 신청할 수 없습니다/);
 
   const start = await sprintRaw('x1b', own, 'start');
   assert.equal(start.status, 403);

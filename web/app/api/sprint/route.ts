@@ -28,12 +28,13 @@ import {
   PolicyError,
   startReadiness,
 } from '@/lib/sprint-policy';
-import { assertEvidence, completionCheck } from '@/lib/deliverables';
 import { assertNotRestricted } from '@/lib/sanction';
 import {
-  cancelStatements,
-  scheduleStatements,
-} from '@/lib/reminder-store';
+  assertEvidence,
+  completionCheck,
+  taskCompletionCheck,
+} from '@/lib/deliverables';
+import { cancelStatements, scheduleStatements } from '@/lib/reminder-store';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -140,7 +141,9 @@ export async function POST(request: Request) {
     if (b.action === 'agreeGoal') {
       // 진행 중 참여자는 고정 목표에 동의할 뿐, 목표를 다시 열지 않는다.
       if (b.goalVersion !== policy!.goalVersion)
-        throw new Conflict('목표가 다시 바뀌었습니다. 최신 내용을 확인해주세요.');
+        throw new Conflict(
+          '목표가 다시 바뀌었습니다. 최신 내용을 확인해주세요.',
+        );
       await save(
         id,
         s,
@@ -151,19 +154,12 @@ export async function POST(request: Request) {
             .prepare(
               'UPDATE project_members SET agreed_at=?,agreed_goal_version=? WHERE project_id=? AND user_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
             )
-            .bind(
-              timestamp,
-              policy!.goalVersion,
-              id,
-              user.id,
-              id,
-              m,
-            ),
+            .bind(timestamp, policy!.goalVersion, id, user.id, id, m),
         ],
         [...open],
       );
     } else if (b.action === 'editGoal') {
-      const v = goalInput(b);
+      const v = goalInput(b, policy?.completionMode === 'tasks');
       const version = policy!.goalVersion + 1;
       s.title = v.title;
       await save(
@@ -176,9 +172,7 @@ export async function POST(request: Request) {
             ' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)';
           return [
             db
-              .prepare(
-                'UPDATE sprints SET title=? WHERE owner=?' + gate,
-              )
+              .prepare('UPDATE sprints SET title=? WHERE owner=?' + gate)
               .bind(v.title, id, id, m),
             db
               .prepare(
@@ -206,7 +200,9 @@ export async function POST(request: Request) {
               )
               .bind(version, id, user.id, id, m),
             // 기존 결과물 프로젝트도 준비 중 편집이면 완료 기준 행으로 바뀐다.
-            ...criteriaStatements(id, m),
+            ...(policy?.completionMode === 'tasks'
+              ? []
+              : criteriaStatements(id, m)),
           ];
         },
         ['draft'],
@@ -220,6 +216,7 @@ export async function POST(request: Request) {
         members,
         policy!.goalVersion,
         deliverables.length,
+        policy!,
       );
       if (!check.ready) throw new PolicyError(check.missing.join(' '));
       const deadline = deadlineFrom(now, policy!.durationDays);
@@ -253,7 +250,8 @@ export async function POST(request: Request) {
               .bind(timestamp, id, id, m),
             db
               .prepare(
-                'UPDATE sprints SET start_date=?,deadline=? WHERE owner=?' + gate,
+                'UPDATE sprints SET start_date=?,deadline=? WHERE owner=?' +
+                  gate,
               )
               .bind(timestamp.slice(0, 10), deadline, id, id, m),
             // 프로젝트 알림은 현재 팀원 각자에게 예약한다.
@@ -494,15 +492,7 @@ export async function POST(request: Request) {
             .prepare(
               'UPDATE project_deliverables SET evidence=?,evidence_by=?,evidence_at=?,confirmed=false,confirmed_by=NULL,confirmed_at=NULL WHERE project_id=? AND deliverable_id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
             )
-            .bind(
-              evidence,
-              user.id,
-              timestamp,
-              id,
-              d.deliverableId,
-              id,
-              m,
-            ),
+            .bind(evidence, user.id, timestamp, id, d.deliverableId, id, m),
         ],
         [...open],
       );
@@ -538,16 +528,22 @@ export async function POST(request: Request) {
         [...open],
       );
     } else if (b.action === 'finish') {
-      // 완주 판정은 완료 기준(또는 기존 결과물) 확인만 본다. 체크인 수·업무 수는 조건이 아니다.
-      const check = completionCheck(await readDeliverables(id));
+      const check =
+        policy?.completionMode === 'tasks'
+          ? taskCompletionCheck(s.tasks)
+          : completionCheck(await readDeliverables(id));
       const criteria = check.mode === 'criteria';
       if (!check.ready)
         throw new PolicyError(
-          criteria
-            ? '완료 기준에 근거를 남기고 팀장이 확인해야 완주할 수 있습니다.'
-            : check.total
-              ? `아직 확인되지 않은 필수 결과물이 있습니다: ${check.missing.join(', ')}`
-              : '확인할 필수 결과물이 없습니다.',
+          check.mode === 'tasks'
+            ? check.total
+              ? `완료와 근거가 필요한 업무: ${check.missing.join(', ')}`
+              : '완료할 업무가 없습니다.'
+            : criteria
+              ? '완료 기준에 근거를 남기고 팀장이 확인해야 완주할 수 있습니다.'
+              : check.total
+                ? `아직 확인되지 않은 필수 결과물이 있습니다: ${check.missing.join(', ')}`
+                : '확인할 필수 결과물이 없습니다.',
         );
       s.finished = true;
       await save(

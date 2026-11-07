@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 // 작업 화면 색 변수의 글자 대비(WCAG AA 4.5:1)를 라이트(:root)·다크(.dark) 모두에서 지킨다.
 const dir = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(join(dir, '../app/globals.css'), 'utf8');
-const pageSource = readFileSync(join(dir, '../app/workspace/page.tsx'), 'utf8');
+const pageSource = readFileSync(join(dir, '../components/project-dashboard.tsx'), 'utf8');
 
 function block(selector) {
   const start = css.indexOf('\n' + selector + ' {');

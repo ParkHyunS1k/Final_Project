@@ -433,3 +433,48 @@ export function PeerReviewGate({
     </dialog>
   );
 }
+
+/**
+ * 통합 앱(/app) 어느 탭에서든 낼 동료평가가 있으면 PeerReviewGate로 막는다.
+ * 목록은 서버(/api/projects)가 정하고, 처음·30초마다·창으로 돌아올 때·'pm:reviews' 이벤트 때 다시 받는다.
+ */
+export function PendingReviewGate() {
+  const [pending, setPending] = useState<{ id: string; title: string }[]>([]);
+  const refresh = useCallback(() => {
+    apiFetch('/api/projects', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(
+        (d: {
+          projects: { id: string; title: string }[];
+          reviewPending: string[];
+        } | null) => {
+          if (!d) return;
+          setPending(
+            d.reviewPending.map((id) => ({
+              id,
+              title: d.projects.find((p) => p.id === id)?.title ?? '',
+            })),
+          );
+        },
+      )
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    refresh();
+    const id = setInterval(refresh, 30000);
+    addEventListener('focus', refresh);
+    addEventListener('pm:reviews', refresh);
+    return () => {
+      clearInterval(id);
+      removeEventListener('focus', refresh);
+      removeEventListener('pm:reviews', refresh);
+    };
+  }, [refresh]);
+  const done = useCallback((id: string) => {
+    setPending((p) => p.filter((x) => x.id !== id));
+    // 열려 있는 프로젝트 홈 카드(ProjectWorkspace)도 곧바로 다시 받게 한다.
+    dispatchEvent(new Event('pm:reviewed'));
+  }, []);
+  if (!pending.length) return null;
+  return <PeerReviewGate projects={pending} onDone={done} />;
+}

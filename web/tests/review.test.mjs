@@ -15,7 +15,7 @@ const outfile = join(mkdtempSync(join(tmpdir(), 'projectmate-review-test-')), 'r
 await build({
   stdin: {
     contents:
-      "export { POST as sprintPOST } from './app/api/sprint/route'; export { POST as projectsPOST } from './app/api/projects/route'; export { GET as reviewGET, POST as reviewPOST, useReviewModel, useGithub } from './app/api/review/route'; export { fakeReviewModel, validateQuestions, validateGrade, asData, prepareQuestions, DIGEST_DIRECT_CHARS } from './lib/ai-review'; export { parseRepoUrl, parseLogin, fetchCommitMaterial, LIMITS } from './lib/ai-review-github'; export { reviewLiveModel, reviewModelFromEnv } from './lib/ai-review-live'; export { kstDay, kstDayStart } from './lib/ai-review-store';",
+      "export { POST as sprintPOST } from './app/api/sprint/route'; export { POST as projectsPOST } from './app/api/projects/route'; export { GET as reviewGET, POST as reviewPOST } from './app/api/review/route'; export { useReviewModel, useGithub } from './lib/ai-review-runtime'; export { fakeReviewModel, validateQuestions, validateGrade, asData, prepareQuestions, DIGEST_DIRECT_CHARS } from './lib/ai-review'; export { parseRepoUrl, parseLogin, fetchCommitMaterial, LIMITS } from './lib/ai-review-github'; export { reviewLiveModel, reviewModelFromEnv } from './lib/ai-review-live'; export { kstDay, kstDayStart } from './lib/ai-review-store';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },

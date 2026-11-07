@@ -14,7 +14,179 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
+// CareerFlow integration: personal records are only read through authenticated server routes.
+// Team sharing contains explicitly selected skills, never the private resume body.
+export const careerProfiles = pgTable('career_profiles', {
+  userId: text('user_id').primaryKey(),
+  version: integer('version').notNull(),
+  snapshotId: text('snapshot_id').notNull(),
+}).enableRLS();
+export const careerProfileVersions = pgTable(
+  'career_profile_versions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => careerProfiles.userId),
+    version: integer('version').notNull(),
+    input: jsonb('input').notNull(),
+    analysis: jsonb('analysis').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex('idx_career_profile_version').on(t.userId, t.version)],
+).enableRLS();
+export const careerProjectLinks = pgTable(
+  'career_project_links',
+  {
+    projectId: text('project_id')
+      .primaryKey()
+      .references(() => sprints.owner),
+    templateId: text('template_id').notNull(),
+    templateVersion: integer('template_version').notNull(),
+    goalVersion: integer('goal_version').notNull(),
+    createdBy: text('created_by').notNull(),
+    profileId: text('profile_id').references(() => careerProfileVersions.id),
+    requestId: text('request_id').notNull(),
+  },
+  (t) => [
+    uniqueIndex('idx_career_project_request').on(t.createdBy, t.requestId),
+  ],
+).enableRLS();
+export const careerProjectProfiles = pgTable(
+  'career_project_profiles',
+  {
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    userId: text('user_id').notNull(),
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => careerProfileVersions.id),
+    skills: jsonb('skills').notNull(),
+    learningGoals: jsonb('learning_goals').notNull(),
+    preferredRoles: jsonb('preferred_roles').notNull(),
+    sharedAt: timestamp('shared_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.userId] })],
+).enableRLS();
+export const careerRoleProposals = pgTable(
+  'career_role_proposals',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    baseRevision: integer('base_revision').notNull(),
+    goalVersion: integer('goal_version').notNull(),
+    status: text('status').notNull().default('pending'),
+    payload: jsonb('payload').notNull(),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index('idx_career_proposal_project').on(t.projectId, t.createdAt)],
+).enableRLS();
+export const careerTaskLinks = pgTable(
+  'career_task_links',
+  {
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    taskId: integer('task_id').notNull(),
+    templateKey: text('template_key').notNull(),
+    workRole: text('work_role').notNull(),
+    skillIds: jsonb('skill_ids').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.projectId, t.taskId] }),
+    uniqueIndex('idx_career_template_task').on(t.projectId, t.templateKey),
+  ],
+).enableRLS();
+export const careerExperiences = pgTable(
+  'career_experiences',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    taskId: integer('task_id').notNull(),
+    taskVersion: integer('task_version').notNull(),
+    taskTitle: text('task_title').notNull(),
+    skillIds: jsonb('skill_ids').notNull(),
+    evidence: text('evidence').notNull(),
+    contribution: text('contribution').notNull(),
+    resumeBullet: text('resume_bullet').notNull(),
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('idx_career_experience_task').on(
+      t.userId,
+      t.projectId,
+      t.taskId,
+    ),
+  ],
+).enableRLS();
+export const careerAiQuota = pgTable(
+  'career_ai_quota',
+  {
+    userId: text('user_id').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    n: integer('n').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })],
+).enableRLS();
+
+export const careerProfileWrites = pgTable('career_profile_writes', {
+  userId: text('user_id').primaryKey(),
+  claimId: text('claim_id'),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+}).enableRLS();
+
 const tz = { withTimezone: true, mode: 'date' } as const;
+// Private hub records never enter the public team directory.
+export const hubRecords = pgTable(
+  'hub_records',
+  {
+    userId: text('user_id').notNull(),
+    id: text('id').notNull(),
+    kind: text('kind').notNull(),
+    payload: jsonb('payload').notNull(),
+    // 포트폴리오·공고 수정 충돌 감지용. 옛 화면의 저장은 409로 거절한다.
+    revision: integer('revision').notNull().default(1),
+    createdAt: timestamp('created_at', tz).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.id] })],
+).enableRLS();
+export const hubProjects = pgTable('hub_projects', {
+  projectId: text('project_id')
+    .primaryKey()
+    .references(() => sprints.owner),
+  template: jsonb('template').notNull(),
+  scopeLevel: integer('scope_level').notNull(),
+  mode: text('mode').notNull(),
+}).enableRLS();
+export const hubInterests = pgTable(
+  'hub_interests',
+  {
+    projectId: text('project_id')
+      .notNull()
+      .references(() => sprints.owner),
+    userId: text('user_id').notNull(),
+    displayName: text('display_name').notNull(),
+    email: text('email').notNull().default(''),
+    invitation: jsonb('invitation'),
+    createdAt: timestamp('created_at', tz).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.userId] })],
+).enableRLS();
 // Supabase는 public 테이블을 anon 키(화면 번들에 공개)로 REST에 노출한다. 모든 테이블에 RLS를 켜고
 // 정책을 두지 않아 막는다. 서버는 테이블 소유자 역할로 접속하므로 영향을 받지 않는다.
 export const sprints = pgTable('sprints', {
@@ -170,6 +342,7 @@ export const projectPolicy = pgTable('project_policy', {
   goalVersion: integer('goal_version').notNull().default(1),
   durationDays: integer('duration_days').notNull(),
   dailyHours: doublePrecision('daily_hours').notNull().default(8),
+  completionMode: text('completion_mode').notNull().default('deliverables'),
   startedAt: timestamp('started_at', tz),
   deadlineAt: timestamp('deadline_at', tz),
   completedAt: timestamp('completed_at', tz),

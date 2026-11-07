@@ -2,6 +2,16 @@
 
 목적은 연구가 아니라 7일 프로젝트 완주 서비스 개발이다.
 
+## 현재 통합 앱 (2026-10-08)
+
+`/` 랜딩 → `/app` 통합 홈으로 들어간다. 이력서·포트폴리오·공고·프로젝트·성장 기록을 한 메뉴 안에서 사용한다. 20개 템플릿, 범위 슬라이더, 솔로 시작, 공개 팀 모집·참여 요청·초대, 일일 체크인·학습 기록을 지원한다. `/career`와 `/workspace`는 호환 리다이렉트다. 기존 Python 자료를 자동 가져오지는 않는다.
+
+현재 구현과 실행 방법은 [통합 앱 문서](../docs/unified-app.md)를 참고한다. 새 로컬 DB에는 마이그레이션 `0000`부터 `0009`까지 필요하다. main DB는 개발 서버를 끄고 `npm run db:migrate`로 `0009_career_hub`만 추가 적용한다. PR #20 브랜치의 옛 번호(0006_career_growth 등)로 만든 로컬 DB는 새로 만든다. 모든 프로젝트는 혼자 시작할 수 있고, 통합 템플릿은 업무 근거로 완료를 판정한다.
+
+동료 평가와 학습 확인의 SQL은 main 그대로 `0006_peer_reviews.sql`, `0007_learning_review.sql`, `0008_peer_review_half_points.sql`이다. 통합 앱의 표(프로필 저장 선점 포함)는 `0009_career_hub.sql` 하나에 있다. 배포 환경에서 통합 앱을 쓰기 전에 이 마이그레이션까지 적용해야 한다.
+
+프로필 저장은 예상 버전과 계정별 선점을 DB에서 함께 확인한다. AI 요청은 선점에 성공한 경우에만 하루 한도를 사용하며, 처리 중 같은 계정의 AI 저장과 기본 저장은 409로 거절한다. 모델 오류나 저장 실패는 선점을 해제하고 한도를 돌려준다. 중단된 요청의 선점은 120초 뒤 만료되며, 이전 요청의 늦은 응답은 새 요청의 결과를 덮어쓸 수 없다.
+
 ## 실제로 동작하는 범위
 
 - 레이스 작업 공간: 메뉴 홈(카운트다운·병목·팀 레인)·업무(표·보드, 내 것만)·프로젝트(목표·팀원과 초대·완주 확인·내보내기). 다크 기본, 라이트 전환.
@@ -140,4 +150,4 @@ npm run build
 - Supabase Auth: Site URL은 운영 주소, Redirect URLs에 `https://<운영주소>/**`, `https://*-<vercel계정>.vercel.app/**`, `http://localhost:*/**`.
 - 마이그레이션은 자동으로 돌지 않는다. `db/migrations/`에 새 파일이 생기는 PR은 미리보기·운영이 같은 DB를 쓰므로, 테이블 추가 같은 호환 마이그레이션은 PR을 올리기 전에 운영 DB에 먼저 적용한다: `node --env-file=.env.local --experimental-strip-types scripts/migrate.ts`. `npm run db:migrate`는 `.env.local`을 자동으로 읽지 않으며, 셸에 `DATABASE_URL`도 없으면 로컬 PGlite에 적용된다. 미리보기도 같은 DB를 쓰므로 컬럼 삭제·이름 변경은 하지 않는다.
 - AI 변경안: Vercel 환경변수 `PROJECTMATE_LIVE_MODEL=1`과 `OPENAI_API_KEY`(Production·Preview)를 넣으면 실제 모델(`gpt-6.1-sol`, `PROJECTMATE_MODEL`로 바꿀 수 있음)을 쓴다. 없으면 '준비 중'이다(`lib/ai-extraction.ts` `aiAvailable`). 사용자당 하루 10회(`ai_quota`).
-- 학습 확인(`/api/review`): 같은 `PROJECTMATE_LIVE_MODEL`·`OPENAI_API_KEY`로 켜진다. 압축 모델 `PROJECTMATE_REVIEW_SUMMARY_MODEL`(기본 `gpt-6.1-luna`, 미확인), 질문·채점 모델 `PROJECTMATE_REVIEW_MODEL`(기본 `gpt-6.1-sol`). 사용자당 하루 3회(`review_quota`). 공개 저장소 읽기 한도를 늘리려면 서버 전용 `GITHUB_TOKEN`(권한 없는 토큰)을 넣는다. 테이블은 마이그레이션 `0007_learning_review.sql`.
+- 학습 확인(`/api/review`): 같은 `PROJECTMATE_LIVE_MODEL`, `OPENAI_API_KEY`로 켜진다. 압축 모델 `PROJECTMATE_REVIEW_SUMMARY_MODEL`(기본 `gpt-6.1-luna`, 미확인), 질문, 채점 모델 `PROJECTMATE_REVIEW_MODEL`(기본 `gpt-6.1-sol`). 사용자당 하루 3회(`review_quota`). 공개 저장소 읽기 한도를 늘리려면 서버 전용 `GITHUB_TOKEN`(권한 없는 토큰)을 넣는다. 테이블은 마이그레이션 `0011_learning_review.sql`.

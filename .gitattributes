@@ -1,0 +1,2 @@
+# Preserve PDF byte offsets and avoid text whitespace checks on fixtures.
+*.pdf binary
