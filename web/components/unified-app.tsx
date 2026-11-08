@@ -19,6 +19,7 @@ import {
 import { TeamDirectory } from './team-directory';
 import { ProjectCreate } from './project-create';
 import { CareerWorkspace } from './career-workspace';
+import { GithubLink } from './github-link';
 import { PendingReviewGate } from './peer-review';
 import ProjectDashboard from './project-dashboard';
 import { ThemeToggle } from './theme-toggle';
@@ -1213,6 +1214,7 @@ export function UnifiedApp({
                   가져왔습니다. 내용을 확인한 뒤 분석·저장해주세요.
                 </div>
               )}
+              {tab === 'profile' && <GithubLink />}
               <CareerWorkspace
                 key={tab + selectedProject + posting + evidence}
                 embedded
