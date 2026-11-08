@@ -27,7 +27,7 @@ export function GithubLinkCard({
         <p>
           {account
             ? '팀원에게 GitHub 아이디가 보이고, 학습 확인은 이 계정의 커밋으로 질문을 만들어요.'
-            : '학습 확인은 GitHub를 연결해야 시작할 수 있어요. 공개 프로필만 읽고 저장소 권한은 받지 않아요.'}
+            : '학습 확인은 GitHub를 연결해야 시작할 수 있어요. 연결할 때 GitHub 프로필과 이메일 주소를 확인하며, 저장소 권한은 받지 않아요.'}
         </p>
         {error && <p role="alert">{error}</p>}
       </div>

@@ -15,10 +15,13 @@ function text(v: unknown) {
   return typeof v === 'string' || typeof v === 'number' ? String(v).trim() : '';
 }
 
-/** Supabase /auth/v1/user 응답에서 GitHub 신원. 없으면 null, 있는데 값이 이상하면 AuthUnavailable. */
+/**
+ * Supabase /auth/v1/user 응답에서 GitHub 신원. identities 배열에 GitHub가 없을 때만 null(연결 해제로 처리).
+ * 응답 구조가 이상하거나 GitHub 값이 틀리면 AuthUnavailable — 연결을 지우지 않는다.
+ */
 export function githubFromSupabaseUser(user: unknown): GithubIdentity | null {
   const identities = (user as { identities?: unknown } | null)?.identities;
-  if (!Array.isArray(identities)) return null;
+  if (!Array.isArray(identities)) throw new AuthUnavailable();
   const found = identities.find((i) => (i as { provider?: unknown })?.provider === 'github') as
     | { id?: unknown; identity_data?: Record<string, unknown> }
     | undefined;
@@ -55,7 +58,15 @@ async function supabaseGithub(request: Request): Promise<GithubIdentity | null> 
     console.warn('github account: supabase user lookup status', response.status);
     throw new AuthUnavailable();
   }
-  return githubFromSupabaseUser(await response.json().catch(() => null));
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (e) {
+    // 본문 수신 시간 초과·JSON 오류는 연결 해제가 아니라 조회 실패다.
+    console.warn('github account: supabase user body unreadable', (e as Error).name);
+    throw new AuthUnavailable();
+  }
+  return githubFromSupabaseUser(body);
 }
 
 export let githubIdentitySource: GithubIdentitySource = supabaseGithub;

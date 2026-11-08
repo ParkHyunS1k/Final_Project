@@ -132,7 +132,10 @@ test('Supabase 조회 실패는 503이고 기존 연결을 유지한다', async 
 
 test('githubFromSupabaseUser: GitHub 신원이 없으면 null, 아이디가 비거나 틀리면 실패', () => {
   assert.equal(api.githubFromSupabaseUser({ identities: [{ provider: 'google' }] }), null);
-  assert.equal(api.githubFromSupabaseUser({}), null);
+  // identities 배열이 없는 응답은 '연결 없음'이 아니라 읽기 실패다(행을 지우면 안 된다).
+  assert.throws(() => api.githubFromSupabaseUser({}), api.AuthUnavailable);
+  assert.throws(() => api.githubFromSupabaseUser(null), api.AuthUnavailable);
+  assert.equal(api.githubFromSupabaseUser({ identities: [] }), null);
   assert.deepEqual(
     api.githubFromSupabaseUser({
       identities: [{ provider: 'github', id: 'x', identity_data: { provider_id: '5', user_name: 'octo-cat' } }],
@@ -175,6 +178,12 @@ test('기본 source: Bearer가 없으면 null, Supabase가 401이면 AuthUnavail
     assert.equal(calls[0].url, 'https://sb.test/auth/v1/user');
     assert.equal(new Headers(calls[0].init.headers).get('authorization'), 'Bearer tok');
     assert.equal(new Headers(calls[0].init.headers).get('apikey'), 'anon');
+    // 200인데 본문이 깨지면 연결 해제가 아니라 조회 실패.
+    globalThis.fetch = async () => new Response('{"identities":', { status: 200 });
+    await assert.rejects(
+      defaultSource(new Request('https://test.local/api/github', { headers: { authorization: 'Bearer tok' } })),
+      api.AuthUnavailable,
+    );
   } finally {
     globalThis.fetch = realFetch;
     if (env.url === undefined) delete process.env.SUPABASE_URL;

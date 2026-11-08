@@ -30,6 +30,9 @@ void test('연결 전: GitHub 연결 버튼과 학습 확인 안내가 있고 �
   const html = render({ account: null });
   assert.match(html, /GitHub 연결<\/button>/);
   assert.match(html, /학습 확인은 GitHub를 연결해야 시작할 수 있어요/);
+  // Supabase GitHub 공급자는 기본으로 user:email을 요청한다. 공개 프로필만 읽는다고 쓰지 않는다.
+  assert.match(html, /프로필과 이메일 주소/);
+  assert.doesNotMatch(html, /공개 프로필만/);
   assert.doesNotMatch(html, /연결 해제/);
 });
 

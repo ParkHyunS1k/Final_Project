@@ -28,7 +28,7 @@
 ### 연결
 
 1. 마이페이지(`components/career-workspace.tsx`, 이력서·역량 영역 근처)에 'GitHub 연결' 버튼.
-2. 버튼은 `supabase.auth.linkIdentity({ provider: 'github', options: { redirectTo } })`. 권한 범위는 기본(공개 프로필)만 쓰고 `repo` 등 추가 scope는 요청하지 않는다.
+2. 버튼은 `supabase.auth.linkIdentity({ provider: 'github', options: { redirectTo } })`. 권한 범위는 Supabase GitHub 공급자 기본값(프로필과 `user:email`)만 쓰고 `repo` 등 추가 scope는 요청하지 않는다. 화면 안내도 이메일 주소 확인을 포함한다(Codex 리뷰 2026-11-08).
 3. GitHub 승인 후 돌아오면 화면이 `POST /api/github {action:'sync'}`를 부른다.
 4. 서버는 사용자의 access token으로 `GET {SUPABASE_URL}/auth/v1/user`를 직접 불러 `identities` 중 `provider === 'github'`을 찾는다. 요청 본문의 아이디·숫자 id는 받지 않는다.
    - 찾으면 GitHub 숫자 id(`identity_data.provider_id` 또는 `sub`/`id`)와 아이디(`identity_data.user_name`, 없으면 `preferred_username`)로 저장(upsert).
