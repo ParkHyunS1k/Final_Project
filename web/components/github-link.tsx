@@ -16,8 +16,8 @@ export function GithubLinkCard({
   account: { login: string } | null;
   busy: boolean;
   error: string;
-  onLink(): void;
-  onUnlink(): void;
+  onLink: () => void;
+  onUnlink: () => void;
 }) {
   return (
     <section className="hub-card hub-info">
@@ -52,21 +52,22 @@ function alreadyLinked(href: string) {
   return code === 'identity_already_exists';
 }
 
+// 서버가 Supabase 신원으로 연결을 맞추고 결과를 돌려준다.
+async function syncGithub(): Promise<{ login: string } | null> {
+  const response = await apiFetch('/api/github', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'sync' }),
+  });
+  const body = (await response.json().catch(() => ({}))) as { github?: { login: string } | null; error?: string };
+  if (!response.ok) throw new Error(body.error ?? 'GitHub 연결 상태를 불러오지 못했습니다.');
+  return body.github ?? null;
+}
+
 export function GithubLink() {
   const [account, setAccount] = useState<{ login: string } | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
-
-  const sync = useCallback(async () => {
-    const response = await apiFetch('/api/github', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sync' }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error ?? 'GitHub 연결 상태를 불러오지 못했습니다.');
-    setAccount(body.github);
-  }, []);
   const run = useCallback(async (work: () => Promise<void>) => {
     setBusy(true);
     setError('');
@@ -83,11 +84,17 @@ export function GithubLink() {
     const failed = alreadyLinked(location.href);
     // 오류로 돌아온 주소에는 code가 없으니 지워도 로그인 교환에 영향이 없다.
     if (failed) history.replaceState(null, '', returnUrl(location.href));
-    void run(async () => {
-      await sync();
-      if (failed) throw new Error(ALREADY_LINKED);
-    });
-  }, [run, sync]);
+    // 처음 상태가 busy=true라 여기서 바로 setState하지 않는다(react-compiler EffectSetState).
+    void syncGithub()
+      .then((next) => {
+        setAccount(next);
+        if (failed) setError(ALREADY_LINKED);
+      })
+      .catch((e: unknown) =>
+        setError(e instanceof Error && e.message ? e.message : 'GitHub 연결 상태를 불러오지 못했습니다.'),
+      )
+      .finally(() => setBusy(false));
+  }, []);
 
   return (
     <GithubLinkCard
@@ -98,7 +105,7 @@ export function GithubLink() {
       onUnlink={() =>
         void run(async () => {
           await unlinkGithub();
-          await sync();
+          setAccount(await syncGithub());
         })
       }
     />

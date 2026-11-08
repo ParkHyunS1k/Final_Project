@@ -162,7 +162,7 @@ test('기본 source: Bearer가 없으면 null, Supabase가 401이면 AuthUnavail
   process.env.SUPABASE_URL = 'https://sb.test';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon';
   globalThis.fetch = async (url, init) => {
-    calls.push({ url: String(url), init });
+    calls.push({ url, init });
     return new Response('{}', { status: 401 });
   };
   try {
