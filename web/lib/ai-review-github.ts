@@ -59,13 +59,6 @@ export function parseRepoUrl(value: unknown): Repo {
   return { owner, name };
 }
 
-export function parseLogin(value: unknown): string {
-  const text = typeof value === 'string' ? value.trim().replace(/^@/, '') : '';
-  if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(text))
-    throw new ReviewSourceError('GitHub 아이디를 확인해주세요.');
-  return text;
-}
-
 export type CommitSummary = { sha: string; message: string; date: string };
 export type Material = {
   commits: CommitSummary[];
