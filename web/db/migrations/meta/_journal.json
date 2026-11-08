@@ -71,6 +71,13 @@
       "when": 1794036853686,
       "tag": "0009_career_hub",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794136724584,
+      "tag": "0010_github_accounts",
+      "breakpoints": true
     }
   ]
 }

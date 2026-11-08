@@ -668,3 +668,27 @@ export const reviewQuota = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.day] })],
 ).enableRLS();
+
+// 마이페이지에서 연결한 GitHub 계정(2026-11-08). 기준은 Supabase 신원이고 서버만 쓴다.
+// github_id(숫자 id)가 기준이며 아이디(login)는 바뀔 수 있다. 한 GitHub는 한 사용자에게만.
+export const githubAccounts = pgTable('github_accounts', {
+  userId: text('user_id').primaryKey(),
+  githubId: text('github_id').notNull().unique(),
+  login: text('login').notNull(),
+  linkedAt: timestamp('linked_at', tz).notNull(),
+  updatedAt: timestamp('updated_at', tz).notNull(),
+}).enableRLS();
+
+// GitHub 연결 기록. action: link | unlink | transfer_out(다른 사용자에게 넘어감).
+export const githubLinkEvents = pgTable(
+  'github_link_events',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    githubId: text('github_id').notNull(),
+    login: text('login').notNull(),
+    action: text('action').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
+  },
+  (t) => [index('idx_github_link_events_user').on(t.userId, t.createdAt)],
+).enableRLS();
