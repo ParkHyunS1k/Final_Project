@@ -8,12 +8,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setupTestDb } from './helpers/pg-db.mjs';
-const { one, rows } = await setupTestDb();
+const { one, rows, run } = await setupTestDb();
 const outfile = join(mkdtempSync(join(tmpdir(), 'projectmate-github-test-')), 'route.mjs');
 await build({
   stdin: {
     contents:
-      "export { POST as githubPOST } from './app/api/github/route'; export { useGithubIdentitySource, githubFromSupabaseUser, readGithubAccount, githubIdentitySource } from './lib/github-account'; export { AuthUnavailable } from './lib/auth';",
+      "export { POST as githubPOST } from './app/api/github/route'; export { useGithubIdentitySource, githubFromSupabaseUser, readGithubAccount, githubIdentitySource } from './lib/github-account'; export { AuthUnavailable } from './lib/auth'; export { GET as sprintGET } from './app/api/sprint/route'; export { POST as projectsPOST } from './app/api/projects/route'; export { GET as teamsGET, POST as teamsPOST } from './app/api/teams/route';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -188,4 +188,68 @@ test('다른 origin·JSON 아님·모르는 action은 거절한다', async () =>
   await json(await sync('alice', { action: 'sync' }, { origin: 'https://evil.test' }), 403);
   await json(await sync('alice', { action: 'sync' }, { 'content-type': 'text/plain' }), 415);
   await json(await sync('alice', { action: 'link' }), 400);
+});
+
+// 두 사람 팀: 팀장이 공개 → 팀원이 참여 신청 → 팀장 승인.
+const postTo = (fn, url) => (user, body) =>
+  fn(new Request('https://test.local' + url, { method: 'POST', headers: headers(user), body: JSON.stringify(body) }));
+const projects = postTo((r) => api.projectsPOST(r), '/api/projects');
+const teamsPost = postTo((r) => api.teamsPOST(r), '/api/teams');
+const state = async (user, projectId) =>
+  json(await api.sprintGET(new Request('https://test.local/api/sprint?project=' + projectId, { headers: headers(user) })), 200);
+async function pairProject(owner, mate) {
+  const projectId = (
+    await json(
+      await projects(owner, {
+        action: 'create',
+        title: 'GitHub 팀',
+        goal: '예약 페이지를 출시한다',
+        scope: '예약 폼',
+        completionCriteria: '예약 1건',
+        duration: 7,
+        agreed: true,
+      }),
+      201,
+    )
+  ).projectId;
+  let s = await state(owner, projectId);
+  await json(await projects(owner, { action: 'setListed', projectId, revision: s.sprint.revision, listed: true }), 200);
+  await json(await teamsPost(mate, { action: 'request', projectId, goalVersion: 1, agreed: true }), 201);
+  s = await state(owner, projectId);
+  await json(
+    await projects(owner, { action: 'decideJoin', projectId, revision: s.sprint.revision, requestId: s.joinRequests[0].id, approve: true }),
+    200,
+  );
+  return projectId;
+}
+const login = (s, name) => s.members.find((m) => m.display_name === name).github_login;
+
+test('같은 프로젝트 팀원은 서로의 GitHub 아이디를 본다', async () => {
+  const projectId = await pairProject('p-owner', 'p-mate');
+  gh.set('p-mate', { githubId: '801', login: 'mate-gh' });
+  await json(await sync('p-mate'), 200);
+  const s = await state('p-owner', projectId);
+  assert.equal(login(s, 'p-mate'), 'mate-gh');
+  assert.equal(login(s, 'p-owner'), null);
+});
+
+test('나간 멤버가 보는 프로젝트 상태에는 GitHub 아이디가 없다', async () => {
+  const projectId = await pairProject('l-owner', 'l-mate');
+  gh.set('l-owner', { githubId: '811', login: 'owner-gh' });
+  gh.set('l-mate', { githubId: '812', login: 'left-gh' });
+  await json(await sync('l-owner'), 200);
+  await json(await sync('l-mate'), 200);
+  await run('UPDATE project_members SET left_at=now() WHERE project_id=? AND user_id=?', projectId, 'l-mate');
+  const left = await state('l-mate', projectId);
+  assert.ok(left.members.every((m) => m.github_login === null));
+  assert.equal(login(await state('l-owner', projectId), 'l-mate'), 'left-gh');
+});
+
+test('공개 팀 목록에는 GitHub 아이디가 없다', async () => {
+  const projectId = await pairProject('v-owner', 'v-mate');
+  gh.set('v-owner', { githubId: '821', login: 'visible-gh' });
+  await json(await sync('v-owner'), 200);
+  const list = await json(await api.teamsGET(new Request('https://test.local/api/teams', { headers: headers('v-viewer') })), 200);
+  assert.ok(list.teams.some((t) => t.projectId === projectId));
+  assert.doesNotMatch(JSON.stringify(list), /github_?login|visible-gh/i);
 });
