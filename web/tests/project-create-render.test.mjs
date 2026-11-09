@@ -23,24 +23,29 @@ await build({
 });
 const { ProjectCreate } = await import(pathToFileURL(outfile).href);
 
-void test('만들기 화면: 단어 3개·잠금 3개·주사위, 5단계 슬라이더 기본 MVP, 결과물 입력 없음', () => {
+void test('만들기 화면: 단어 3개·잠금 3개·주사위, 3단계 슬라이더 기본 검증까지, 결과물 입력 없음', () => {
   const html = renderToString(createElement(ProjectCreate, { onSubmit: async () => true }));
   assert.equal((html.match(/class="dice-word"/g) ?? []).length, 3);
   assert.equal((html.match(/aria-label="[^"]+ 고정"/g) ?? []).length, 3);
   assert.match(html, /다시 굴리기/);
-  assert.match(html, /type="range"[^>]*min="1"[^>]*max="5"/);
+  assert.match(html, /type="range"[^>]*min="1"[^>]*max="3"/);
   assert.match(html, /value="2"/);
-  const names = ['핵심 기능', 'MVP', '테스트', '데모', '배포'];
+  const names = ['핵심만', '검증까지', '확장까지'];
   let at = -1;
   for (const n of names) {
     const i = html.indexOf(n, at + 1);
     assert.ok(i > at, n);
     at = i;
   }
-  assert.match(html, /사용자가 들어와서 목적을 이루고 나가는 흐름 하나를 완성한다/);
+  assert.match(html, /팀 밖 사람 3명에게 써보게 하고 가장 큰 불편 하나를 고친다/);
   assert.match(html, /혼자서도 시작할 수 있어요/);
   assert.match(html, /maxLength="100"|maxlength="100"/);
   assert.doesNotMatch(html, /name="deliverables"|필수 결과물/);
+  // 템플릿처럼 혼자/팀을 고른다. 기본은 혼자, 공개 체크는 팀일 때만.
+  assert.match(html, /어떻게 시작할까요\?/);
+  assert.match(html, /<input[^>]*type="radio"[^>]*checked=""[^>]*\/>혼자 시작/);
+  assert.match(html, /팀으로 시작/);
+  assert.doesNotMatch(html, /팀 찾기에 공개하고 모집하기/);
 });
 
 void test('동료평가 미제출로 금지 중이면 만들기 버튼을 끄고 언제까지인지 알린다', () => {

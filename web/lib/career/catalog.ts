@@ -1,5 +1,6 @@
 // Shared vocabulary for resume evidence, goals, templates and project tasks.
 // These are curated learning examples, not live recruitment listings.
+import { SCOPE_LEVELS } from '../idea-dice.ts';
 export const SKILLS = [
   { id: 'python', name: 'Python', aliases: ['Python', '파이썬'] },
   { id: 'sql', name: 'SQL', aliases: ['SQL', 'PostgreSQL', 'SQLite', 'MySQL'] },
@@ -687,7 +688,7 @@ for (const item of MORE_TEMPLATES) {
     tasks,
   });
 }
-export const SCOPE_LABELS = ['핵심만', '검증까지', '확장까지'] as const;
+export const SCOPE_LABELS = SCOPE_LEVELS.map((l) => l.name);
 export function scopedTemplate(
   template: ProjectTemplate,
   level: number,
