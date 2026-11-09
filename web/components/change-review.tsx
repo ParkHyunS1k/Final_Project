@@ -72,6 +72,12 @@ const KIND_LABEL: Record<string, string> = {
   complete: '완료 보고',
 };
 
+// datetime-local은 브라우저 시간대 문자열이다. 저장은 UTC 절대 시각(ISO)으로 한다.
+function localInput(iso: unknown) {
+  return typeof iso === 'string' && iso
+    ? new Date(Date.parse(iso) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    : '';
+}
 function describe(value: unknown) {
   if (value === null || value === undefined || value === '') return '없음';
   if (typeof value === 'boolean') return value ? '예' : '아니오';
@@ -326,11 +332,18 @@ export function ChangeReview({
     const hoursEstimated =
       after.remainingEstimated === true &&
       !(!replayItem && edits[c.changeId] && 'remaining' in edits[c.changeId]);
+    const dueEstimated =
+      after.dueEstimated === true &&
+      !(!replayItem && edits[c.changeId] && 'dueAt' in edits[c.changeId]);
     const afterText =
       c.kind === 'createTask'
         ? `${text(after.title)} · 담당자 ${personName(after.person, members)} · 공수 ${
             typeof after.remaining === 'number'
               ? `${after.remaining}시간${hoursEstimated ? ' (AI 추정)' : ''}`
+              : '미정'
+          } · 마감 ${
+            after.dueAt
+              ? `${seoulTime(text(after.dueAt)).slice(5)}${dueEstimated ? ' (AI 추정)' : ''}`
               : '미정'
           }`
         : c.kind === 'assignee'
@@ -428,6 +441,22 @@ export function ChangeReview({
                     </NativeSelectOption>
                   ))}
               </NativeSelect>
+            </label>
+          )}
+          {!replayItem && c.kind === 'createTask' && (
+            <label className="input-label">
+              마감
+              <input
+                type="datetime-local"
+                value={localInput(after.dueAt)}
+                onChange={(e) =>
+                  setEdit(
+                    c.changeId,
+                    'dueAt',
+                    e.target.value ? new Date(e.target.value).toISOString() : null,
+                  )
+                }
+              />
             </label>
           )}
           {!replayItem && (c.kind === 'createTask' || c.kind === 'remaining') && (

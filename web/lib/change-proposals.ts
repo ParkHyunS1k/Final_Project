@@ -132,7 +132,7 @@ export type Selection = {
 
 function editable(kind: Kind) {
   return kind === 'createTask'
-    ? ['title', 'person', 'remaining', 'dependsOn']
+    ? ['title', 'person', 'remaining', 'dependsOn', 'dueAt']
     : kind === 'status'
       ? ['status']
       : kind === 'remaining'
@@ -174,6 +174,7 @@ export type Prepared = {
     remaining: number;
     dependsOn: number[];
     taskId: number;
+    dueAt: string | null;
   }[];
 };
 
@@ -256,8 +257,22 @@ export function prepareApplication(
         throw new PolicyError(
           `"${title}"은(는) 이 원문에서 이미 적용한 신규 업무입니다. 항목을 제외하고 다시 승인해주세요.`,
         );
+      // 신규 업무 마감: 업무 편집과 같은 규칙(시작 후, 지금 이후, 최종 기한 안).
+      let dueAt: string | null = null;
+      if (after.dueAt !== null && after.dueAt !== undefined && after.dueAt !== '') {
+        const at = typeof after.dueAt === 'string' ? Date.parse(after.dueAt) : NaN;
+        if (!Number.isFinite(at)) throw new PolicyError(`"${title}"의 마감 값이 올바르지 않습니다.`);
+        if (!ctx.deadline)
+          throw new PolicyError('시작 전에는 업무 마감을 지정할 수 없습니다.');
+        if (at > ctx.deadline.getTime())
+          throw new PolicyError(`"${title}"의 마감이 프로젝트 최종 기한을 넘습니다.`);
+        if (at <= ctx.now.getTime())
+          throw new PolicyError(`"${title}"의 마감이 이미 지났습니다. 마감을 고친 뒤 승인해주세요.`);
+        dueAt = new Date(at).toISOString();
+      }
       const taskId = newKeys.get(change.newKey!)!;
       creations.push({
+        dueAt,
         changeId: change.changeId,
         newKey: change.newKey!,
         title,
@@ -271,7 +286,7 @@ export function prepareApplication(
         kind: change.kind,
         taskId,
         before: {},
-        after: { title, person, remaining, dependsOn, changeVersion: 0 },
+        after: { title, person, remaining, dependsOn, dueAt, changeVersion: 0 },
         edited: wasEdited,
         candidateKey: key,
       });
