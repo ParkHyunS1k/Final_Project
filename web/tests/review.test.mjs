@@ -209,7 +209,7 @@ test('하루 확인 전체 흐름: 등록 → 시작(내 커밋 기반 질문) �
   state = await json(await reviewGet('r_alice', projectId), 200);
   assert.equal(state.today.done, true);
   assert.equal(state.today.reviewId, started.reviewId);
-  assert.deepEqual(state.link, { repoUrl, githubLogin: 'alice-dev' });
+  assert.deepEqual(state.link, { repoUrl, githubLogin: 'alice-dev', source: 'personal' });
   assert.equal(state.history.length, 1);
   assert.equal(state.history[0].answers[0].text.startsWith('목록 저장'), true);
   assert.equal(state.quota.used, 1);
@@ -493,7 +493,7 @@ test('GitHub를 연결하지 않으면 학습 확인을 시작할 수 없고 한
   assert.equal(await one('SELECT n FROM review_quota WHERE user_id=?', 'r_nolink'), null);
   assert.equal(gh.calls.length, 0);
   const state = await json(await reviewGet('r_nolink', projectId), 200);
-  assert.deepEqual(state.link, { repoUrl, githubLogin: null });
+  assert.deepEqual(state.link, { repoUrl, githubLogin: null, source: 'personal' });
 });
 
 test('본문의 githubLogin은 쓰지 않고 연결된 계정 아이디로 커밋을 거른다', async () => {
@@ -511,7 +511,7 @@ test('본문의 githubLogin은 쓰지 않고 연결된 계정 아이디로 커�
   const row = await one('SELECT github_login FROM learning_reviews WHERE id=?', started.reviewId);
   assert.equal(row.github_login, 'real-me');
   const state = await json(await reviewGet('r_real', projectId), 200);
-  assert.deepEqual(state.link, { repoUrl, githubLogin: 'real-me' });
+  assert.deepEqual(state.link, { repoUrl, githubLogin: 'real-me', source: 'personal' });
 });
 
 test('Supabase에서 해제한 뒤 sync 없이 시작하면 행을 지우고 거절한다', async () => {
@@ -536,4 +536,36 @@ test('시작 시 Supabase 조회 실패는 503이고 한도를 쓰지 않는다'
   await json(await review('r_sbdown', { action: 'start', projectId, sourceUrl: repoUrl }), 503);
   assert.equal(await one('SELECT n FROM review_quota WHERE user_id=?', 'r_sbdown'), null);
   assert.equal(gh.calls.length, 0);
+});
+
+test('개인 저장소가 없으면 프로젝트 저장소로 커밋을 읽는다', async () => {
+  const projectId = await soloProject('r_projrepo');
+  await run(
+    "INSERT INTO project_repos(project_id,repo_owner,repo_name,version,updated_by,updated_at) VALUES(?,'team','shared',1,'r_projrepo',now())",
+    projectId,
+  );
+  const gh = fakeGithub();
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  api.useReviewModel(api.fakeReviewModel());
+  await json(await review('r_projrepo', { action: 'start', projectId }), 201);
+  assert.ok(gh.calls.some((c) => c.url.includes('/repos/team/shared/commits')));
+  // GitHub 계정은 시작할 때 동기화되므로 시작 뒤에 조회한다.
+  const state = await json(await reviewGet('r_projrepo', projectId), 200);
+  assert.deepEqual(state.link, { repoUrl: 'https://github.com/team/shared', githubLogin: 'alice-dev', source: 'project' });
+});
+
+test('개인 저장소가 있으면 그것을 쓴다', async () => {
+  const projectId = await soloProject('r_ownrepo');
+  await run(
+    "INSERT INTO project_repos(project_id,repo_owner,repo_name,version,updated_by,updated_at) VALUES(?,'team','shared',1,'r_ownrepo',now())",
+    projectId,
+  );
+  const gh = fakeGithub();
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  api.useReviewModel(api.fakeReviewModel());
+  await json(await review('r_ownrepo', { action: 'start', projectId, sourceUrl: repoUrl }), 201);
+  assert.ok(gh.calls.some((c) => c.url.includes('/repos/alice-dev/todo-app/commits')));
+  assert.ok(!gh.calls.some((c) => c.url.includes('/repos/team/shared')));
+  const state = await json(await reviewGet('r_ownrepo', projectId), 200);
+  assert.equal(state.link.source, 'personal');
 });
