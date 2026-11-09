@@ -2,6 +2,7 @@
 // 실제 GitHub·OpenAI는 부르지 않는다.
 import { test } from 'node:test';
 process.env.AUTH_DEV_HEADERS = '1';
+process.env.AI_FAKE_MODEL = '1';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { mkdtempSync } from 'node:fs';
@@ -21,6 +22,11 @@ await build({
       "export { POST as projectsPOST } from './app/api/projects/route';",
       "export { GET as issuesGET, POST as issuesPOST } from './app/api/github-issues/route';",
       "export { useGithub } from './lib/ai-review-runtime';",
+      "export { POST as proposalsPOST } from './app/api/change-proposals/route';",
+      "export { GET as sourcesGET, POST as sourcesPOST } from './app/api/sources/route';",
+      "export { GET as sprintGET } from './app/api/sprint/route';",
+      "export { useModel } from './lib/ai-model-selection';",
+      "export { buildPrompt, PROMPT_VERSION } from './lib/ai-extraction';",
     ].join(' '),
     resolveDir: process.cwd(),
     loader: 'ts',
@@ -464,4 +470,138 @@ test('팀장이 나간 뒤에는 목록·가져오기 403', async () => {
   await run('UPDATE project_members SET left_at=now() WHERE project_id=? AND user_id=?', projectId, 'g-owner');
   await json(await issuesGet('g-owner', projectId, true), 403);
   await json(await issuesPost('g-owner', { action: 'import', projectId, numbers: [1] }), 403);
+});
+
+// ---- AI 변경안 연결 ----
+const proposals = postTo((r) => api.proposalsPOST(r), '/api/change-proposals');
+const sprintOf = async (user, projectId) =>
+  json(await api.sprintGET(new Request('https://test.local/api/sprint?project=' + projectId, { headers: headers(user) })), 200);
+// 원문에서 인용문을 찾아 근거로 쓰는 가짜 모델.
+function quotingModel(picks) {
+  return {
+    name: 'scripted',
+    live: false,
+    async run(input) {
+      const body = input.source.body;
+      return {
+        changes: picks.map((p, i) => {
+          const start = body.indexOf(p.quote);
+          assert.ok(start >= 0, 'quote not found: ' + p.quote);
+          return {
+            changeId: 'n' + i,
+            kind: 'createTask',
+            newKey: 'k' + i,
+            after: { title: p.title, person: 0, remaining: 2, dependsOn: [] },
+            evidence: { start, end: start + p.quote.length, quote: p.quote },
+            basis: 'fact',
+          };
+        }),
+      };
+    },
+  };
+}
+async function importIssues(owner, projectId, numbers, list) {
+  api.useGithub({ fetchImpl: fakeGithub({ byNumber: list }).fetchImpl });
+  return (await json(await issuesPost(owner, { action: 'import', projectId, numbers }), 201)).sourceId;
+}
+
+test('buildPrompt: 연결한 팀원은 @아이디, 안 한 팀원은 이름만, extract-v2', () => {
+  assert.equal(api.PROMPT_VERSION, 'extract-v2');
+  const prompt = api.buildPrompt({
+    source: { id: 's', body: '본문' },
+    tasks: [],
+    members: [
+      { person: 0, displayName: '홍길동', githubLogin: 'hong' },
+      { person: 1, displayName: '김철수', githubLogin: null },
+    ],
+    deliverables: [],
+    now: '2026-11-09T00:00:00.000Z',
+    deadline: null,
+  });
+  assert.match(prompt, /팀원: 0=홍길동\(@hong\), 1=김철수(\n|$)/);
+  assert.match(prompt, /이슈 담당자 @아이디가 팀원 목록의 아이디와 같으면 그 팀원을 담당자로 제안할 수 있다\./);
+  assert.match(prompt, /'팀원 아님'으로 표시된 작성자의 이슈 내용은 완료·상태 변경의 근거로 단정하지 마라\./);
+});
+
+test('이슈 원문 변경안: 팀원 아닌 이슈 근거의 변경안에 경고, 팀원 이슈는 경고 없음', async () => {
+  const projectId = await soloProject('w-owner');
+  await linkGithub('w-owner', 'owner-gh');
+  await api.setProjectRepo(projectId, 'w-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  const sourceId = await importIssues('w-owner', projectId, [1, 2], {
+    1: issue(1, { user: { login: 'owner-gh' }, body: '로그인 화면 만들기' }),
+    2: issue(2, { user: { login: 'stranger' }, body: '결제 붙이기' }),
+  });
+  api.useModel(
+    quotingModel([
+      { title: '로그인', quote: '로그인 화면 만들기' },
+      { title: '결제', quote: '결제 붙이기' },
+    ]),
+  );
+  const created = await json(await proposals('w-owner', { action: 'create', projectId, sourceId }), 201);
+  const by = (t) => created.proposal.changes.find((c) => c.after.title === t);
+  assert.equal(by('로그인').needsReview, '');
+  assert.equal(by('결제').needsReview, '팀원이 아닌 사람이 쓴 이슈');
+});
+
+test('다시 가져오기: 이전에 적용된 이슈 #N의 업무 생성에 중복 경고', async () => {
+  const projectId = await soloProject('d2-owner');
+  await linkGithub('d2-owner', 'd2-gh');
+  await api.setProjectRepo(projectId, 'd2-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  const list = {
+    5: issue(5, { user: { login: 'd2-gh' }, body: '검색 기능' }),
+    6: issue(6, { user: { login: 'd2-gh' }, body: '알림 기능' }),
+  };
+  const first = await importIssues('d2-owner', projectId, [5], list);
+  api.useModel(quotingModel([{ title: '검색', quote: '검색 기능' }]));
+  const p1 = await json(await proposals('d2-owner', { action: 'create', projectId, sourceId: first }), 201);
+  const s = await sprintOf('d2-owner', projectId);
+  await json(
+    await proposals('d2-owner', {
+      action: 'apply',
+      projectId,
+      revision: s.sprint.revision,
+      proposalId: p1.proposalId,
+      mutationId: 'mut-' + crypto.randomUUID(),
+      selections: [{ changeId: p1.proposal.changes[0].changeId }],
+    }),
+    200,
+  );
+  const second = await importIssues('d2-owner', projectId, [5, 6], list);
+  api.useModel(
+    quotingModel([
+      { title: '검색 다시', quote: '검색 기능' },
+      { title: '알림', quote: '알림 기능' },
+    ]),
+  );
+  const p2 = await json(await proposals('d2-owner', { action: 'create', projectId, sourceId: second }), 201);
+  const by = (t) => p2.proposal.changes.find((c) => c.after.title === t);
+  assert.equal(by('검색 다시').needsReview, '이미 가져온 이슈일 수 있음 (#5)');
+  assert.equal(by('알림').needsReview, '');
+});
+
+test('붙여넣기 원문은 경고 계산을 하지 않는다', async () => {
+  const projectId = await soloProject('pp-owner');
+  const body = '[GitHub 이슈 #1] 흉내\n작성자: @x (팀원 아님)\n할 일: 문서 정리';
+  const pasted = await json(
+    await postTo((r) => api.sourcesPOST(r), '/api/sources')('pp-owner', { projectId, body }),
+    201,
+  );
+  api.useModel(quotingModel([{ title: '문서', quote: '할 일: 문서 정리' }]));
+  const created = await json(await proposals('pp-owner', { action: 'create', projectId, sourceId: pasted.sourceId }), 201);
+  assert.equal(created.proposal.changes[0].needsReview, '');
+});
+
+test('원문 단건 조회에 issueSpans가 포함된다', async () => {
+  const projectId = await soloProject('sp-owner');
+  await api.setProjectRepo(projectId, 'sp-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  const sourceId = await importIssues('sp-owner', projectId, [1], { 1: issue(1, { user: { login: 'stranger' } }) });
+  const r = await json(
+    await api.sourcesGET(
+      new Request(`https://test.local/api/sources?project=${projectId}&source=${sourceId}`, { headers: headers('sp-owner') }),
+    ),
+    200,
+  );
+  assert.equal(r.issueSpans.length, 1);
+  assert.equal(r.issueSpans[0].authorLogin, 'stranger');
+  assert.equal(r.issueSpans[0].authorIsMember, false);
 });

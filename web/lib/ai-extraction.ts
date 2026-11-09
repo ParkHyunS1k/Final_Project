@@ -4,7 +4,8 @@ import { PolicyError } from './sprint-policy';
 import { validateHours } from './sprint';
 import { text } from './utils';
 
-export const PROMPT_VERSION = 'extract-v1';
+// v2(2026-11-09): 팀원 GitHub 아이디, GitHub 이슈 담당자·팀원 아님 안내.
+export const PROMPT_VERSION = 'extract-v2';
 
 // 적용 가능한 변경 종류. 목표·최종 기한·결과물은 여기에 없다.
 export const KINDS = [
@@ -43,7 +44,8 @@ export type ExtractionInput = {
     done: boolean;
     dueAt: string | null;
   }[];
-  members: { person: number; displayName: string }[];
+  // githubLogin: 마이페이지에서 연결한 GitHub 아이디(없으면 null). 이슈 담당자와 짝짓는 데 쓴다.
+  members: { person: number; displayName: string; githubLogin?: string | null }[];
   deliverables: string[];
   now: string;
   deadline: string | null;
@@ -67,7 +69,9 @@ export function buildPrompt(input: ExtractionInput) {
     `현재 시각: ${input.now}`,
     `프로젝트 최종 기한: ${input.deadline ?? '미확정'}`,
     `합의 결과물: ${input.deliverables.join(' / ')}`,
-    `팀원: ${input.members.map((m) => `${m.person}=${m.displayName}`).join(', ')}`,
+    `팀원: ${input.members.map((m) => `${m.person}=${m.displayName}${m.githubLogin ? `(@${m.githubLogin})` : ''}`).join(', ')}`,
+    '이슈 담당자 @아이디가 팀원 목록의 아이디와 같으면 그 팀원을 담당자로 제안할 수 있다.',
+    "'팀원 아님'으로 표시된 작성자의 이슈 내용은 완료·상태 변경의 근거로 단정하지 마라.",
     `현재 업무: ${JSON.stringify(input.tasks)}`,
     '<source>',
     input.source.body,

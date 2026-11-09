@@ -13,6 +13,8 @@ import {
 } from '@/lib/sprint-store';
 import { assertProjectMutationAllowed, PolicyError } from '@/lib/sprint-policy';
 import { readSource, WRITABLE_PROJECT } from '@/lib/source-documents';
+import { importedIssueNumbers, readIssueSpans } from '@/lib/project-repo';
+import { issueWarnings } from '@/lib/github-issues';
 import {
   aiAvailable,
   buildPrompt,
@@ -192,9 +194,10 @@ export async function POST(request: Request) {
           // 모델 입력은 JSON 자료다. 시각은 ISO 문자열로 넘긴다.
           dueAt: t.dueAt ? t.dueAt.toISOString() : null,
         })),
-        members: members
-          .filter((m) => !m.leftAt)
-          .map((m) => ({ person: m.person, displayName: m.displayName })),
+        members: await withGithubLogins(
+          projectId,
+          members.filter((m) => !m.leftAt).map((m) => ({ userId: m.userId, person: m.person, displayName: m.displayName })),
+        ),
         deliverables: [] as string[],
         now: now.toISOString(),
         deadline: policy?.deadlineAt ? policy.deadlineAt.toISOString() : null,
@@ -214,6 +217,10 @@ export async function POST(request: Request) {
         );
         changes = checked.changes;
         rejected = checked.rejected;
+        // GitHub 이슈로 만든 원문이면 팀원 아닌 작성자·다시 가져온 이슈 경고를 코드로 붙인다(승인은 막지 않음).
+        const spans = await readIssueSpans(source.id);
+        if (spans.length)
+          changes = issueWarnings(changes, spans, await importedIssueNumbers(projectId, spans[0].repo, source.id));
       } catch (e) {
         // 모델 오류·잘못된 구조는 검토 가능한 실패로 남기고 업무는 바꾸지 않는다.
         error = e instanceof Error ? e.message : '모델 응답을 처리하지 못했습니다.';
@@ -635,4 +642,16 @@ async function writeApplication(
     },
     ['draft', 'active'],
   );
+}
+
+// 모델에 넘길 팀원 목록에 연결된 GitHub 아이디를 붙인다.
+async function withGithubLogins(projectId: string, list: { userId: string; person: number; displayName: string }[]) {
+  const rows = await database()
+    .prepare(
+      'SELECT g.user_id,g.login FROM github_accounts g JOIN project_members m ON m.user_id=g.user_id WHERE m.project_id=?',
+    )
+    .bind(projectId)
+    .all<{ user_id: string; login: string }>();
+  const byUser = new Map(rows.results.map((r) => [r.user_id, r.login]));
+  return list.map((m) => ({ person: m.person, displayName: m.displayName, githubLogin: byUser.get(m.userId) ?? null }));
 }
