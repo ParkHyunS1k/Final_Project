@@ -20,6 +20,7 @@ import { CareerWorkspace } from './career-workspace';
 import { GithubLink } from './github-link';
 import { PendingReviewGate } from './peer-review';
 import ProjectDashboard from './project-dashboard';
+import { homeShowsProject } from '@/lib/app-navigation';
 import { ThemeToggle } from './theme-toggle';
 import { apiFetch, signInWithGoogle, signOut } from '@/lib/supabase-browser';
 import {
@@ -207,8 +208,8 @@ export function UnifiedApp({
       removeEventListener('popstate', back);
     };
   }, []);
-  // 프로젝트가 하나라도 있으면 홈이 곧 프로젝트 화면이다(메뉴의 '내 프로젝트' 탭은 없앴다, 2026-11-09).
-  const workHome = tab === 'home' && Boolean(data?.projects.length);
+  // 준비·진행 중 프로젝트가 있으면 홈이 곧 프로젝트 화면이다(메뉴의 '내 프로젝트' 탭은 없앴다, 2026-11-09).
+  const workHome = tab === 'home' && homeShowsProject(data?.projects);
   const showWork = tab === 'work' || workHome;
   function navigate(next: Tab, id = '') {
     if (next !== 'profile') {
@@ -540,7 +541,8 @@ export function UnifiedApp({
                   </Link>
                 </section>
               ))}
-              {data && !workHome && (
+              {/* 불러오는 중에만 비워 둔다. 로그인 전(오류)이면 원래 홈을 보인다. */}
+              {(data || error) && !workHome && (
                 <>
                   <section className="hub-hero">
                     <div>
