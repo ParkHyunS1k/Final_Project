@@ -19,6 +19,8 @@ await build({
       "export { PolicyError } from './lib/sprint-policy';",
       "export { readProjectRepo, setProjectRepo, createIssueSource, readIssueSpans, importedIssueNumbers } from './lib/project-repo';",
       "export { POST as projectsPOST } from './app/api/projects/route';",
+      "export { GET as issuesGET, POST as issuesPOST } from './app/api/github-issues/route';",
+      "export { useGithub } from './lib/ai-review-runtime';",
     ].join(' '),
     resolveDir: process.cwd(),
     loader: 'ts',
@@ -323,8 +325,143 @@ test('이미 가져온 번호: 적용된 업무 생성만, 되돌린 것은 빼�
   const undone = await applied(projectId, a.id, span(a, 2).start + 1, span(a, 2).start + 5);
   await applied(projectId, a.id, 0, 0, { reverts: undone, id: 'rev_' + undone });
   await applied(projectId, other.id, span(other, 4).start + 1, span(other, 4).start + 5);
-  assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/app', b.id))].sort(), [1]);
+  assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/app', b.id))].sort((x, y) => x - y), [1]);
   // 현재 원문은 제외한다.
   assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/app', a.id))], []);
   assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/other', null))], [4]);
+});
+
+// ---- /api/github-issues ----
+const issuesPost = postTo((r) => api.issuesPOST(r), '/api/github-issues');
+const issuesGet = async (user, projectId, list = false) =>
+  api.issuesGET(
+    new Request(`https://test.local/api/github-issues?project=${encodeURIComponent(projectId)}${list ? '&list=1' : ''}`, {
+      headers: headers(user),
+    }),
+  );
+async function addMate(projectId, userId, person = 1) {
+  await run(
+    // 목표에 동의한 팀원(동의 전이면 권한보다 목표 확인 검사에 먼저 걸린다).
+    "INSERT INTO project_members(project_id,user_id,display_name,role,person,joined_at,agreed_at,agreed_goal_version) VALUES(?,?,?,'member',?,now(),now(),1)",
+    projectId,
+    userId,
+    userId + ' 이름',
+    person,
+  );
+}
+async function linkGithub(userId, login) {
+  await run(
+    'INSERT INTO github_accounts(user_id,github_id,login,linked_at,updated_at) VALUES(?,?,?,now(),now())',
+    userId,
+    'gh-' + userId,
+    login,
+  );
+}
+const repoUrl = 'https://github.com/team/app';
+
+test('저장소 등록은 팀장만, 비공개·허용 밖 URL은 거절하고 fetch하지 않는다', async () => {
+  const projectId = await soloProject('r-owner');
+  await addMate(projectId, 'r-mate');
+  let gh = fakeGithub();
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  await json(await issuesPost('r-mate', { action: 'setRepo', projectId, repoUrl, version: 0 }), 403);
+  await json(await issuesPost('r-owner', { action: 'setRepo', projectId, repoUrl: 'https://evil.com/a/b', version: 0 }), 400);
+  assert.equal(gh.calls.length, 0);
+  gh = fakeGithub({ visibility: 'private' });
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  await json(await issuesPost('r-owner', { action: 'setRepo', projectId, repoUrl, version: 0 }), 404);
+  assert.equal(await api.readProjectRepo(projectId), null);
+  api.useGithub({ fetchImpl: fakeGithub().fetchImpl });
+  const saved = await json(await issuesPost('r-owner', { action: 'setRepo', projectId, repoUrl, version: 0 }), 200);
+  assert.deepEqual(saved.repo, { owner: 'team', name: 'app', version: 1, url: repoUrl });
+  await json(await issuesPost('r-owner', { action: 'setRepo', projectId, repoUrl, version: 0 }), 409);
+  const mateView = await json(await issuesGet('r-mate', projectId), 200);
+  assert.equal(mateView.repo.url, repoUrl);
+  assert.equal(mateView.canManage, false);
+  assert.equal((await json(await issuesGet('r-owner', projectId), 200)).canManage, true);
+});
+
+test('목록은 팀장만, 팀원 아님·이미 가져옴 표시', async () => {
+  const projectId = await soloProject('l-owner');
+  await addMate(projectId, 'l-mate');
+  await linkGithub('l-mate', 'Mate-GH');
+  await api.setProjectRepo(projectId, 'l-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  // #1을 이전에 가져와 업무 생성까지 적용했다.
+  const built = api.buildIssueSource([ghIssue(1)], []);
+  const old = await api.createIssueSource(projectId, 'l-owner', { body: built.body, origin: 'x', repo: 'team/app' }, built.spans, new Date());
+  await applied(projectId, old, built.spans[0].start + 1, built.spans[0].start + 4);
+  api.useGithub({
+    fetchImpl: fakeGithub({
+      list: [issue(1), issue(2, { user: { login: 'mate-gh' } }), issue(3, { user: { login: 'stranger' } }), issue(4, { pull_request: {} })],
+    }).fetchImpl,
+  });
+  await json(await issuesGet('l-mate', projectId, true), 403);
+  const r = await json(await issuesGet('l-owner', projectId, true), 200);
+  assert.deepEqual(
+    r.issues.map((i) => [i.number, i.authorIsMember, i.imported]),
+    [
+      [1, false, true],
+      [2, true, false],
+      [3, false, false],
+    ],
+  );
+  assert.ok(r.issues.every((i) => !('body' in i)));
+});
+
+test('가져오기: 고른 번호만 원문에 들어가고 화면이 보낸 제목은 무시, 닫힌 번호는 제외 안내', async () => {
+  const projectId = await soloProject('i-owner');
+  await api.setProjectRepo(projectId, 'i-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  api.useGithub({
+    fetchImpl: fakeGithub({
+      byNumber: { 1: issue(1), 2: issue(2, { state: 'closed' }), 3: issue(3) },
+    }).fetchImpl,
+  });
+  const r = await json(
+    await issuesPost('i-owner', { action: 'import', projectId, numbers: [1, 2], title: 'evil', body: 'evil body' }),
+    201,
+  );
+  assert.deepEqual(r.excluded, [{ number: 2, reason: 'closed' }]);
+  assert.equal(r.included, 1);
+  const src = await one('SELECT body,origin FROM source_documents WHERE id=?', r.sourceId);
+  assert.match(src.body, /\[GitHub 이슈 #1\] 이슈 1/);
+  assert.doesNotMatch(src.body, /evil|이슈 3/);
+  assert.equal(src.origin, 'GitHub team/app 이슈');
+  assert.equal((await api.readIssueSpans(r.sourceId)).length, 1);
+});
+
+test('가져오기: 21개·정수 아님은 400, 저장소 미등록은 404, 남은 0개면 원문 없음', async () => {
+  const projectId = await soloProject('v-owner');
+  api.useGithub({ fetchImpl: fakeGithub({ byNumber: { 2: issue(2, { state: 'closed' }) } }).fetchImpl });
+  const noRepo = await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: [1] }), 404);
+  assert.equal(noRepo.error, '프로젝트 저장소를 먼저 등록해주세요.');
+  await api.setProjectRepo(projectId, 'v-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: Array.from({ length: 21 }, (_, i) => i + 1) }), 400);
+  await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: ['1'] }), 400);
+  const empty = await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: [2] }), 200);
+  assert.equal(empty.sourceId, null);
+  assert.equal(empty.error, '가져올 수 있는 이슈가 없습니다.');
+  assert.equal(await one('SELECT 1 FROM source_documents WHERE project_id=?', projectId), null);
+});
+
+test('GitHub 403·5xx면 원문·스팬·AI 한도 그대로', async () => {
+  const projectId = await soloProject('e-owner');
+  await api.setProjectRepo(projectId, 'e-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  for (const status of [403, 500]) {
+    api.useGithub({ fetchImpl: fakeGithub({ status }).fetchImpl });
+    const r = await issuesPost('e-owner', { action: 'import', projectId, numbers: [1] });
+    assert.ok(r.status >= 500, String(r.status));
+    await json(await issuesGet('e-owner', projectId, true), r.status);
+  }
+  assert.equal(await one('SELECT 1 FROM source_documents WHERE project_id=?', projectId), null);
+  assert.equal(await one('SELECT 1 FROM source_issue_spans WHERE project_id=?', projectId), null);
+  assert.equal(await one("SELECT 1 FROM ai_quota WHERE user_id='e-owner'"), null);
+});
+
+test('팀장이 나간 뒤에는 목록·가져오기 403', async () => {
+  const projectId = await soloProject('g-owner');
+  await api.setProjectRepo(projectId, 'g-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  api.useGithub({ fetchImpl: fakeGithub({ list: [issue(1)], byNumber: { 1: issue(1) } }).fetchImpl });
+  await run('UPDATE project_members SET left_at=now() WHERE project_id=? AND user_id=?', projectId, 'g-owner');
+  await json(await issuesGet('g-owner', projectId, true), 403);
+  await json(await issuesPost('g-owner', { action: 'import', projectId, numbers: [1] }), 403);
 });
