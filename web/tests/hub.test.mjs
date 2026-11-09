@@ -12,7 +12,7 @@ const db = await setupTestDb();
 const out = join(mkdtempSync(join(tmpdir(), 'hub-test-')), 'api.mjs');
 await build({
   stdin: {
-    contents: `export {GET,POST} from './app/api/hub/route'; export {GET as sprintGET,POST as sprintPOST} from './app/api/sprint/route'; export {GET as careerGET,POST as careerPOST} from './app/api/career/route'; export {POST as projectPOST} from './app/api/projects/route'; export {GET as teamsGET,POST as teamsPOST} from './app/api/teams/route'; export {TEMPLATES,scopedTemplate} from './lib/career/catalog'; export {learningStats,safeLink} from './lib/hub'; export {appDestination} from './lib/app-navigation';`,
+    contents: `export {GET,POST} from './app/api/hub/route'; export {GET as sprintGET,POST as sprintPOST} from './app/api/sprint/route'; export {GET as careerGET,POST as careerPOST} from './app/api/career/route'; export {POST as projectPOST} from './app/api/projects/route'; export {GET as teamsGET,POST as teamsPOST} from './app/api/teams/route'; export {TEMPLATES,scopedTemplate} from './lib/career/catalog'; export {learningStats,safeLink} from './lib/hub'; export {appDestination,homeShowsProject} from './lib/app-navigation';`,
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -555,6 +555,15 @@ test('연속 학습은 한국 날짜 경계를 사용하고, 점수·레벨·배
 
 test('old team and create links open the unified app destinations', () => {
   assert.equal(api.appDestination({ teams: '1' }, 'work'), '/app?tab=teams');
+});
+test('홈은 준비·진행 중인 프로젝트가 있을 때만 프로젝트 화면이고, 아니면 원래 홈이다', () => {
+  const p = (lifecycle) => ({ lifecycle });
+  assert.equal(api.homeShowsProject([p('active')]), true);
+  assert.equal(api.homeShowsProject([p('completed'), p('draft')]), true);
+  assert.equal(api.homeShowsProject([p('completed'), p('expired')]), false);
+  assert.equal(api.homeShowsProject([]), false);
+  // 로그인 전이거나 아직 불러오지 못했으면 프로젝트 화면이 아니다.
+  assert.equal(api.homeShowsProject(undefined), false);
   assert.equal(api.appDestination({ create: '1' }, 'work'), '/app?tab=create');
   assert.equal(
     api.appDestination({ teams: '1', invite: 'token' }, 'work'),

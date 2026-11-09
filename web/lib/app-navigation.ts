@@ -10,3 +10,7 @@ export function appDestination(params: AppParams, tab = 'home') {
   }
   return '/app?' + query.toString();
 }
+/** 홈을 내 프로젝트 화면으로 보일지. 준비·진행 중 프로젝트가 있을 때만이고, 로그인 전·끝난 프로젝트만 있으면 원래 홈. */
+export function homeShowsProject(projects?: { lifecycle: string }[]) {
+  return Boolean(projects?.some((p) => p.lifecycle === 'draft' || p.lifecycle === 'active'));
+}
