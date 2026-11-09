@@ -19,7 +19,7 @@ await build({
   platform: 'node',
   format: 'esm',
 });
-const { validateChanges, buildPrompt } = await import(pathToFileURL(outfile).href);
+const { validateChanges, buildPrompt, neutralizeSourceTags } = await import(pathToFileURL(outfile).href);
 process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
 
 const suite = JSON.parse(
@@ -144,4 +144,12 @@ test('원문의 </source>는 프롬프트 경계를 닫지 못하고 근거는 �
     assert.equal(rejected.length, 0, JSON.stringify(rejected));
     assert.deepEqual(changes[0].evidence, { start, end, quote: original });
   }
+});
+
+test('neutralizeSourceTags: < 뒤 긴 공백에도 선형 시간, 공백 섞인 태그는 여전히 막는다', () => {
+  const long = '<' + ' '.repeat(39000) + 'x';
+  const started = performance.now();
+  assert.equal(neutralizeSourceTags(long), long);
+  assert.ok(performance.now() - started < 100, `took ${performance.now() - started}ms`);
+  assert.equal(neutralizeSourceTags('< / source><SOURCE>< source'), '‹ / source>‹SOURCE>‹ source');
 });

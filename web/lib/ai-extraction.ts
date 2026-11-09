@@ -58,7 +58,7 @@ export type Model = {
 };
 
 // 원문 속 <source, </source가 감싸기를 닫지 못하게 <를 ‹로 바꾼다. 한 글자씩이라 좌표는 같다.
-const SOURCE_TAG = /<(?=\s*\/?\s*source)/gi;
+const SOURCE_TAG = /<(?=\s*(?:\/\s*)?source)/gi;
 export function neutralizeSourceTags(text: string) {
   return text.replace(SOURCE_TAG, '‹');
 }
