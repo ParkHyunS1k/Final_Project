@@ -304,6 +304,9 @@ export async function createProject(
     duration: assertDuration(b.duration),
   };
   if (b.agreed !== true) throw new Error('목표와 완료 기준을 확인해주세요.');
+  // 직접 만들기의 '팀으로 시작 + 팀 찾기에 공개'. 없으면 비공개로 만든다.
+  if (b.listed !== undefined && typeof b.listed !== 'boolean')
+    throw new Error('공개 여부를 선택해주세요.');
   await assertNotRestricted(user.id, new Date(), '새 프로젝트를 만들');
   const id = 'p_' + crypto.randomUUID();
   const db = database();
@@ -321,7 +324,7 @@ export async function createProject(
       .bind(id, user.id, v.goal, [], v.completion, now),
     db
       .prepare(
-        'INSERT INTO project_policy(project_id,lifecycle,goal_version,duration_days,created_at,completion_mode) VALUES(?,?,1,?,?,?)',
+        'INSERT INTO project_policy(project_id,lifecycle,goal_version,duration_days,created_at,completion_mode,listed) VALUES(?,?,1,?,?,?,?)',
       )
       .bind(
         id,
@@ -329,6 +332,7 @@ export async function createProject(
         v.duration,
         now,
         options?.simple ? 'tasks' : 'deliverables',
+        b.listed === true,
       ),
     db
       .prepare(

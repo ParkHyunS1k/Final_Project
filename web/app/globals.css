@@ -1240,7 +1240,7 @@ textarea {
   font-size: 14px;
   font-weight: 600;
 }
-.project-form input:not([type='checkbox']),
+.project-form input:not([type='checkbox']):not([type='radio']),
 .project-form textarea,
 .project-form select {
   width: 100%;
@@ -1260,6 +1260,12 @@ textarea {
   gap: 10px;
   align-items: center;
   margin: 12px 0;
+}
+/* 직접 만들기의 혼자/팀 선택은 템플릿(.hub-mode)과 같은 한 줄 배치. */
+.project-form .hub-mode label,
+.project-form .hub-check-label {
+  display: flex;
+  font-weight: 400;
 }
 .project-panel .btn {
   width: fit-content;
