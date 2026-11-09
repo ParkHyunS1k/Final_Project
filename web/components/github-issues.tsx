@@ -113,6 +113,8 @@ export function GithubIssues({
   const [editing, setEditing] = useState(false);
   const [url, setUrl] = useState('');
   const [issues, setIssues] = useState<PickerIssue[] | null>(null);
+  // 목록을 만든 저장소 version. 가져오기 요청에 함께 보내 저장소가 바뀐 뒤의 오래된 선택을 서버가 거절하게 한다.
+  const [listVersion, setListVersion] = useState(0);
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -195,10 +197,11 @@ export function GithubIssues({
           disabled={busy || !writable}
           onClick={() =>
             void run(async () => {
-              const d = await call<{ issues: PickerIssue[] }>(
+              const d = await call<{ issues: PickerIssue[]; repoVersion: number }>(
                 `/api/github-issues?project=${encodeURIComponent(projectId)}&list=1`,
               );
               setIssues(d.issues);
+              setListVersion(d.repoVersion);
               setChecked(initialChecked(d.issues));
             })
           }
@@ -216,7 +219,7 @@ export function GithubIssues({
               const numbers = issues.filter((i) => checked[i.number]).map((i) => i.number);
               const d = await call<{ sourceId: string | null; excluded: Excluded[]; error?: string }>(
                 '/api/github-issues',
-                { action: 'import', projectId, numbers },
+                { action: 'import', projectId, numbers, repoVersion: listVersion },
               );
               const skipped = d.excluded.map((x) => `#${x.number}(${REASON[x.reason]})`).join(', ');
               if (!d.sourceId) {

@@ -130,7 +130,8 @@ export async function importedIssueNumbers(
   const db = database();
   const spans = await db
     .prepare(
-      'SELECT source_id,issue_number,start,"end" FROM source_issue_spans WHERE project_id=? AND repo=? AND source_id<>?',
+      // GitHub 저장소 이름은 대소문자를 구분하지 않는다.
+      'SELECT source_id,issue_number,start,"end" FROM source_issue_spans WHERE project_id=? AND lower(repo)=lower(?) AND source_id<>?',
     )
     .bind(projectId, repo, exceptSourceId ?? '')
     .all();

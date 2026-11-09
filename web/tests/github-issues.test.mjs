@@ -423,7 +423,7 @@ test('가져오기: 고른 번호만 원문에 들어가고 화면이 보낸 제
     }).fetchImpl,
   });
   const r = await json(
-    await issuesPost('i-owner', { action: 'import', projectId, numbers: [1, 2], title: 'evil', body: 'evil body' }),
+    await issuesPost('i-owner', { action: 'import', projectId, numbers: [1, 2], repoVersion: 1, title: 'evil', body: 'evil body' }),
     201,
   );
   assert.deepEqual(r.excluded, [{ number: 2, reason: 'closed' }]);
@@ -438,12 +438,12 @@ test('가져오기: 고른 번호만 원문에 들어가고 화면이 보낸 제
 test('가져오기: 21개·정수 아님은 400, 저장소 미등록은 404, 남은 0개면 원문 없음', async () => {
   const projectId = await soloProject('v-owner');
   api.useGithub({ fetchImpl: fakeGithub({ byNumber: { 2: issue(2, { state: 'closed' }) } }).fetchImpl });
-  const noRepo = await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: [1] }), 404);
+  const noRepo = await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: [1], repoVersion: 1 }), 404);
   assert.equal(noRepo.error, '프로젝트 저장소를 먼저 등록해주세요.');
   await api.setProjectRepo(projectId, 'v-owner', { owner: 'team', name: 'app' }, 0, new Date());
-  await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: Array.from({ length: 21 }, (_, i) => i + 1) }), 400);
-  await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: ['1'] }), 400);
-  const empty = await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: [2] }), 200);
+  await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: Array.from({ length: 21 }, (_, i) => i + 1), repoVersion: 1 }), 400);
+  await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: ['1'], repoVersion: 1 }), 400);
+  const empty = await json(await issuesPost('v-owner', { action: 'import', projectId, numbers: [2], repoVersion: 1 }), 200);
   assert.equal(empty.sourceId, null);
   assert.equal(empty.error, '가져올 수 있는 이슈가 없습니다.');
   assert.equal(await one('SELECT 1 FROM source_documents WHERE project_id=?', projectId), null);
@@ -454,7 +454,7 @@ test('GitHub 403·5xx면 원문·스팬·AI 한도 그대로', async () => {
   await api.setProjectRepo(projectId, 'e-owner', { owner: 'team', name: 'app' }, 0, new Date());
   for (const status of [403, 500]) {
     api.useGithub({ fetchImpl: fakeGithub({ status }).fetchImpl });
-    const r = await issuesPost('e-owner', { action: 'import', projectId, numbers: [1] });
+    const r = await issuesPost('e-owner', { action: 'import', projectId, numbers: [1], repoVersion: 1 });
     assert.ok(r.status >= 500, String(r.status));
     await json(await issuesGet('e-owner', projectId, true), r.status);
   }
@@ -469,7 +469,7 @@ test('팀장이 나간 뒤에는 목록·가져오기 403', async () => {
   api.useGithub({ fetchImpl: fakeGithub({ list: [issue(1)], byNumber: { 1: issue(1) } }).fetchImpl });
   await run('UPDATE project_members SET left_at=now() WHERE project_id=? AND user_id=?', projectId, 'g-owner');
   await json(await issuesGet('g-owner', projectId, true), 403);
-  await json(await issuesPost('g-owner', { action: 'import', projectId, numbers: [1] }), 403);
+  await json(await issuesPost('g-owner', { action: 'import', projectId, numbers: [1], repoVersion: 1 }), 403);
 });
 
 // ---- AI 변경안 연결 ----
@@ -502,7 +502,7 @@ function quotingModel(picks) {
 }
 async function importIssues(owner, projectId, numbers, list) {
   api.useGithub({ fetchImpl: fakeGithub({ byNumber: list }).fetchImpl });
-  return (await json(await issuesPost(owner, { action: 'import', projectId, numbers }), 201)).sourceId;
+  return (await json(await issuesPost(owner, { action: 'import', projectId, numbers, repoVersion: 1 }), 201)).sourceId;
 }
 
 test('buildPrompt: 연결한 팀원은 @아이디, 안 한 팀원은 이름만, extract-v2', () => {
@@ -674,4 +674,33 @@ test('저장소 등록 중 프로젝트가 종료되면 바꾸지 않는다', as
   );
   assert.equal(await api.readProjectRepo(projectId), null);
   assert.equal(await one('SELECT 1 FROM project_repo_events WHERE project_id=?', projectId), null);
+});
+
+// ---- PR #29 리뷰 반영 ----
+test('목록을 본 뒤 저장소가 바뀌면 그 목록으로 가져오기는 409이고 새 저장소를 읽지 않는다', async () => {
+  const projectId = await soloProject('stale-owner');
+  await api.setProjectRepo(projectId, 'stale-owner', { owner: 'team', name: 'app' }, 0, new Date());
+  let gh = fakeGithub({ list: [issue(1)], byNumber: { 1: issue(1) } });
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  const listed = await json(await issuesGet('stale-owner', projectId, true), 200);
+  assert.equal(listed.repoVersion, 1);
+  await api.setProjectRepo(projectId, 'stale-owner', { owner: 'team', name: 'other' }, 1, new Date());
+  gh = fakeGithub({ byNumber: { 1: issue(1) } });
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  const r = await json(
+    await issuesPost('stale-owner', { action: 'import', projectId, numbers: [1], repoVersion: listed.repoVersion }),
+    409,
+  );
+  assert.match(r.error, /저장소가 바뀌었습니다/);
+  assert.equal(gh.calls.length, 0);
+  // 버전이 없으면 받지 않는다.
+  await json(await issuesPost('stale-owner', { action: 'import', projectId, numbers: [1] }), 400);
+});
+
+test('저장소 이름 대소문자가 달라도 같은 저장소로 보고 이미 가져옴을 센다', async () => {
+  const projectId = await soloProject('case-owner');
+  const built = api.buildIssueSource([ghIssue(7)], []);
+  const src = await api.createIssueSource(projectId, 'case-owner', { body: built.body, origin: 'x', repo: 'Team/App' }, built.spans, new Date());
+  await applied(projectId, src, built.spans[0].start + 1, built.spans[0].start + 4);
+  assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/app', null))], [7]);
 });

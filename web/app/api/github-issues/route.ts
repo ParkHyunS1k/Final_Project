@@ -71,6 +71,8 @@ export async function GET(request: Request) {
     const logins = new Set((await memberLogins(projectId)).map((m) => m.login.toLowerCase()));
     const imported = await importedIssueNumbers(projectId, `${repo.owner}/${repo.name}`, null);
     return reply({
+      // 가져오기 요청이 이 목록을 만든 저장소에 묶이도록 version을 함께 돌려준다.
+      repoVersion: repo.version,
       issues: issues.map((i) => ({
         number: i.number,
         title: i.title,
@@ -119,7 +121,12 @@ export async function POST(request: Request) {
     }
     // 화면이 보낸 제목·본문은 쓰지 않는다. 번호만 받아 GitHub에서 다시 읽는다.
     const numbers = parseIssueNumbers(b.numbers);
+    const repoVersion = typeof b.repoVersion === 'number' && Number.isInteger(b.repoVersion) ? b.repoVersion : 0;
+    if (repoVersion < 1) throw new PolicyError('이슈 목록을 다시 불러와 주세요.');
     const repo = await requireRepo(projectId);
+    // 이슈 번호는 저장소마다 다르다. 목록을 본 뒤 저장소가 바뀌었으면 다른 저장소의 이슈를 가져오지 않는다.
+    if (repo.version !== repoVersion)
+      throw new PolicyError('저장소가 바뀌었습니다. 이슈 목록을 다시 불러와 주세요.', 409);
     const { issues, excluded } = await fetchIssuesByNumber(repo, numbers, github);
     if (!issues.length) return reply({ sourceId: null, excluded, error: '가져올 수 있는 이슈가 없습니다.' });
     const built = buildIssueSource(issues, await memberLogins(projectId));
