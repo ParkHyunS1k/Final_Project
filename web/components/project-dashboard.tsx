@@ -444,6 +444,7 @@ function Dashboard({
                   {phase.label}
                 </span>
               </div>
+              {nav.picker}
               <RaceClock
                 lifecycle={lifecycle}
                 deadline={deadline}
@@ -462,6 +463,7 @@ function Dashboard({
                 </button>
               )}
             </header>
+            {nav.tabs && <div className="race-views-row">{nav.tabs}</div>}
             {phase.note && (
               <output className="work-health">
                 <span

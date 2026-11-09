@@ -36,8 +36,11 @@ export function RaceClock({
   if (!running || !now) return null;
   const c = countdown(left);
   return (
-    <span role="timer" aria-label={`남은 시간 ${c.text}`} className={`race-clock ${c.level}`}>
-      {c.text}
+    <span className="race-clock-wrap">
+      <small>프로젝트 마감</small>
+      <span role="timer" aria-label={`프로젝트 마감까지 ${c.text}`} className={`race-clock ${c.level}`}>
+        {c.text}
+      </span>
     </span>
   );
 }
