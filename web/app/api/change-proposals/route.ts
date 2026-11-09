@@ -201,6 +201,7 @@ export async function POST(request: Request) {
         deliverables: [] as string[],
         now: now.toISOString(),
         deadline: policy?.deadlineAt ? policy.deadlineAt.toISOString() : null,
+        startedAt: policy?.startedAt ? policy.startedAt.toISOString() : null,
       };
       const proposalId = 'cp_' + crypto.randomUUID();
       let changes: ReturnType<typeof validateChanges>['changes'] = [];
@@ -462,6 +463,7 @@ async function writeApplication(
     person: number;
     remaining: number;
     dependsOn: number[];
+    dueAt?: string | null;
   }[],
   meta: {
     mutationId: string;
@@ -490,9 +492,9 @@ async function writeApplication(
         out.push(
           db
             .prepare(
-              'INSERT INTO sprint_tasks(owner,id,title,person,remaining) SELECT owner,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
+              'INSERT INTO sprint_tasks(owner,id,title,person,remaining,due_at,deadline_version) SELECT owner,?,?,?,?,?,? FROM sprints WHERE owner=? AND mutation=?',
             )
-            .bind(c.taskId, c.title, c.person, c.remaining, projectId, m),
+            .bind(c.taskId, c.title, c.person, c.remaining, c.dueAt ?? null, c.dueAt ? 1 : 0, projectId, m),
           ...c.dependsOn.map((d) =>
             db
               .prepare(

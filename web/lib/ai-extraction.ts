@@ -50,6 +50,8 @@ export type ExtractionInput = {
   deliverables: string[];
   now: string;
   deadline: string | null;
+  /** 프로젝트 시작 시각. 'Day N까지'를 실제 시각으로 바꾸는 기준(시작 전이면 null). */
+  startedAt?: string | null;
 };
 export type Model = {
   name: string;
@@ -75,7 +77,10 @@ export function buildPrompt(input: ExtractionInput) {
     '근거가 원문에 없으면 추정(basis="estimate")으로 표시하고, 담당자를 알 수 없으면 비워 둔다.',
     '신규 업무에는 남은 공수(시간)를 항상 채운다. 원문에 적힌 공수가 있으면 그 값을 쓰고, 공수가 원문에 없으면 업무 범위를 보고 0.5시간 단위로 추정해 공수 근거를 추정으로 표시한다.',
     '공수는 하루 8시간 기준이며 업무 하나는 1~16시간 안에서 잡는다. 더 크면 여러 업무로 나눠 제안한다.',
+    '신규 업무에는 마감(dueAt, ISO 8601)도 채운다. 원문에 "Day N까지"가 있으면 프로젝트 시작 시각 + N×24시간을, 날짜·시각이 있으면 그 시각(KST)을 쓴다.',
+    '마감이 원문에 없으면 선행 업무와 공수를 보고 현재 시각 이후, 프로젝트 최종 기한 안에서 추정해 마감 근거를 추정으로 표시한다. 최종 기한이 미확정이면 마감은 비운다.',
     `현재 시각: ${input.now}`,
+    `프로젝트 시작: ${input.startedAt ?? '미확정'}`,
     `프로젝트 최종 기한: ${input.deadline ?? '미확정'}`,
     `합의 결과물: ${input.deliverables.join(' / ')}`,
     `팀원: ${input.members.map((m) => `${m.person}=${m.displayName}${m.githubLogin ? `(@${m.githubLogin})` : ''}`).join(', ')}`,
@@ -169,11 +174,29 @@ export function validateChanges(
           ? remaining
           : null;
       if (after.remaining === null) needsReview = needsReview || '공수 미정';
-      // AI가 추정한 공수는 값을 채우되 추정임을 표시해 승인 전에 확인하게 한다.
-      else if (source.remainingEstimated === true) {
+      // 마감은 시작 후, 지금 이후, 최종 기한 안일 때만 채운다. 아니면 비우고 업무는 남긴다.
+      after.dueAt = null;
+      const due = typeof source.dueAt === 'string' ? Date.parse(source.dueAt) : NaN;
+      if (
+        input.deadline &&
+        Number.isFinite(due) &&
+        due > Date.parse(input.now) &&
+        due <= Date.parse(input.deadline)
+      )
+        after.dueAt = new Date(due).toISOString();
+      // AI가 추정한 공수·마감은 값을 채우되 추정임을 표시해 승인 전에 확인하게 한다.
+      const guessed: string[] = [];
+      if (after.remaining !== null && source.remainingEstimated === true) {
         after.remainingEstimated = true;
-        needsReview = needsReview || '공수는 AI 추정입니다. 확인 후 승인해주세요.';
+        guessed.push('공수');
       }
+      if (after.dueAt && source.dueEstimated === true) {
+        after.dueEstimated = true;
+        guessed.push('마감');
+      }
+      if (guessed.length)
+        needsReview =
+          needsReview || `${guessed.join('·')}은(는) AI 추정입니다. 확인 후 승인해주세요.`;
       // 기존 업무 ID와, 같은 변경안 안의 신규 업무 참조(newKey)를 모두 남긴다.
       // 여기서 버리면 함께 승인해야 하는 항목 검사가 무력화된다.
       after.dependsOn = Array.isArray(source.dependsOn)
@@ -286,6 +309,12 @@ export function validateChanges(
 // ---------------------------------------------------------------------------
 const DONE_HINT = /(완료|끝냈|끝났|마쳤|배포했)/;
 const START_HINT = /(시작했|착수|진행 중|진행중|하는 중)/;
+function dayDue(line: string, startedAt?: string | null) {
+  const day = /Day\s*(\d+)\s*까지/i.exec(line);
+  return day && startedAt
+    ? new Date(Date.parse(startedAt) + Number(day[1]) * 86400000).toISOString()
+    : null;
+}
 const NEW_HINT = /^(?:[-*·]\s*)?(?:할 일|새 업무|추가)\s*[:：]\s*(.+)$/;
 const HOURS = /(\d+(?:\.5)?)\s*시간/;
 
@@ -326,6 +355,8 @@ export function fakeModel(): Model {
               // ponytail: 가짜 모델의 추정은 고정 4시간. 실제 추정은 실제 모델이 한다.
               remaining: hours ? Number(hours[1]) : 4,
               ...(hours ? {} : { remainingEstimated: true }),
+              // 'Day N까지'가 있으면 시작 시각 + N×24시간을 마감으로 둔다.
+              ...(dayDue(trimmed, input.startedAt) ? { dueAt: dayDue(trimmed, input.startedAt) } : {}),
               dependsOn: [],
             },
             evidence,

@@ -244,6 +244,37 @@ async function createdByAi(owner, mate, title) {
   return { projectId, sourceId, applicationId, state: await read(owner, projectId) };
 }
 
+test('AI 신규 업무의 마감은 승인하면 업무 마감으로 저장된다', async () => {
+  const { projectId, state } = await startedTeam('due1', 'due1mate');
+  const body = '할 일: 캘린더에 뜰 업무, 2시간';
+  const sourceId = await paste('due1', projectId, body);
+  const dueAt = new Date(Date.parse(state.policy.deadlineAt) - 24 * 3600000).toISOString();
+  api.useModel(
+    scriptedModel([
+      {
+        changeId: 'd1',
+        kind: 'createTask',
+        newKey: 'k1',
+        after: { title: '캘린더에 뜰 업무', person: 0, remaining: 2, dueAt, dueEstimated: true, dependsOn: [] },
+        evidence: quoteOf(body, body),
+        basis: 'fact',
+      },
+    ]),
+  );
+  const created = await propose('due1', projectId, sourceId);
+  const r = await proposalRequest('due1', {
+    action: 'apply',
+    projectId,
+    revision: state.sprint.revision,
+    proposalId: created.proposalId,
+    mutationId: mutation('due'),
+    selections: [{ changeId: 'd1' }],
+  });
+  assert.equal(r.status, 200, await r.clone().text());
+  const task = (await read('due1', projectId)).sprint.tasks.find((t) => t.title === '캘린더에 뜰 업무');
+  assert.equal(Date.parse(task.dueAt), Date.parse(dueAt));
+});
+
 // --- 4. 되돌리기가 팀원의 후속 기록을 삭제하는 문제 -------------------------
 
 test('생성 이후 설명만 바뀌어도 신규 업무 되돌리기를 거절한다', async () => {
