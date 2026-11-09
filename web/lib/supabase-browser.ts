@@ -52,3 +52,25 @@ export async function signOut() {
   await supabase?.auth.signOut();
   location.assign('/');
 }
+
+/** 로그인한 계정에 GitHub 신원을 붙인다(Supabase Manual Linking). 돌아오면 화면이 /api/github sync를 부른다. */
+export async function linkGithub() {
+  if (!supabase) throw new Error('NEXT_PUBLIC_SUPABASE_URL·NEXT_PUBLIC_SUPABASE_ANON_KEY가 필요합니다.');
+  // 권한 범위는 기본(공개 프로필)만. scopes를 넘기지 않는다.
+  const { error } = await supabase.auth.linkIdentity({
+    provider: 'github',
+    options: { redirectTo: returnUrl(location.href) },
+  });
+  if (error) throw error;
+}
+
+/** GitHub 신원만 뗀다. Google 신원은 건드리지 않는다. */
+export async function unlinkGithub() {
+  if (!supabase) throw new Error('NEXT_PUBLIC_SUPABASE_URL·NEXT_PUBLIC_SUPABASE_ANON_KEY가 필요합니다.');
+  const { data, error } = await supabase.auth.getUserIdentities();
+  if (error) throw error;
+  const github = data.identities.find((i) => i.provider === 'github');
+  if (!github) return;
+  const result = await supabase.auth.unlinkIdentity(github);
+  if (result.error) throw result.error;
+}

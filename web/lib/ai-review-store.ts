@@ -11,7 +11,8 @@ export function kstDayStart(at: Date): Date {
   return new Date(Date.parse(kstDay(at) + 'T00:00:00Z') - KST_MS);
 }
 
-export type ReviewLink = { repoOwner: string; repoName: string; githubLogin: string };
+// GitHub 아이디는 마이페이지에서 연결한 계정(github_accounts)을 쓴다. review_links.github_login은 읽지 않는다.
+export type ReviewLink = { repoOwner: string; repoName: string };
 
 export type ReviewRow = {
   reviewId: string;
@@ -52,23 +53,21 @@ function toRow(r: Record<string, unknown>): ReviewRow {
 
 export async function readLink(projectId: string, userId: string): Promise<ReviewLink | null> {
   const r = await database()
-    .prepare('SELECT repo_owner,repo_name,github_login FROM review_links WHERE project_id=? AND user_id=?')
+    .prepare('SELECT repo_owner,repo_name FROM review_links WHERE project_id=? AND user_id=?')
     .bind(projectId, userId)
     .first<Record<string, unknown>>();
-  return r
-    ? { repoOwner: String(r.repo_owner), repoName: String(r.repo_name), githubLogin: String(r.github_login) }
-    : null;
+  return r ? { repoOwner: String(r.repo_owner), repoName: String(r.repo_name) } : null;
 }
 
-/** 저장 시점에도 현재 멤버(탈퇴 안 함)일 때만 쓴다. */
+/** 저장 시점에도 현재 멤버(탈퇴 안 함)일 때만 쓴다. github_login 컬럼은 남겨 두고 빈 값을 쓴다. */
 export async function saveLink(projectId: string, userId: string, link: ReviewLink, now: Date) {
   const r = await database()
     .prepare(
       'INSERT INTO review_links(project_id,user_id,repo_owner,repo_name,github_login,updated_at)' +
-        ' SELECT ?,?,?,?,?,? FROM project_members WHERE project_id=? AND user_id=? AND left_at IS NULL' +
-        ' ON CONFLICT (project_id,user_id) DO UPDATE SET repo_owner=excluded.repo_owner,repo_name=excluded.repo_name,github_login=excluded.github_login,updated_at=excluded.updated_at',
+        " SELECT ?,?,?,?,'',? FROM project_members WHERE project_id=? AND user_id=? AND left_at IS NULL" +
+        ' ON CONFLICT (project_id,user_id) DO UPDATE SET repo_owner=excluded.repo_owner,repo_name=excluded.repo_name,updated_at=excluded.updated_at',
     )
-    .bind(projectId, userId, link.repoOwner, link.repoName, link.githubLogin, now.toISOString(), projectId, userId)
+    .bind(projectId, userId, link.repoOwner, link.repoName, now.toISOString(), projectId, userId)
     .run();
   return r.meta.changes === 1;
 }

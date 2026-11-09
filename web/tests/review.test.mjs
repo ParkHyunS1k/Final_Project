@@ -15,7 +15,7 @@ const outfile = join(mkdtempSync(join(tmpdir(), 'projectmate-review-test-')), 'r
 await build({
   stdin: {
     contents:
-      "export { POST as sprintPOST } from './app/api/sprint/route'; export { POST as projectsPOST } from './app/api/projects/route'; export { GET as reviewGET, POST as reviewPOST } from './app/api/review/route'; export { useReviewModel, useGithub } from './lib/ai-review-runtime'; export { fakeReviewModel, validateQuestions, validateGrade, asData, prepareQuestions, DIGEST_DIRECT_CHARS } from './lib/ai-review'; export { parseRepoUrl, parseLogin, fetchCommitMaterial, LIMITS } from './lib/ai-review-github'; export { reviewLiveModel, reviewModelFromEnv } from './lib/ai-review-live'; export { kstDay, kstDayStart } from './lib/ai-review-store';",
+      "export { POST as sprintPOST } from './app/api/sprint/route'; export { POST as projectsPOST } from './app/api/projects/route'; export { GET as reviewGET, POST as reviewPOST } from './app/api/review/route'; export { useReviewModel, useGithub } from './lib/ai-review-runtime'; export { fakeReviewModel, validateQuestions, validateGrade, asData, prepareQuestions, DIGEST_DIRECT_CHARS } from './lib/ai-review'; export { parseRepoUrl, fetchCommitMaterial, LIMITS } from './lib/ai-review-github'; export { useGithubIdentitySource } from './lib/github-account'; export { AuthUnavailable } from './lib/auth'; export { reviewLiveModel, reviewModelFromEnv } from './lib/ai-review-live'; export { kstDay, kstDayStart } from './lib/ai-review-store';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -37,6 +37,16 @@ await build({
   ],
 });
 const api = await import(pathToFileURL(outfile).href);
+// 가짜 Supabase GitHub 신원. 따로 정하지 않은 사용자는 'alice-dev'로 연결된 것으로 본다.
+// 값 null = 연결 안 함, 'down' = Supabase 조회 실패.
+const ghUsers = new Map();
+api.useGithubIdentitySource(async (r) => {
+  const user = r.headers.get('oai-authenticated-user-id');
+  if (!ghUsers.has(user)) return { githubId: 'gh-' + user, login: 'alice-dev' };
+  const v = ghUsers.get(user);
+  if (v === 'down') throw new api.AuthUnavailable();
+  return v;
+});
 
 function headers(user) {
   return {
@@ -224,7 +234,7 @@ test('오늘 커밋이 없으면 AI를 부르지 않고 기록·한도도 남기
   assert.equal(state.today.due, true);
 });
 
-test('허용 목록 밖 URL·아이디는 거절하고 fetch하지 않는다', async () => {
+test('허용 목록 밖 URL은 거절하고 fetch하지 않는다', async () => {
   const projectId = await soloProject('r_ssrf');
   const gh = fakeGithub();
   api.useGithub({ fetchImpl: gh.fetchImpl });
@@ -244,8 +254,6 @@ test('허용 목록 밖 URL·아이디는 거절하고 fetch하지 않는다', a
     const r = await review('r_ssrf', { action: 'link', projectId, repoUrl: bad, githubLogin: 'alice' });
     assert.equal(r.status, 400, bad);
   }
-  for (const login of ['', 'a b', '-x', 'x'.repeat(40), 'a/../b'])
-    assert.equal((await review('r_ssrf', { action: 'link', projectId, repoUrl, githubLogin: login })).status, 400, login);
   assert.equal(gh.calls.length, 0);
   assert.deepEqual(api.parseRepoUrl('https://github.com/Owner-1/my.repo.git/'), { owner: 'Owner-1', name: 'my.repo' });
 });
@@ -471,4 +479,61 @@ test('같은 확인에 동시에 답하면 채점 모델은 한 번만 부르고
   await json(await review('r_race2', { action: 'answer', reviewId: s2.reviewId, answers: a2 }), 409);
   await run("UPDATE learning_reviews SET claimed_at=now() - interval '10 minutes' WHERE id=?", s2.reviewId);
   await json(await review('r_race2', { action: 'answer', reviewId: s2.reviewId, answers: a2 }), 200);
+});
+
+test('GitHub를 연결하지 않으면 학습 확인을 시작할 수 없고 한도를 쓰지 않는다', async () => {
+  const projectId = await soloProject('r_nolink');
+  ghUsers.set('r_nolink', null);
+  const gh = fakeGithub();
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  api.useReviewModel(api.fakeReviewModel());
+  await json(await review('r_nolink', { action: 'link', projectId, repoUrl }), 200);
+  const r = await json(await review('r_nolink', { action: 'start', projectId }), 400);
+  assert.equal(r.error, '마이페이지에서 GitHub를 먼저 연결해주세요.');
+  assert.equal(await one('SELECT n FROM review_quota WHERE user_id=?', 'r_nolink'), null);
+  assert.equal(gh.calls.length, 0);
+  const state = await json(await reviewGet('r_nolink', projectId), 200);
+  assert.deepEqual(state.link, { repoUrl, githubLogin: null });
+});
+
+test('본문의 githubLogin은 쓰지 않고 연결된 계정 아이디로 커밋을 거른다', async () => {
+  const projectId = await soloProject('r_real');
+  ghUsers.set('r_real', { githubId: 'gh-real', login: 'real-me' });
+  const gh = fakeGithub();
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  api.useReviewModel(api.fakeReviewModel());
+  const started = await json(
+    await review('r_real', { action: 'start', projectId, sourceUrl: repoUrl, githubLogin: 'someone-else' }),
+    201,
+  );
+  const list = new URL(gh.calls.find((c) => /\/commits\?/.test(c.url)).url);
+  assert.equal(list.searchParams.get('author'), 'real-me');
+  const row = await one('SELECT github_login FROM learning_reviews WHERE id=?', started.reviewId);
+  assert.equal(row.github_login, 'real-me');
+  const state = await json(await reviewGet('r_real', projectId), 200);
+  assert.deepEqual(state.link, { repoUrl, githubLogin: 'real-me' });
+});
+
+test('Supabase에서 해제한 뒤 sync 없이 시작하면 행을 지우고 거절한다', async () => {
+  const projectId = await soloProject('r_unlinked');
+  ghUsers.set('r_unlinked', { githubId: 'gh-unlinked', login: 'was-me' });
+  api.useGithub({ fetchImpl: fakeGithub({ commits: 0 }).fetchImpl });
+  api.useReviewModel(api.fakeReviewModel());
+  // 커밋이 없어 기록 없이 끝나지만 연결은 저장된다.
+  await json(await review('r_unlinked', { action: 'start', projectId, sourceUrl: repoUrl }), 200);
+  assert.ok(await one('SELECT 1 FROM github_accounts WHERE user_id=?', 'r_unlinked'));
+  ghUsers.set('r_unlinked', null);
+  await json(await review('r_unlinked', { action: 'start', projectId }), 400);
+  assert.equal(await one('SELECT 1 FROM github_accounts WHERE user_id=?', 'r_unlinked'), null);
+});
+
+test('시작 시 Supabase 조회 실패는 503이고 한도를 쓰지 않는다', async () => {
+  const projectId = await soloProject('r_sbdown');
+  ghUsers.set('r_sbdown', 'down');
+  const gh = fakeGithub();
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  api.useReviewModel(api.fakeReviewModel());
+  await json(await review('r_sbdown', { action: 'start', projectId, sourceUrl: repoUrl }), 503);
+  assert.equal(await one('SELECT n FROM review_quota WHERE user_id=?', 'r_sbdown'), null);
+  assert.equal(gh.calls.length, 0);
 });

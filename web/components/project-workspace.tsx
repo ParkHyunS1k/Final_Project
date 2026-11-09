@@ -163,6 +163,8 @@ export type ProjectMeta = {
     agreed_goal_version: number;
     left_at: string | null;
     left_note: string;
+    // 연결된 GitHub 아이디. 연결 안 했거나 내가 나간 프로젝트면 null.
+    github_login: string | null;
   }[];
   invites: {
     id: string;

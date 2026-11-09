@@ -758,6 +758,15 @@ function Dashboard({
                         </span>
                         <div>
                           <b>{m.display_name}</b>
+                          {m.github_login && (
+                            <a
+                              href={'https://github.com/' + m.github_login}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              @{m.github_login}
+                            </a>
+                          )}
                           <span>
                             {m.role === 'owner' ? '팀장' : '팀원'} ·{' '}
                             {/* 2026-10-15에 참여 중단 기능을 뺐다. 그 전에 남은 기록만 표시한다. */}

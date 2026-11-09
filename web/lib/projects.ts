@@ -164,11 +164,14 @@ export async function projectState(project: string, user: Identity) {
         'SELECT goal,deliverables,completion_criteria,legacy FROM project_details WHERE project_id=?',
       )
       .bind(project),
+    // 연결된 GitHub 아이디는 같은 프로젝트 현재 멤버에게만 보인다(나간 사람이 볼 때는 숨긴다).
     db
       .prepare(
-        'SELECT display_name,role,person,agreed_at,agreed_goal_version,joined_at,left_at,left_note FROM project_members WHERE project_id=? ORDER BY person',
+        'SELECT m.display_name,m.role,m.person,m.agreed_at,m.agreed_goal_version,m.joined_at,m.left_at,m.left_note,' +
+          'CASE WHEN ? THEN NULL ELSE g.login END AS github_login' +
+          ' FROM project_members m LEFT JOIN github_accounts g ON g.user_id=m.user_id WHERE m.project_id=? ORDER BY m.person',
       )
-      .bind(project),
+      .bind(Boolean(me.left_at), project),
     db
       .prepare(
         "SELECT id,email,expires_at,status,email_status,email_sent_at,email_sends FROM project_invites WHERE project_id=? AND ?='owner' ORDER BY created_at DESC LIMIT 20",
