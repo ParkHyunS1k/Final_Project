@@ -117,9 +117,13 @@ type State = ProjectMeta & {
   }[];
 };
 type Modal = 'checkin' | 'evidence' | null;
-export default function ProjectDashboard() {
+export default function ProjectDashboard({
+  onProject,
+}: {
+  onProject?: (id: string) => void;
+}) {
   return (
-    <ProjectWorkspace embedded>
+    <ProjectWorkspace embedded onSelect={onProject}>
       {(id, nav) => <Dashboard key={id} projectId={id} nav={nav} />}
     </ProjectWorkspace>
   );
