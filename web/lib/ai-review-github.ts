@@ -71,7 +71,7 @@ export type FetchOptions = {
   token?: string;
 };
 
-async function getJson(path: string, options: FetchOptions): Promise<unknown> {
+export async function getJson(path: string, options: FetchOptions): Promise<unknown> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
@@ -124,6 +124,20 @@ function commitSummary(raw: Record<string, unknown>): CommitSummary | null {
   };
 }
 
+export function repoPath(repo: Repo) {
+  return `/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.name)}`;
+}
+
+/**
+ * 서버 토큰(GITHUB_TOKEN)이 비공개 저장소를 읽을 수 있더라도 공개 저장소만 다룬다.
+ * 비공개는 없는 저장소와 같은 안내로 거절해 존재 여부도 알려주지 않는다.
+ */
+export async function assertPublicRepo(repo: Repo, options: FetchOptions) {
+  const meta = (await getJson(repoPath(repo), options)) as Record<string, unknown> | null;
+  if (!meta || meta.private !== false || (meta.visibility !== undefined && meta.visibility !== 'public'))
+    throw new ReviewSourceError('저장소를 찾을 수 없습니다. 공개 저장소인지, 주소가 맞는지 확인해주세요.', 404);
+}
+
 /** 사용자의 커밋 목록과, 모델에 넘길 자료(커밋 메시지 + 상위 몇 개 커밋의 잘린 diff + README)를 만든다.
  * 크기는 LIMITS로 묶는다. 커밋이 없으면 text는 빈 문자열. */
 export async function fetchCommitMaterial(
@@ -137,12 +151,8 @@ export async function fetchCommitMaterial(
   options: FetchOptions = {},
 ): Promise<Material> {
   const { repo, login, since, until, kind } = input;
-  const base = `/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.name)}`;
-  // 서버 토큰(GITHUB_TOKEN)이 비공개 저장소를 읽을 수 있더라도 공개 저장소만 다룬다.
-  // 비공개는 없는 저장소와 같은 안내로 거절해 존재 여부도 알려주지 않는다.
-  const meta = (await getJson(base, options)) as Record<string, unknown> | null;
-  if (!meta || meta.private !== false || (meta.visibility !== undefined && meta.visibility !== 'public'))
-    throw new ReviewSourceError('저장소를 찾을 수 없습니다. 공개 저장소인지, 주소가 맞는지 확인해주세요.', 404);
+  const base = repoPath(repo);
+  await assertPublicRepo(repo, options);
   const max = kind === 'daily' ? LIMITS.dailyCommits : LIMITS.finalCommits;
   const query = new URLSearchParams({
     author: login,

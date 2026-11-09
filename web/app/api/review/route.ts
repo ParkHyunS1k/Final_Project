@@ -17,6 +17,7 @@ import {
 import { model, github } from '@/lib/ai-review-runtime';
 import { fetchCommitMaterial, parseRepoUrl, ReviewSourceError } from '@/lib/ai-review-github';
 import { readGithubAccount, syncGithubAccount } from '@/lib/github-account';
+import { readProjectRepo } from '@/lib/project-repo';
 import {
   findReview,
   insertReview,
@@ -71,9 +72,19 @@ function publicReview(r: ReviewRow) {
     answeredAt: r.answeredAt,
   };
 }
-// githubLogin은 마이페이지에서 연결한 GitHub 계정(없으면 null).
-function linkView(link: ReviewLink | null, githubLogin: string | null) {
-  return link ? { repoUrl: `https://github.com/${link.repoOwner}/${link.repoName}`, githubLogin } : null;
+type EffectiveLink = ReviewLink & { source: 'personal' | 'project' };
+// githubLogin은 마이페이지에서 연결한 GitHub 계정(없으면 null). source: 본인 등록 저장소인지 프로젝트 저장소인지.
+function linkView(link: EffectiveLink | null, githubLogin: string | null) {
+  return link
+    ? { repoUrl: `https://github.com/${link.repoOwner}/${link.repoName}`, githubLogin, source: link.source }
+    : null;
+}
+// 본인이 등록한 저장소가 우선, 없으면 프로젝트 저장소(2026-11-09).
+async function effectiveLink(projectId: string, userId: string): Promise<EffectiveLink | null> {
+  const own = await readLink(projectId, userId);
+  if (own) return { ...own, source: 'personal' };
+  const repo = await readProjectRepo(projectId);
+  return repo ? { repoOwner: repo.owner, repoName: repo.name, source: 'project' } : null;
 }
 function activeMember(me: MemberRow) {
   if (me.left_at) throw new PolicyError('프로젝트를 떠난 뒤에는 학습 확인을 할 수 없습니다.', 403);
@@ -100,7 +111,7 @@ export async function GET(request: Request) {
     const todays = history.find((r) => r.kind === 'daily' && r.day === day) ?? null;
     const finalRow = history.find((r) => r.kind === 'final') ?? null;
     return reply({
-      link: linkView(await readLink(projectId, user.id), (await readGithubAccount(user.id))?.login ?? null),
+      link: linkView(await effectiveLink(projectId, user.id), (await readGithubAccount(user.id))?.login ?? null),
       today: {
         // 진행 중인 프로젝트의 현재 멤버에게만 하루 1회 확인이 걸린다. 건너뛰어도 표시만 한다.
         due: lifecycle === 'active' && !me.left_at,
@@ -146,7 +157,7 @@ export async function POST(request: Request) {
       const link = linkInput(b.repoUrl ?? b.sourceUrl);
       if (!(await saveLink(projectId, user.id, link, now)))
         throw new PolicyError('프로젝트를 떠난 뒤에는 학습 확인을 할 수 없습니다.', 403);
-      return reply({ link: linkView(link, (await readGithubAccount(user.id))?.login ?? null) });
+      return reply({ link: linkView({ ...link, source: 'personal' }, (await readGithubAccount(user.id))?.login ?? null) });
     }
     if (action === 'start' || action === 'final')
       return await start(request, projectId, user.id, action === 'start' ? 'daily' : 'final', b, now);
@@ -193,7 +204,7 @@ async function start(
   if (existing?.status === 'answered')
     throw new PolicyError(kind === 'daily' ? '오늘 확인을 이미 마쳤습니다.' : '최종 확인을 이미 마쳤습니다.', 409);
   if (existing) return reply({ ...startView(existing), repeated: true });
-  const link = await readLink(projectId, userId);
+  const link = await effectiveLink(projectId, userId);
   if (!link) throw new PolicyError('공개 GitHub 저장소를 먼저 등록해주세요.');
   // 매번 Supabase 신원으로 다시 맞춘다. 해제한 뒤 sync하지 않은 연결로 시작하지 못하게.
   const account = await syncGithubAccount(request, userId, now);

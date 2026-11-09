@@ -129,6 +129,9 @@ export const RULES: Record<string, Rule> = {
   createProposal: { scope: 'member', states: ['draft', 'active'] },
   applyChanges: { scope: 'member', states: ['draft', 'active'] },
   revertChanges: { scope: 'member', states: ['draft', 'active'] },
+  // GitHub 이슈 가져오기(2026-11-09): 저장소 등록·변경과 목록·가져오기 모두 팀장만
+  setRepo: { scope: 'owner', states: ['draft', 'active'] },
+  importIssues: { scope: 'owner', states: ['draft', 'active'] },
 };
 
 // 목표·최종 기한은 시작 뒤 어떤 경로로도 바꿀 수 없다. 되돌리기·AI 승인도 같다.

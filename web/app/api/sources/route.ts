@@ -9,6 +9,7 @@ import {
   sameHashSources,
   sourceInput,
 } from '@/lib/source-documents';
+import { readIssueSpans } from '@/lib/project-repo';
 export const dynamic = 'force-dynamic';
 
 function reply(value: unknown, status = 200) {
@@ -43,6 +44,8 @@ export async function GET(request: Request) {
     return reply({
       source,
       duplicates: await sameHashSources(projectId, source.hash, source.id),
+      // GitHub 이슈로 만든 원문의 이슈별 위치(작성자·팀원 여부). 화면 상단 경고에 쓴다.
+      issueSpans: await readIssueSpans(source.id),
     });
   } catch (e) {
     return failure(e);

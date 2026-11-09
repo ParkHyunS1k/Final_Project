@@ -7,6 +7,7 @@ import {
   NativeSelectOption,
 } from '@/components/ui/native-select';
 import { SourceList, SourcePaste, type SourceSummary } from './source-paste';
+import { GithubIssues, NonMemberBanner } from './github-issues';
 import type { ProjectMeta } from './project-workspace';
 import { seoulTime, type Task as ServerTask } from '@/lib/sprint';
 import type { Wire } from '@/lib/wire';
@@ -130,6 +131,8 @@ export function ChangeReview({
   const [sourceId, setSourceId] = useState('');
   const [sourceBody, setSourceBody] = useState('');
   const [duplicates, setDuplicates] = useState<{ id: string }[]>([]);
+  // GitHub 이슈로 만든 원문의 이슈별 작성자(팀원 아님 경고용). 붙여넣기 원문은 빈 배열.
+  const [issueSpans, setIssueSpans] = useState<{ authorLogin: string; authorIsMember: boolean }[]>([]);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [stale, setStale] = useState(false);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -188,10 +191,15 @@ export function ChangeReview({
     await run(async () => {
       const data = (await call(
         `/api/sources?project=${encodeURIComponent(projectId)}&source=${encodeURIComponent(id)}`,
-      )) as { source: { body: string }; duplicates: { id: string }[] };
+      )) as {
+        source: { body: string };
+        duplicates: { id: string }[];
+        issueSpans?: { authorLogin: string; authorIsMember: boolean }[];
+      };
       setSourceId(id);
       setSourceBody(data.source.body);
       setDuplicates(data.duplicates);
+      setIssueSpans(data.issueSpans ?? []);
       setProposal(null);
     });
   }
@@ -565,6 +573,14 @@ export function ChangeReview({
         <>
           <div className="content-grid">
             <section>
+              <GithubIssues
+                projectId={projectId}
+                writable={writable}
+                onImported={async (id) => {
+                  await refresh();
+                  await openSource(id);
+                }}
+              />
               <SourcePaste
                 busy={busy}
                 disabled={!writable}
@@ -590,6 +606,7 @@ export function ChangeReview({
                     <h2>저장된 원문</h2>
                     <span className="tiny muted">그대로 보존됩니다</span>
                   </div>
+                  <NonMemberBanner spans={issueSpans} />
                   <pre className="source-body">{sourceBody}</pre>
                   {duplicates.length > 0 && (
                     <p className="tiny muted">
