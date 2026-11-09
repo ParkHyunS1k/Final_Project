@@ -5,7 +5,6 @@ import {
   ArrowRight,
   House,
   Layers3,
-  FolderKanban,
   BriefcaseBusiness,
   UserRound,
   Flame,
@@ -64,7 +63,6 @@ const MAIN_NAV = [
   { id: 'home', icon: House },
   { id: 'templates', icon: Layers3 },
   { id: 'teams', icon: Users },
-  { id: 'work', icon: FolderKanban },
   { id: 'jobs', icon: BriefcaseBusiness },
   { id: 'profile', icon: UserRound },
 ] as const;
@@ -206,6 +204,9 @@ export function UnifiedApp({
       removeEventListener('popstate', back);
     };
   }, []);
+  // 프로젝트가 하나라도 있으면 홈이 곧 프로젝트 화면이다(메뉴의 '내 프로젝트' 탭은 없앴다, 2026-11-09).
+  const workHome = tab === 'home' && Boolean(data?.projects.length);
+  const showWork = tab === 'work' || workHome;
   function navigate(next: Tab, id = '') {
     if (next !== 'profile') {
       setPosting('');
@@ -408,13 +409,14 @@ export function UnifiedApp({
               className={
                 tab === item.id ||
                 (item.id === 'profile' && PERSONAL.includes(tab)) ||
-                (item.id === 'work' && tab === 'team')
+                (item.id === 'home' && (tab === 'work' || tab === 'team'))
                   ? 'active'
                   : ''
               }
               aria-current={
                 tab === item.id ||
-                (item.id === 'profile' && PERSONAL.includes(tab))
+                (item.id === 'profile' && PERSONAL.includes(tab)) ||
+                (item.id === 'home' && tab === 'work')
                   ? 'page'
                   : undefined
               }
@@ -448,7 +450,7 @@ export function UnifiedApp({
             {data?.name || '마이페이지'}
           </button>
         </header>
-        <main className={'hub-main' + (tab === 'work' ? ' hub-main-work' : '')}>
+        <main className={'hub-main' + (showWork ? ' hub-main-work' : '')}>
           {error && (
             <div className="hub-alert" role="alert">
               <p>{error}</p>
@@ -535,349 +537,366 @@ export function UnifiedApp({
                   </Link>
                 </section>
               ))}
-              <section className="hub-hero">
-                <div>
-                  <p className="hub-eyebrow">YOUR NEXT EXPERIENCE</p>
-                  <h1>
-                    오늘의 작은 도전이,
-                    <br />
-                    내일의 나를 바꾸니까.
-                  </h1>
-                  <p>
-                    이력서와 포트폴리오에서 발견한 다음 경험.
-                    <br />
-                    나에게 맞는 프로젝트로 채워보세요.
-                  </p>
-                  <button
-                    className="btn primary"
-                    onClick={() => navigate('templates')}
-                  >
-                    내 프로젝트 찾기 <ArrowRight size={17} />
-                  </button>
-                </div>
-                <div className="hub-orbit" aria-hidden="true">
-                  <span>LEARN</span>
-                  <b>
-                    한 걸음
-                    <br />
-                    <em>더, 나답게.</em>
-                  </b>
-                  <span>BUILD · GROW</span>
-                </div>
-              </section>
-              <div className="hub-home-grid">
-                <div>
-                  <div className="hub-heading">
+              {data && !workHome && (
+                <>
+                  <section className="hub-hero">
                     <div>
-                      <h2>함께 달리고 있는 팀</h2>
-                      <p>진행 중인 팀과 새 멤버를 기다리는 팀이에요.</p>
-                    </div>
-                    <span className="hub-pill">
-                      공개 모집 {data?.directory.length ?? 0}
-                    </span>
-                  </div>
-                  {!data && !error ? (
-                    <output className="hub-empty">
-                      팀 목록을 불러오는 중입니다.
-                    </output>
-                  ) : !data?.directory.length ? (
-                    <div className="hub-empty">
-                      <Users size={29} />
-                      <h3>아직 공개 모집 중인 팀이 없어요.</h3>
-                      <p>
-                        팀을 기다리는 동안 혼자 시작해도 좋아요.
+                      <p className="hub-eyebrow">YOUR NEXT EXPERIENCE</p>
+                      <h1>
+                        오늘의 작은 도전이,
                         <br />
-                        모집 공개를 선택한 실제 프로젝트만 이곳에 나타납니다.
+                        내일의 나를 바꾸니까.
+                      </h1>
+                      <p>
+                        이력서와 포트폴리오에서 발견한 다음 경험.
+                        <br />
+                        나에게 맞는 프로젝트로 채워보세요.
                       </p>
                       <button
-                        className="btn"
+                        className="btn primary"
                         onClick={() => navigate('templates')}
                       >
-                        템플릿으로 시작하기
+                        내 프로젝트 찾기 <ArrowRight size={17} />
                       </button>
                     </div>
-                  ) : (
-                    <div className="hub-grid">
-                      {data.directory.map((team) => (
-                        <article className="hub-card" key={team.project_id}>
-                          <div className="hub-card-top">
-                            <span className="hub-live">
-                              {team.lifecycle === 'active'
-                                ? '진행 중'
-                                : '멤버 모집'}
-                            </span>
-                            <span>{team.members}/4명</span>
-                          </div>
-                          <h3>{team.title}</h3>
-                          <p>{team.template?.goal || team.goal}</p>
-                          <Chips
-                            skills={[
-                              ...new Set(
-                                team.template?.tasks.flatMap((t) => t.skills) ??
-                                  [],
-                              ),
-                            ].slice(0, 4)}
-                          />
-                          <ProjectTime
-                            start={team.started_at}
-                            end={team.deadline_at}
-                          />
-                          {team.joined ? (
-                            <button
-                              className="btn wide"
-                              onClick={() => navigate('work', team.project_id)}
-                            >
-                              프로젝트 열기
-                            </button>
-                          ) : !team.template ? (
-                            <button
-                              className="btn wide"
-                              onClick={() => navigate('teams')}
-                            >
-                              참여 조건 확인하고 신청
-                            </button>
-                          ) : (
-                            <>
-                              <button
-                                className="btn wide"
-                                disabled={
-                                  busy || team.interested || team.members >= 4
-                                }
-                                onClick={() =>
-                                  void act(async () => {
-                                    await request({
-                                      action: 'interest',
-                                      projectId: team.project_id,
-                                      consent: true,
-                                    });
-                                    await refresh();
-                                    setNotice(
-                                      '관심을 전달했습니다. 실제 팀 참여는 팀장의 초대와 목표 동의 후 확정됩니다.',
-                                    );
-                                  })
-                                }
-                              >
-                                {team.interested
-                                  ? '관심 전달됨 · 초대 대기'
-                                  : team.members >= 4
-                                    ? '모집 마감'
-                                    : '연락처 공유하고 참여 요청'}
-                              </button>
-                              <small className="hub-note">
-                                팀장에게 이름과 로그인 이메일을 전달해요.
-                                이력서는 공개되지 않아요.
-                              </small>
-                            </>
-                          )}
-                        </article>
-                      ))}
+                    <div className="hub-orbit" aria-hidden="true">
+                      <span>LEARN</span>
+                      <b>
+                        한 걸음
+                        <br />
+                        <em>더, 나답게.</em>
+                      </b>
+                      <span>BUILD · GROW</span>
                     </div>
-                  )}
-                  <div className="hub-heading">
+                  </section>
+                  <div className="hub-home-grid">
                     <div>
-                      <h2>이어서 할 나의 프로젝트</h2>
-                      <p>혼자 시작했든 함께 시작했든, 같은 공간에서.</p>
-                    </div>
-                    <button
-                      className="hub-text-button"
-                      onClick={() => navigate('work')}
-                    >
-                      전체 보기 <ArrowRight size={14} />
-                    </button>
-                  </div>
-                  {!data?.projects.length ? (
-                    <div className="hub-card">
-                      <p>첫 프로젝트를 고르면 할 일이 자동으로 준비돼요.</p>
-                      <button
-                        className="btn"
-                        onClick={() => navigate('templates')}
-                      >
-                        20개 템플릿 살펴보기
-                      </button>
-                    </div>
-                  ) : (
-                    data.projects.slice(0, 4).map((p) => (
-                      <article className="hub-card hub-project-row" key={p.id}>
+                      <div className="hub-heading">
                         <div>
-                          <span className="hub-note">
-                            {
-                              {
-                                active: '진행 중',
-                                draft: '준비 중',
-                                completed: '완료',
-                                expired: '기간 종료',
-                                legacy: '이전 기록',
-                              }[p.lifecycle]
-                            }
-                          </span>
-                          <h3>{p.title}</h3>
-                          <ProjectTime
-                            start={p.started_at}
-                            end={p.deadline_at}
-                          />
+                          <h2>함께 달리고 있는 팀</h2>
+                          <p>진행 중인 팀과 새 멤버를 기다리는 팀이에요.</p>
+                        </div>
+                        <span className="hub-pill">
+                          공개 모집 {data?.directory.length ?? 0}
+                        </span>
+                      </div>
+                      {!data && !error ? (
+                        <output className="hub-empty">
+                          팀 목록을 불러오는 중입니다.
+                        </output>
+                      ) : !data?.directory.length ? (
+                        <div className="hub-empty">
+                          <Users size={29} />
+                          <h3>아직 공개 모집 중인 팀이 없어요.</h3>
+                          <p>
+                            팀을 기다리는 동안 혼자 시작해도 좋아요.
+                            <br />
+                            모집 공개를 선택한 실제 프로젝트만 이곳에
+                            나타납니다.
+                          </p>
+                          <button
+                            className="btn"
+                            onClick={() => navigate('templates')}
+                          >
+                            템플릿으로 시작하기
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="hub-grid">
+                          {data.directory.map((team) => (
+                            <article className="hub-card" key={team.project_id}>
+                              <div className="hub-card-top">
+                                <span className="hub-live">
+                                  {team.lifecycle === 'active'
+                                    ? '진행 중'
+                                    : '멤버 모집'}
+                                </span>
+                                <span>{team.members}/4명</span>
+                              </div>
+                              <h3>{team.title}</h3>
+                              <p>{team.template?.goal || team.goal}</p>
+                              <Chips
+                                skills={[
+                                  ...new Set(
+                                    team.template?.tasks.flatMap(
+                                      (t) => t.skills,
+                                    ) ?? [],
+                                  ),
+                                ].slice(0, 4)}
+                              />
+                              <ProjectTime
+                                start={team.started_at}
+                                end={team.deadline_at}
+                              />
+                              {team.joined ? (
+                                <button
+                                  className="btn wide"
+                                  onClick={() =>
+                                    navigate('work', team.project_id)
+                                  }
+                                >
+                                  프로젝트 열기
+                                </button>
+                              ) : !team.template ? (
+                                <button
+                                  className="btn wide"
+                                  onClick={() => navigate('teams')}
+                                >
+                                  참여 조건 확인하고 신청
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    className="btn wide"
+                                    disabled={
+                                      busy ||
+                                      team.interested ||
+                                      team.members >= 4
+                                    }
+                                    onClick={() =>
+                                      void act(async () => {
+                                        await request({
+                                          action: 'interest',
+                                          projectId: team.project_id,
+                                          consent: true,
+                                        });
+                                        await refresh();
+                                        setNotice(
+                                          '관심을 전달했습니다. 실제 팀 참여는 팀장의 초대와 목표 동의 후 확정됩니다.',
+                                        );
+                                      })
+                                    }
+                                  >
+                                    {team.interested
+                                      ? '관심 전달됨 · 초대 대기'
+                                      : team.members >= 4
+                                        ? '모집 마감'
+                                        : '연락처 공유하고 참여 요청'}
+                                  </button>
+                                  <small className="hub-note">
+                                    팀장에게 이름과 로그인 이메일을 전달해요.
+                                    이력서는 공개되지 않아요.
+                                  </small>
+                                </>
+                              )}
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                      <div className="hub-heading">
+                        <div>
+                          <h2>이어서 할 나의 프로젝트</h2>
+                          <p>혼자 시작했든 함께 시작했든, 같은 공간에서.</p>
                         </div>
                         <button
-                          className="btn"
-                          onClick={() => navigate('work', p.id)}
+                          className="hub-text-button"
+                          onClick={() => navigate('work')}
                         >
-                          이어 하기 <ArrowRight size={16} />
+                          전체 보기 <ArrowRight size={14} />
                         </button>
-                      </article>
-                    ))
-                  )}
-                </div>
-                <aside className="hub-home-side">
-                  <section className="hub-card">
-                    <p className="hub-eyebrow">
-                      <Flame size={15} /> DAILY CHECK-IN
-                    </p>
-                    <h2>오늘, 어떻게 보내셨나요?</h2>
-                    <p>
-                      잘 된 날도 막힌 날도 기록해요.
-                      <br />
-                      학습 여부는 본인 기록이며 자동 검증은 아니에요.
-                    </p>
-                    <div className="hub-checkin-skills">
-                      {SKILLS.filter((s) =>
-                        [
-                          'python',
-                          'react',
-                          'sql',
-                          'api',
-                          'design',
-                          'testing',
-                          'docker',
-                        ].includes(s.id),
-                      ).map((s) => (
-                        <button
-                          className={learning.includes(s.id) ? 'selected' : ''}
-                          aria-pressed={learning.includes(s.id)}
-                          key={s.id}
-                          onClick={() =>
-                            setLearning((v) =>
-                              v.includes(s.id)
-                                ? v.filter((i) => i !== s.id)
-                                : [...v, s.id],
-                            )
-                          }
-                        >
-                          {s.name}
-                        </button>
-                      ))}
+                      </div>
+                      {!data?.projects.length ? (
+                        <div className="hub-card">
+                          <p>첫 프로젝트를 고르면 할 일이 자동으로 준비돼요.</p>
+                          <button
+                            className="btn"
+                            onClick={() => navigate('templates')}
+                          >
+                            20개 템플릿 살펴보기
+                          </button>
+                        </div>
+                      ) : (
+                        data.projects.slice(0, 4).map((p) => (
+                          <article
+                            className="hub-card hub-project-row"
+                            key={p.id}
+                          >
+                            <div>
+                              <span className="hub-note">
+                                {
+                                  {
+                                    active: '진행 중',
+                                    draft: '준비 중',
+                                    completed: '완료',
+                                    expired: '기간 종료',
+                                    legacy: '이전 기록',
+                                  }[p.lifecycle]
+                                }
+                              </span>
+                              <h3>{p.title}</h3>
+                              <ProjectTime
+                                start={p.started_at}
+                                end={p.deadline_at}
+                              />
+                            </div>
+                            <button
+                              className="btn"
+                              onClick={() => navigate('work', p.id)}
+                            >
+                              이어 하기 <ArrowRight size={16} />
+                            </button>
+                          </article>
+                        ))
+                      )}
                     </div>
-                    <div className="hub-checkin">
-                      {[
-                        ['studied', '공부했어요'],
-                        ['stuck', '막혔어요'],
-                        ['rest', '쉬어갈게요'],
-                      ].map(([status, label]) => (
+                    <aside className="hub-home-side">
+                      <section className="hub-card">
+                        <p className="hub-eyebrow">
+                          <Flame size={15} /> DAILY CHECK-IN
+                        </p>
+                        <h2>오늘, 어떻게 보내셨나요?</h2>
+                        <p>
+                          잘 된 날도 막힌 날도 기록해요.
+                          <br />
+                          학습 여부는 본인 기록이며 자동 검증은 아니에요.
+                        </p>
+                        <div className="hub-checkin-skills">
+                          {SKILLS.filter((s) =>
+                            [
+                              'python',
+                              'react',
+                              'sql',
+                              'api',
+                              'design',
+                              'testing',
+                              'docker',
+                            ].includes(s.id),
+                          ).map((s) => (
+                            <button
+                              className={
+                                learning.includes(s.id) ? 'selected' : ''
+                              }
+                              aria-pressed={learning.includes(s.id)}
+                              key={s.id}
+                              onClick={() =>
+                                setLearning((v) =>
+                                  v.includes(s.id)
+                                    ? v.filter((i) => i !== s.id)
+                                    : [...v, s.id],
+                                )
+                              }
+                            >
+                              {s.name}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="hub-checkin">
+                          {[
+                            ['studied', '공부했어요'],
+                            ['stuck', '막혔어요'],
+                            ['rest', '쉬어갈게요'],
+                          ].map(([status, label]) => (
+                            <button
+                              key={status}
+                              className={
+                                data?.stats.today === status ? 'selected' : ''
+                              }
+                              aria-pressed={data?.stats.today === status}
+                              disabled={busy || !data}
+                              onClick={() =>
+                                void act(async () => {
+                                  await request({
+                                    action: 'checkin',
+                                    status,
+                                    skills: learning,
+                                  });
+                                  await refresh();
+                                  setNotice(
+                                    '오늘 기록을 저장했습니다. 같은 날 여러 번 눌러도 점수는 중복되지 않아요.',
+                                  );
+                                })
+                              }
+                            >
+                              {data?.stats.today === status && (
+                                <Check size={14} />
+                              )}
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                        {data?.stats.today === 'stuck' && (
+                          <button
+                            className="hub-text-button"
+                            onClick={() => navigate('templates')}
+                          >
+                            범위를 작게 잡을 프로젝트 찾아보기{' '}
+                            <ArrowRight size={14} />
+                          </button>
+                        )}
+                      </section>
+                      <section className="hub-card hub-growth">
+                        <p className="hub-eyebrow">
+                          <Trophy size={15} /> MY MOMENTUM
+                        </p>
+                        <h2>학습 기록</h2>
+                        <div className="hub-stat-row">
+                          <div>
+                            <b>
+                              {data?.stats.streak ?? 0}
+                              <small>일</small>
+                            </b>
+                            <span>연속 학습</span>
+                          </div>
+                          <div>
+                            <b>
+                              {data?.stats.days ?? 0}
+                              <small>일</small>
+                            </b>
+                            <span>학습한 날</span>
+                          </div>
+                        </div>
+                        <p className="hub-note">
+                          ‘공부함’으로 체크인한 날을 셉니다.
+                          <br />
+                          등급·뱃지는 동료평가 결과로만 정해져요.
+                        </p>
                         <button
-                          key={status}
-                          className={
-                            data?.stats.today === status ? 'selected' : ''
-                          }
-                          aria-pressed={data?.stats.today === status}
-                          disabled={busy || !data}
+                          className="btn wide"
+                          disabled={!data}
                           onClick={() =>
                             void act(async () => {
-                              await request({
-                                action: 'checkin',
-                                status,
-                                skills: learning,
-                              });
-                              await refresh();
+                              await navigator.clipboard.writeText(
+                                `ProjectMate에서 ${data!.stats.days}일 학습을 기록했어요.`,
+                              );
                               setNotice(
-                                '오늘 기록을 저장했습니다. 같은 날 여러 번 눌러도 점수는 중복되지 않아요.',
+                                '학습 기록 문구를 복사했습니다. 원하는 곳에 직접 공유해보세요.',
                               );
                             })
                           }
                         >
-                          {data?.stats.today === status && <Check size={14} />}
-                          {label}
+                          학습 기록 문구 복사
                         </button>
-                      ))}
-                    </div>
-                    {data?.stats.today === 'stuck' && (
-                      <button
-                        className="hub-text-button"
-                        onClick={() => navigate('templates')}
-                      >
-                        범위를 작게 잡을 프로젝트 찾아보기{' '}
-                        <ArrowRight size={14} />
-                      </button>
-                    )}
-                  </section>
-                  <section className="hub-card hub-growth">
-                    <p className="hub-eyebrow">
-                      <Trophy size={15} /> MY MOMENTUM
-                    </p>
-                    <h2>학습 기록</h2>
-                    <div className="hub-stat-row">
-                      <div>
-                        <b>
-                          {data?.stats.streak ?? 0}
-                          <small>일</small>
-                        </b>
-                        <span>연속 학습</span>
-                      </div>
-                      <div>
-                        <b>
-                          {data?.stats.days ?? 0}
-                          <small>일</small>
-                        </b>
-                        <span>학습한 날</span>
-                      </div>
-                    </div>
-                    <p className="hub-note">
-                      ‘공부함’으로 체크인한 날을 셉니다.
-                      <br />
-                      등급·뱃지는 동료평가 결과로만 정해져요.
-                    </p>
-                    <button
-                      className="btn wide"
-                      disabled={!data}
-                      onClick={() =>
-                        void act(async () => {
-                          await navigator.clipboard.writeText(
-                            `ProjectMate에서 ${data!.stats.days}일 학습을 기록했어요.`,
-                          );
-                          setNotice(
-                            '학습 기록 문구를 복사했습니다. 원하는 곳에 직접 공유해보세요.',
-                          );
-                        })
-                      }
-                    >
-                      학습 기록 문구 복사
-                    </button>
-                  </section>
-                  <section className="hub-card">
-                    <h3>나에게 필요한 다음 경험</h3>
-                    {data?.profile ? (
-                      <>
-                        <Chips
-                          skills={missing.slice(0, 4).map((g) => g.skillId)}
-                        />
-                        <p>
-                          {missing.length
-                            ? '원문에서 충분한 근거가 확인되지 않은 역량이에요. 능력이 없다는 뜻은 아닙니다.'
-                            : '목표 역량의 수행 근거를 확인했어요. 다른 목표도 살펴보세요.'}
-                        </p>
-                      </>
-                    ) : (
-                      <p>
-                        이력서나 포트폴리오를 등록하면 내 경험을 기준으로
-                        프로젝트를 추천해요.
-                      </p>
-                    )}
-                    <button
-                      className="hub-text-button"
-                      onClick={() => navigate('profile')}
-                    >
-                      나의 역량 살펴보기 <ArrowRight size={14} />
-                    </button>
-                  </section>
-                </aside>
-              </div>
+                      </section>
+                      <section className="hub-card">
+                        <h3>나에게 필요한 다음 경험</h3>
+                        {data?.profile ? (
+                          <>
+                            <Chips
+                              skills={missing.slice(0, 4).map((g) => g.skillId)}
+                            />
+                            <p>
+                              {missing.length
+                                ? '원문에서 충분한 근거가 확인되지 않은 역량이에요. 능력이 없다는 뜻은 아닙니다.'
+                                : '목표 역량의 수행 근거를 확인했어요. 다른 목표도 살펴보세요.'}
+                            </p>
+                          </>
+                        ) : (
+                          <p>
+                            이력서나 포트폴리오를 등록하면 내 경험을 기준으로
+                            프로젝트를 추천해요.
+                          </p>
+                        )}
+                        <button
+                          className="hub-text-button"
+                          onClick={() => navigate('profile')}
+                        >
+                          나의 역량 살펴보기 <ArrowRight size={14} />
+                        </button>
+                      </section>
+                    </aside>
+                  </div>
+                </>
+              )}
             </>
           )}
           {tab === 'templates' && (
@@ -1111,7 +1130,7 @@ export function UnifiedApp({
               </div>
             </>
           )}
-          {tab === 'work' && (
+          {showWork && (
             <>
               <ProjectDashboard key={selectedProject} />
               {data?.settings.some(
