@@ -1657,31 +1657,46 @@ textarea {
   margin-top: 10px;
 }
 .task-board {
-  display: flex;
-  align-items: flex-start;
-  gap: 18px;
-  overflow-x: auto;
+  /* 세 열을 한 화면에 나란히. 좁으면 한 줄씩 쌓는다. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px;
   padding: 18px 0 12px;
 }
 .board-column {
-  flex: 1 0 240px;
-  min-width: 240px;
+  min-width: 0;
   background: var(--gray-25);
-  border-radius: 4px;
-  padding: 12px;
+  border: 1px solid var(--gray-100);
+  border-top: 3px solid var(--gray-300);
+  border-radius: 10px;
+  padding: 12px 10px 4px;
 }
-.board-column h2 {
-  font-size: 14px;
-  font-weight: 600;
+.board-column.status-in_progress {
+  border-top-color: var(--heat-500);
+}
+.board-column.status-done {
+  border-top-color: var(--good);
+}
+/* 통합 앱의 .hub-main h2(18px)보다 우선한다. */
+.task-board .board-column h2 {
+  font-size: 13px;
+  font-weight: 700;
   display: flex;
   gap: 7px;
   align-items: center;
-  margin: 0 0 16px;
+  margin: 2px 4px 12px;
 }
 .board-column h2 > span:last-child {
-  font-weight: 400;
-  color: var(--gray-400);
-  margin-left: 3px;
+  margin-left: auto;
+  min-width: 22px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
 }
 .status-dot {
   display: inline-block;
@@ -1703,26 +1718,80 @@ textarea {
 .board-card {
   border: 1px solid var(--gray-200);
   background: var(--gray-0);
-  padding: 15px;
-  border-radius: 6px;
+  padding: 12px 13px;
+  border-radius: 8px;
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
-  margin-bottom: 9px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
 }
-.board-card p {
-  font-size: 13px;
+.board-card:hover {
+  border-color: var(--gray-300);
+}
+.board-card .task-title-button {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.board-column.status-done .board-card .task-title-button {
   color: var(--gray-500);
-  margin: 12px 0;
+}
+.board-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 6px;
+  font-size: 12px;
+  color: var(--gray-600);
+}
+.board-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--heat-100);
+  color: var(--heat-700);
+  font-size: 11px;
+  font-weight: 700;
+}
+.board-card-dep {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  color: var(--gray-500);
+}
+.board-card-due {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--gray-500);
+  font-variant-numeric: tabular-nums;
 }
 .board-card-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 5px;
+  padding-top: 8px;
+  border-top: 1px solid var(--gray-100);
 }
 .board-empty {
   color: var(--gray-400);
   font-size: 13px;
-  padding: 16px 6px 30px;
+  text-align: center;
+  padding: 14px 6px 22px;
+  margin-bottom: 8px;
+  border: 1px dashed var(--gray-200);
+  border-radius: 8px;
+}
+@media (max-width: 720px) {
+  .task-board {
+    grid-template-columns: 1fr;
+  }
 }
 .workspace-history {
   margin-top: 30px;

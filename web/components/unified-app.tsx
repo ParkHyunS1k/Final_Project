@@ -402,9 +402,14 @@ export function UnifiedApp({
   return (
     <div className="hub-shell">
       <aside className="hub-sidebar">
-        <Link href="/" className="hub-brand">
+        {/* 로고는 랜딩이 아니라 앱 홈으로. 랜딩은 하단 '서비스 소개'. */}
+        <button
+          type="button"
+          className="hub-brand"
+          onClick={() => navigate('home')}
+        >
           <span>p.</span> projectmate
-        </Link>
+        </button>
         <p className="hub-tagline">나의 다음 경험을 만드는 곳</p>
         <nav aria-label="주 메뉴">
           {MAIN_NAV.map((item) => (

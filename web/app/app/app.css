@@ -24,6 +24,12 @@
   align-items: center;
   color: var(--ink);
   text-decoration: none;
+  /* 버튼이지만 로고처럼 보이게 */
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
 }
 .hub-brand > span {
   background: var(--primary);
