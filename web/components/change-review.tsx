@@ -322,10 +322,16 @@ export function ChangeReview({
         : c.kind === 'assignee'
           ? personName(c.before.person, members)
           : describe(Object.values(c.before)[0]);
+    // AI가 추정한 공수는 사용자가 직접 고치기 전까지 추정이라고 표시한다.
+    const hoursEstimated =
+      after.remainingEstimated === true &&
+      !(!replayItem && edits[c.changeId] && 'remaining' in edits[c.changeId]);
     const afterText =
       c.kind === 'createTask'
         ? `${text(after.title)} · 담당자 ${personName(after.person, members)} · 공수 ${
-            typeof after.remaining === 'number' ? `${after.remaining}시간` : '미정'
+            typeof after.remaining === 'number'
+              ? `${after.remaining}시간${hoursEstimated ? ' (AI 추정)' : ''}`
+              : '미정'
           }`
         : c.kind === 'assignee'
           ? personName(after.person, members)
