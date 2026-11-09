@@ -17,6 +17,8 @@ await build({
       "export { listOpenIssues, fetchIssuesByNumber, parseIssueNumbers, buildIssueSource, issueWarnings } from './lib/github-issues';",
       "export { ReviewSourceError } from './lib/ai-review-github';",
       "export { PolicyError } from './lib/sprint-policy';",
+      "export { readProjectRepo, setProjectRepo, createIssueSource, readIssueSpans, importedIssueNumbers } from './lib/project-repo';",
+      "export { POST as projectsPOST } from './app/api/projects/route';",
     ].join(' '),
     resolveDir: process.cwd(),
     loader: 'ts',
@@ -39,9 +41,55 @@ await build({
   ],
 });
 const api = await import(pathToFileURL(outfile).href);
-void one;
-void rows;
-void run;
+
+function headers(user, extra = {}) {
+  return {
+    'oai-authenticated-user-id': user,
+    'oai-authenticated-user-email': user + '@test.local',
+    'content-type': 'application/json',
+    origin: 'https://test.local',
+    ...extra,
+  };
+}
+const postTo = (fn, url) => (user, body, extra) =>
+  fn(new Request('https://test.local' + url, { method: 'POST', headers: headers(user, extra), body: JSON.stringify(body) }));
+const projects = postTo((r) => api.projectsPOST(r), '/api/projects');
+async function json(response, status) {
+  const text = await response.text();
+  assert.equal(response.status, status, text);
+  return JSON.parse(text);
+}
+async function soloProject(owner) {
+  const created = await json(
+    await projects(owner, {
+      action: 'create',
+      title: '이슈 스프린트',
+      goal: '할 일 앱을 출시한다',
+      scope: '목록, 추가',
+      completionCriteria: '시연한다',
+      duration: 7,
+      agreed: true,
+    }),
+    201,
+  );
+  return created.projectId;
+}
+// 적용 기록을 직접 넣는다(되돌림 행 포함 구성용).
+async function applied(projectId, sourceId, start, end, { id = 'app_' + Math.random(), reverts = null } = {}) {
+  await run(
+    'INSERT INTO ai_change_applications(id,project_id,proposal_id,source_id,reverts,approved_by,approved_at,revision,entries) VALUES(?,?,?,?,?,?,now(),1,?)',
+    id,
+    projectId,
+    null,
+    sourceId,
+    reverts,
+    'someone',
+    JSON.stringify([
+      { changeId: 'c1', kind: 'createTask', taskId: 9, before: {}, after: {}, edited: false, candidateKey: `${sourceId}#${start}-${end}` },
+    ]),
+  );
+  return id;
+}
 
 const repo = { owner: 'team', name: 'app' };
 function issue(n, over = {}) {
@@ -207,4 +255,76 @@ test('issueWarnings: 팀원 아닌 이슈 근거, 이미 가져온 번호의 업
   assert.equal(out[3].needsReview, '');
   const none = api.issueWarnings(changes.slice(0, 1), spans, new Set());
   assert.equal(none[0].needsReview, '');
+});
+
+test('저장소 등록: 처음은 version 1, 오래된 version은 409, 기록이 남고 업무 revision은 그대로', async () => {
+  const projectId = await soloProject('pr-owner');
+  const before = (await one('SELECT revision FROM sprints WHERE owner=?', projectId)).revision;
+  const now = new Date();
+  const first = await api.setProjectRepo(projectId, 'pr-owner', { owner: 'team', name: 'app' }, 0, now);
+  assert.deepEqual(first, { owner: 'team', name: 'app', version: 1 });
+  assert.deepEqual(await api.readProjectRepo(projectId), first);
+  const second = await api.setProjectRepo(projectId, 'pr-owner', { owner: 'team', name: 'web' }, 1, now);
+  assert.equal(second.version, 2);
+  await assert.rejects(
+    api.setProjectRepo(projectId, 'pr-owner', { owner: 'team', name: 'old' }, 1, now),
+    (e) => e instanceof api.PolicyError && e.status === 409,
+  );
+  assert.equal((await api.readProjectRepo(projectId)).name, 'web');
+  const events = await rows('SELECT repo_name,action FROM project_repo_events WHERE project_id=? ORDER BY created_at,id', projectId);
+  assert.deepEqual(events.map((e) => e.repo_name).sort(), ['app', 'web']);
+  assert.ok(events.every((e) => e.action === 'set'));
+  assert.equal((await one('SELECT revision FROM sprints WHERE owner=?', projectId)).revision, before);
+});
+
+test('팀장이 아니면 저장소를 저장하지 않는다', async () => {
+  const projectId = await soloProject('pr-owner2');
+  await assert.rejects(api.setProjectRepo(projectId, 'stranger', { owner: 'team', name: 'app' }, 0, new Date()), api.PolicyError);
+  assert.equal(await api.readProjectRepo(projectId), null);
+  assert.equal(await one('SELECT 1 FROM project_repo_events WHERE project_id=?', projectId), null);
+});
+
+test('이슈 원문과 스팬은 한 번에 저장되고 다시 읽힌다', async () => {
+  const projectId = await soloProject('src-owner');
+  const built = api.buildIssueSource([ghIssue(1), ghIssue(2, { author: 'stranger' })], []);
+  const id = await api.createIssueSource(
+    projectId,
+    'src-owner',
+    { body: built.body, origin: 'GitHub team/app 이슈', repo: 'team/app' },
+    built.spans,
+    new Date(),
+  );
+  assert.ok(id);
+  const src = await one('SELECT body,origin,captured_at FROM source_documents WHERE id=?', id);
+  assert.equal(src.body, built.body);
+  assert.equal(src.origin, 'GitHub team/app 이슈');
+  assert.ok(src.captured_at);
+  assert.deepEqual(await api.readIssueSpans(id), built.spans.map((sp) => ({ ...sp, repo: 'team/app' })));
+  // 프로젝트 멤버가 아니면 아무것도 남지 않는다.
+  assert.equal(
+    await api.createIssueSource(projectId, 'stranger', { body: built.body, origin: 'x', repo: 'team/app' }, built.spans, new Date()),
+    null,
+  );
+});
+
+test('이미 가져온 번호: 적용된 업무 생성만, 되돌린 것은 빼고, 다른 저장소는 세지 않는다', async () => {
+  const projectId = await soloProject('dup-owner');
+  const make = async (repo, issues) => {
+    const built = api.buildIssueSource(issues, []);
+    const id = await api.createIssueSource(projectId, 'dup-owner', { body: built.body, origin: 'x', repo }, built.spans, new Date());
+    return { id, spans: built.spans };
+  };
+  const a = await make('team/app', [ghIssue(1), ghIssue(2), ghIssue(3)]);
+  const b = await make('team/app', [ghIssue(2)]);
+  const other = await make('team/other', [ghIssue(4)]);
+  const span = (src, n) => src.spans.find((s) => s.issueNumber === n);
+  // #1: 적용. #2: 적용 후 되돌림. #3: 적용 없음. 다른 저장소 #4: 적용.
+  await applied(projectId, a.id, span(a, 1).start + 1, span(a, 1).start + 5);
+  const undone = await applied(projectId, a.id, span(a, 2).start + 1, span(a, 2).start + 5);
+  await applied(projectId, a.id, 0, 0, { reverts: undone, id: 'rev_' + undone });
+  await applied(projectId, other.id, span(other, 4).start + 1, span(other, 4).start + 5);
+  assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/app', b.id))].sort(), [1]);
+  // 현재 원문은 제외한다.
+  assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/app', a.id))], []);
+  assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/other', null))], [4]);
 });
