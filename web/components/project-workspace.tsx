@@ -222,9 +222,12 @@ async function api(path: string, body?: Record<string, unknown>) {
 export function ProjectWorkspace({
   children,
   embedded = false,
+  onSelect,
 }: {
   children: (id: string, nav: WorkspaceNav) => ReactNode;
   embedded?: boolean;
+  /** 주소에 프로젝트가 없을 때 스스로 고른 프로젝트를 통합 앱에 알린다(홈의 팀 모집 카드용). */
+  onSelect?: (id: string) => void;
 }) {
   const [projects, setProjects] = useState<
     { id: string; title: string; role: string; lifecycle: string }[]
@@ -287,6 +290,7 @@ export function ProjectWorkspace({
         setBrowsing(!embedded && entry.browsing);
         setProjects(data.projects);
         setSelected(entry.selected);
+        onSelect?.(entry.selected);
         if (token)
           setPreview(
             await api('/api/projects?invite=' + encodeURIComponent(token)),
@@ -297,7 +301,8 @@ export function ProjectWorkspace({
         setError(e.message);
       })
       .finally(() => setLoaded(true));
-  }, [embedded]);
+    // onSelect는 통합 앱의 state setter라 바뀌지 않는다.
+  }, [embedded, onSelect]);
   return (
     <SidebarProvider
       className={'workspace-shell' + (embedded ? ' hub-workspace' : '')}

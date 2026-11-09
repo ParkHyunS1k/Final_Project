@@ -150,6 +150,9 @@ export function UnifiedApp({
 }) {
   const [tab, setTab] = useState<Tab>(tabFrom(initialTab));
   const [selectedProject, setSelectedProject] = useState(projectId);
+  // 홈에서 프로젝트 화면이 스스로 고른 프로젝트. 주소에 project가 있으면 그쪽이 우선이다.
+  const [homeProject, setHomeProject] = useState('');
+  const shownProject = selectedProject || homeProject;
   const [data, setData] = useState<Hub | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -1132,14 +1135,17 @@ export function UnifiedApp({
           )}
           {showWork && (
             <>
-              <ProjectDashboard key={selectedProject} />
+              <ProjectDashboard
+                key={selectedProject}
+                onProject={setHomeProject}
+              />
               {data?.settings.some(
-                (s) => s.project_id === selectedProject && s.mode === 'team',
+                (s) => s.project_id === shownProject && s.mode === 'team',
               ) && (
                 <section className="hub-card">
                   <h2>홈에서 팀 모집하기</h2>
                   {data.settings
-                    .filter((s) => s.project_id === selectedProject)
+                    .filter((s) => s.project_id === shownProject)
                     .map((s) => (
                       <label className="hub-check-label" key={s.project_id}>
                         <input
@@ -1168,14 +1174,14 @@ export function UnifiedApp({
                     참여 관심{' '}
                     {
                       data.interests.filter(
-                        (i) => i.project_id === selectedProject,
+                        (i) => i.project_id === shownProject,
                       ).length
                     }
                     명 · 초대를 보내면 상대방 홈에 초대가 도착해요. 이메일
                     발송은 서버 설정에 따릅니다.
                   </p>
                   {data.interests
-                    .filter((i) => i.project_id === selectedProject)
+                    .filter((i) => i.project_id === shownProject)
                     .map((i, n) => (
                       <div className="hub-project-row" key={n}>
                         <p>
