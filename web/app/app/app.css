@@ -66,40 +66,12 @@
 .hub-sidebar nav button:hover {
   background: var(--muted);
 }
-.hub-sidebar-note {
-  margin-top: auto;
-  background: var(--gray-50);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 19px 15px;
-  font-size: 12px;
-}
-.hub-sidebar-note svg {
-  color: var(--primary);
-}
-.hub-sidebar-note b {
-  display: block;
-  margin: 10px 0;
-}
-.hub-sidebar-note p {
-  line-height: 1.8;
-  color: var(--muted-foreground);
-}
-.hub-sidebar-note button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 15px;
-  font-weight: 600;
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
 .hub-sidebar-bottom {
   display: flex;
   align-items: center;
   gap: 9px;
-  margin-top: 24px;
+  margin-top: auto;
+  padding-top: 24px;
 }
 .hub-sidebar-bottom > a {
   font-size: 11px;
@@ -972,7 +944,6 @@
     font-size: 23px;
   }
   .hub-tagline,
-  .hub-sidebar-note,
   .hub-sidebar-bottom {
     display: none;
   }

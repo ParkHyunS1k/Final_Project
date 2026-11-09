@@ -9,7 +9,6 @@ import {
   BriefcaseBusiness,
   UserRound,
   Flame,
-  Sparkles,
   Check,
   Users,
   Trophy,
@@ -426,21 +425,6 @@ export function UnifiedApp({
             </button>
           ))}
         </nav>
-        <div className="hub-sidebar-note">
-          <Sparkles size={20} />
-          <b>혼자여도 괜찮아요.</b>
-          <p>
-            작게 시작한 프로젝트가
-            <br />
-            다음 기회의 근거가 되도록.
-          </p>
-          <button onClick={() => navigate('templates')}>
-            템플릿 둘러보기 <ArrowRight size={14} />
-          </button>
-          <button onClick={() => navigate('create')}>
-            직접 만들어보기 <ArrowRight size={14} />
-          </button>
-        </div>
         <div className="hub-sidebar-bottom">
           <ThemeToggle />
           <button
@@ -907,6 +891,9 @@ export function UnifiedApp({
                     쓰지 않아도 돼요.
                   </p>
                 </div>
+                <button className="btn" onClick={() => navigate('create')}>
+                  직접 만들기 <ArrowRight size={16} />
+                </button>
               </div>
               <div className="hub-filter">
                 <button
