@@ -110,6 +110,9 @@ void test('levelOf는 접두어로 단계를 찾고, 없거나 모르면 검증�
     ['[핵심 기능] a', '[MVP] a', '[테스트] a', '[데모] a', '[배포] a'].map(levelOf),
     [1, 2, 2, 3, 3],
   );
+  // 직접 쓴 범위의 접두어가 객체 기본 속성 이름이어도 기본 단계로 읽는다.
+  for (const name of ['__proto__', 'constructor', 'toString'])
+    assert.equal(levelOf(`[${name}] 문장`), 2);
   assert.equal(levelOf('직접 쓴 범위'), 2);
   assert.equal(levelOf('[없는단계] 문장'), 2);
 });

@@ -87,7 +87,7 @@ export function scopeText(level: number) {
 export function levelOf(scope: string) {
   const name = /^\[([^\]]+)\]/.exec(scope)?.[1];
   const i = SCOPE_LEVELS.findIndex((l) => l.name === name);
-  return i >= 0 ? i + 1 : (name && OLD_LEVELS[name]) || DEFAULT_LEVEL;
+  return i >= 0 ? i + 1 : name && Object.hasOwn(OLD_LEVELS, name) ? OLD_LEVELS[name] : DEFAULT_LEVEL;
 }
 
 export function createBody(input: {
