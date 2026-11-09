@@ -2778,7 +2778,9 @@ textarea {
 /* 진행 보고 저장 직후 축하 영상. 클릭·Esc·재생 끝에 닫힌다. */
 .celebration-dialog {
   margin: auto;
-  width: min(720px, calc(100vw - 32px));
+  /* 16:9 영상이 화면 높이를 넘지 않게 높이로도 제한한다. */
+  width: min(900px, calc(100vw - 32px), calc((100dvh - 48px) * 16 / 9));
+  max-width: none;
   padding: 0;
   border: 0;
   border-radius: 16px;
