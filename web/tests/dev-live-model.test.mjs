@@ -17,7 +17,7 @@ const outfile = join(dir, 'adapter.mjs');
 await build({
   stdin: {
     contents:
-      "export { devLiveModel, liveModelFromEnv } from './lib/dev-live-model'; export { fakeModel, validateChanges } from './lib/ai-extraction';",
+      "export { devLiveModel, liveModelFromEnv } from './lib/dev-live-model'; export { fakeModel, validateChanges, buildPrompt } from './lib/ai-extraction';",
     resolveDir: process.cwd(),
     loader: 'ts',
   },
@@ -339,4 +339,58 @@ test('모델이 ‹로 무력화된 원문을 인용해도 원문 위치와 원�
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+// 2026-11-09: 원문에 공수가 없으면 AI가 추정해 채우고, 추정임을 따로 표시한다.
+test('AI 지시문은 신규 업무 공수를 원문에 없으면 하루 8시간 기준으로 추정하라고 한다', () => {
+  const prompt = api.buildPrompt(input);
+  assert.match(prompt, /공수가 원문에 없으면.*추정/);
+  assert.match(prompt, /하루 8시간/);
+});
+
+test('실제 모델이 추정한 공수는 채워진 채 AI 추정으로 표시되고 확인 필요가 붙는다', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    responseWith([liveCreate({ remaining: 6, remainingBasis: 'estimate' })]);
+  try {
+    const model = api.devLiveModel({ apiKey: 'k', model: 'm', reasoningEffort: 'low' });
+    const checked = api.validateChanges((await model.run(input)).changes, input);
+    const c = checked.changes[0];
+    assert.equal(c.after.remaining, 6);
+    assert.equal(c.after.remainingEstimated, true);
+    assert.match(c.needsReview, /AI 추정/);
+    // 업무 자체는 원문 근거가 있으므로 사실로 남는다.
+    assert.equal(c.basis, 'fact');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('원문에 적힌 공수는 추정 표시 없이 그대로 쓴다', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => responseWith([liveCreate({ remainingBasis: 'fact' })]);
+  try {
+    const model = api.devLiveModel({ apiKey: 'k', model: 'm', reasoningEffort: 'low' });
+    const c = api.validateChanges((await model.run(input)).changes, input).changes[0];
+    assert.equal(c.after.remaining, 8);
+    assert.equal('remainingEstimated' in c.after, false);
+    assert.equal(c.needsReview, '');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('실제 모델 응답 스키마는 공수 근거(remainingBasis)를 반드시 받는다', () => {
+  const adapter = readFileSync('lib/dev-live-model.ts', 'utf8');
+  assert.match(adapter, /remainingBasis/);
+  assert.match(adapter, /required: \[[^\]]*'remainingBasis'/);
+});
+
+test('로컬 가짜 모델도 공수가 없는 신규 업무에 추정 공수를 채운다', async () => {
+  const fakeInput = { ...input, source: { id: 's', body: '- 새 업무: 로그인 화면 만들기' } };
+  const out = await api.fakeModel().run(fakeInput);
+  const c = api.validateChanges(out.changes, fakeInput).changes[0];
+  assert.equal(c.kind, 'createTask');
+  assert.equal(typeof c.after.remaining, 'number');
+  assert.equal(c.after.remainingEstimated, true);
 });

@@ -28,6 +28,8 @@ type LiveChangeItem = {
   title: string | null;
   person: number | null;
   remaining: number | null;
+  /** remaining이 원문에 적힌 값이면 fact, 모델이 추정했으면 estimate. */
+  remainingBasis: 'fact' | 'estimate' | null;
   status: 'todo' | 'in_progress' | null;
   dueAt: string | null;
   evidenceQuote: string | null;
@@ -65,7 +67,15 @@ const SCHEMA = {
             type: ['integer', 'null'],
             description: '팀원 목록의 person 번호. 근거가 없으면 null.',
           },
-          remaining: { type: ['number', 'null'], description: '남은 공수(시간).' },
+          remaining: {
+            type: ['number', 'null'],
+            description: '남은 공수(시간). createTask면 항상 채운다(원문에 없으면 추정).',
+          },
+          remainingBasis: {
+            type: ['string', 'null'],
+            enum: ['fact', 'estimate', null],
+            description: 'remaining이 원문에 적힌 값이면 fact, 추정했으면 estimate. remaining이 없으면 null.',
+          },
           status: { type: ['string', 'null'], enum: ['todo', 'in_progress', null] },
           dueAt: { type: ['string', 'null'], description: 'ISO 8601 날짜/시각 문자열.' },
           evidenceQuote: {
@@ -81,6 +91,7 @@ const SCHEMA = {
           'title',
           'person',
           'remaining',
+          'remainingBasis',
           'status',
           'dueAt',
           'evidenceQuote',
@@ -226,6 +237,7 @@ function buildAfter(item: LiveChangeItem): Record<string, unknown> {
         title: item.title,
         person: item.person,
         remaining: item.remaining,
+        ...(item.remainingBasis === 'estimate' ? { remainingEstimated: true } : {}),
         // 이 어댑터는 새 업무 사이의 의존관계는 제안하지 않는다(스키마 범위 밖).
         dependsOn: [],
       };
