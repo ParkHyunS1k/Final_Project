@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, Check, Flag } from 'lucide-react';
+import { CalendarDays, Check, Flag } from 'lucide-react';
 import { deadlineDays, seoulTime, type Task as ServerTask } from '@/lib/sprint';
 import type { Wire } from '@/lib/wire';
 import { chipStage, dayProgress } from '@/lib/race';
@@ -23,7 +23,6 @@ export function DeadlineCalendar({
   tasks,
   people,
   active,
-  onPlan,
 }: {
   startedAt: string | null;
   deadline: string | null;
@@ -33,7 +32,6 @@ export function DeadlineCalendar({
   active: boolean;
   tasks: Task[];
   people: { name: string }[];
-  onPlan: () => void;
 }) {
   const calendar =
     startedAt && deadline ? deadlineDays(startedAt, deadline, tasks) : null;
@@ -113,12 +111,6 @@ export function DeadlineCalendar({
               );
             })}
           </ol>
-          {calendar.undated.length > 0 && (
-            <button className="text-link calendar-undated" onClick={onPlan}>
-              마감 미정 {calendar.undated.length}개 · 업무에서 정하기{' '}
-              <ArrowRight size={15} />
-            </button>
-          )}
         </>
       )}
     </section>

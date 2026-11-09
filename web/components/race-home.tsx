@@ -31,12 +31,31 @@ export function FocusCountdown({
   tasks,
   person,
   now,
+  deadline,
 }: {
   tasks: Task[];
   person: number;
   now: number;
+  /** 프로젝트 마감. 마감 정해진 내 업무가 없으면 이것을 센다(시안 v7·v9). 긴장 효과는 없다. */
+  deadline?: string | null;
 }) {
   const task = focusTask(tasks, person);
+  if (!task && deadline) {
+    const clock = focusClock(Date.parse(deadline) - now);
+    return (
+      <section className="focus-hero" aria-label="프로젝트 마감">
+        <p className="focus-label">
+          <em>프로젝트 마감</em>까지
+        </p>
+        <div className="focus-clock project" role="timer">
+          {clock.slice(0, -2)}
+          <span className="focus-sec" key={clock.slice(-2)}>
+            {clock.slice(-2)}
+          </span>
+        </div>
+      </section>
+    );
+  }
   if (!task)
     return (
       <section className="focus-hero" aria-label="내 업무 마감">
@@ -109,10 +128,6 @@ export function TeamCheckins({
               </div>
             );
           })}
-        <p className="tiny muted">
-          하루 한 번 진행 보고로 완료·남은 일·막힘을 남겨주세요. 보고가 없어도 완주 판정에는 영향을
-          주지 않습니다.
-        </p>
       </div>
     </section>
   );
@@ -153,7 +168,9 @@ export function RaceHome({
           </div>
         </div>
       ) : (
-        active && <FocusCountdown tasks={tasks} person={me.person} now={now} />
+        active && (
+          <FocusCountdown tasks={tasks} person={me.person} now={now} deadline={deadline} />
+        )
       )}
       <DeadlineCalendar
         startedAt={startedAt}
@@ -162,7 +179,6 @@ export function RaceHome({
         tasks={tasks}
         people={people}
         active={active}
-        onPlan={onTasks}
       />
     </>
   );

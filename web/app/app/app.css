@@ -1054,3 +1054,98 @@
     transition: none;
   }
 }
+
+/* 홈 시안 v9 (2026-11-09): 맨 위 프로젝트 줄 대신 상단 바에 프로젝트 선택·역할 추천, 바 아래에 화면 전환. */
+.hub-workspace .race-title {
+  flex: 0 1 auto;
+}
+.race-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  min-width: 0;
+}
+.race-picker select,
+.race-picker a {
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+}
+.race-picker select {
+  max-width: 220px;
+  min-width: 0;
+  cursor: pointer;
+}
+.race-picker select option {
+  color: var(--ink);
+  background: var(--background);
+}
+.race-picker a {
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.race-picker a:hover,
+.race-picker select:hover {
+  border-color: color-mix(in srgb, currentColor 50%, transparent);
+}
+.race-clock-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+.race-clock-wrap small {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.race-views-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 18px;
+}
+.race-views {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--gray-25);
+}
+.race-view {
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-500);
+}
+.race-view:hover {
+  color: var(--ink);
+}
+.race-view.on {
+  background: var(--heat-500);
+  color: #fff;
+}
+@media (max-width: 720px) {
+  .hub-workspace .race-bar {
+    flex-wrap: wrap;
+  }
+  .race-picker {
+    order: 3;
+    width: 100%;
+  }
+  .race-views-row {
+    justify-content: stretch;
+  }
+  .race-views {
+    width: 100%;
+  }
+  .race-view {
+    flex: 1;
+  }
+}

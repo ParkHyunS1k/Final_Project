@@ -46,6 +46,10 @@ export type WorkspaceNav = {
   reviewPending: string[];
   /** 서버에서 낼 평가 목록을 다시 받는다(이 화면에서 프로젝트가 끝난 경우). */
   refreshReviews: () => void;
+  /** 통합 앱에서만: 상단 바 프로젝트 이름 옆에 둘 프로젝트 선택·역할 추천(홈 시안 v9). */
+  picker?: ReactNode;
+  /** 통합 앱에서만: 상단 바 아래에 둘 진행 현황·업무·프로젝트 전환. */
+  tabs?: ReactNode;
 };
 function WorkspaceMenu({
   view,
@@ -303,6 +307,51 @@ export function ProjectWorkspace({
       .finally(() => setLoaded(true));
     // onSelect는 통합 앱의 state setter라 바뀌지 않는다.
   }, [embedded, onSelect]);
+  // 통합 앱(embedded) 상단 바에 들어갈 조각. 맨 위 프로젝트 줄은 없앴다(홈 시안 v9, 2026-11-09).
+  const picker = embedded && (
+    <div className="race-picker">
+      <select
+        aria-label="프로젝트 선택"
+        value={selected}
+        onChange={(e) =>
+          location.assign(
+            e.target.value === '__new'
+              ? '/app?tab=templates'
+              : '/app?tab=work&project=' + encodeURIComponent(e.target.value),
+          )
+        }
+      >
+        <option value="" disabled>
+          프로젝트 선택
+        </option>
+        {projects.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.title}
+          </option>
+        ))}
+        <option value="__new">+ 새 프로젝트</option>
+      </select>
+      {selected && (
+        <a href={'/app?tab=team&project=' + encodeURIComponent(selected)}>
+          역할 추천
+        </a>
+      )}
+    </div>
+  );
+  const tabs = embedded && (
+    <nav className="race-views" aria-label="프로젝트 화면">
+      {workspaceViews.map((item) => (
+        <button
+          key={item.id}
+          className={'race-view' + (view === item.id ? ' on' : '')}
+          aria-current={view === item.id ? 'page' : undefined}
+          onClick={() => setView(item.id)}
+        >
+          {item.id === 'home' ? '진행 현황' : item.label}
+        </button>
+      ))}
+    </nav>
+  );
   return (
     <SidebarProvider
       className={'workspace-shell' + (embedded ? ' hub-workspace' : '')}
@@ -373,55 +422,8 @@ export function ProjectWorkspace({
         </Sidebar>
       )}
       <Body className="workspace-body">
-        {embedded && (
-          <div className="hub-work-toolbar">
-            <label>
-              프로젝트{' '}
-              <select
-                aria-label="프로젝트 선택"
-                value={selected}
-                onChange={(e) =>
-                  location.assign(
-                    '/app?tab=work&project=' +
-                      encodeURIComponent(e.target.value),
-                  )
-                }
-              >
-                <option value="" disabled>
-                  프로젝트 선택
-                </option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <a className="btn" href="/app?tab=templates">
-              새 프로젝트
-            </a>
-            {selected && (
-              <a
-                className="btn"
-                href={'/app?tab=team&project=' + encodeURIComponent(selected)}
-              >
-                역할 추천
-              </a>
-            )}
-            {selected && (
-              <nav aria-label="프로젝트 화면">
-                {workspaceViews.map((item) => (
-                  <button
-                    key={item.id}
-                    className={'btn ' + (view === item.id ? 'primary' : '')}
-                    onClick={() => setView(item.id)}
-                  >
-                    {item.id === 'home' ? '진행 현황' : item.label}
-                  </button>
-                ))}
-              </nav>
-            )}
-          </div>
+        {embedded && !selected && projects.length > 0 && (
+          <div className="hub-work-toolbar">{picker}</div>
         )}
         {!(selected && !creating && !invite && !browsing) && (
           <header className="workspace-bar">
@@ -552,7 +554,7 @@ export function ProjectWorkspace({
         ) : browsing && !creating ? (
           <TeamDirectory restriction={restriction} />
         ) : selected && !creating ? (
-          children(selected, { view, setView, mine, setMine, restriction, reviewPending, refreshReviews })
+          children(selected, { view, setView, mine, setMine, restriction, reviewPending, refreshReviews, picker: picker || undefined, tabs: tabs || undefined })
         ) : loaded && !creating ? (
           <section className="project-panel">
             <h1>첫 프로젝트를 골라보세요.</h1>

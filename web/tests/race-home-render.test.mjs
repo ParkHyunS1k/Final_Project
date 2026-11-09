@@ -211,3 +211,57 @@ void test('캘린더 칩: 마감 초과는 빨강, 완료는 취소선', () => {
   assert.doesNotMatch(rule('.deadline-card.late'), /--heat-/);
   assert.match(rule('.deadline-card.done .deadline-title'), /line-through/);
 });
+
+// 홈 시안 v9(2026-11-09): 마감 정해진 내 업무가 없으면 프로젝트 마감까지 세고, 상단 시계에 이름표를 붙인다.
+void test('카운트다운: 마감 정해진 내 업무가 없으면 프로젝트 마감까지 센다', () => {
+  const html = renderToString(
+    createElement(FocusCountdown, {
+      tasks: [task(1, 0, 'A', null)],
+      person: 0,
+      now: NOW,
+      deadline: new Date(NOW + 3 * H).toISOString(),
+    }),
+  );
+  assert.match(text(html), /프로젝트 마감까지/);
+  assert.match(text(html), /03:00:00/);
+  assert.match(html, /role="timer"/);
+  assert.doesNotMatch(text(html), /대기 중/);
+});
+
+void test('상단 시계: 진행 중이면 프로젝트 마감 이름표를 붙인다', () => {
+  const clock = renderToString(
+    createElement(RaceClock, {
+      lifecycle: 'active',
+      deadline: new Date(NOW + 5 * H).toISOString(),
+      asOf: new Date(NOW).toISOString(),
+      durationDays: 7,
+      onZero: () => {},
+    }),
+  );
+  assert.match(text(clock), /프로젝트 마감/);
+  assert.match(text(clock), /05:00:00/);
+});
+
+void test('시안 v7대로: 체크인 안내 문장과 캘린더의 마감 미정 링크가 없다', () => {
+  const members = [{ display_name: '도윤', person: 0, left_at: null }];
+  const checks = text(
+    renderToString(
+      createElement(TeamCheckins, { members, me: { person: 0 }, tasks: [], checkins: [], now: NOW, active: true }),
+    ),
+  );
+  assert.doesNotMatch(checks, /하루 한 번/);
+  const cal = text(
+    renderToString(
+      createElement(DeadlineCalendar, {
+        startedAt: new Date(NOW - H).toISOString(),
+        deadline: new Date(NOW - H + 168 * H).toISOString(),
+        now: NOW,
+        tasks: [task(1, 0, 'A', null)],
+        people: [{ name: '도윤' }],
+        onPlan: () => {},
+        active: true,
+      }),
+    ),
+  );
+  assert.doesNotMatch(cal, /마감 미정/);
+});
