@@ -8,6 +8,7 @@ import {
   createBody,
   scopeText,
   levelOf,
+  checklistFor,
 } from '../lib/idea-dice.ts';
 import { SCOPE_LABELS } from '../lib/career/catalog.ts';
 
@@ -101,6 +102,17 @@ void test('팀으로 시작하고 공개를 고를 때만 팀 찾기에 공개�
   assert.equal(createBody({ ...base, mode: 'team', listed: true }).listed, true);
   assert.equal(createBody({ ...base, mode: 'team', listed: false }).listed, false);
   assert.equal(createBody({ ...base, mode: 'solo', listed: true }).listed, false);
+});
+
+void test('체크리스트는 고른 단계까지 누적된다', () => {
+  const [one, two, three] = [1, 2, 3].map(checklistFor);
+  assert.ok(one.length >= 2);
+  assert.deepEqual(two.slice(0, one.length), one);
+  assert.deepEqual(three.slice(0, two.length), two);
+  assert.ok(two.length > one.length && three.length > two.length);
+  assert.ok(two.some((t) => /3명/.test(t)));
+  assert.ok(three.some((t) => /배포/.test(t)));
+  assert.deepEqual(checklistFor(99), three);
 });
 
 void test('levelOf는 접두어로 단계를 찾고, 없거나 모르면 검증까지', () => {

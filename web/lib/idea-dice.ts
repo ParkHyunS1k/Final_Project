@@ -18,7 +18,13 @@ export const WORDS: readonly string[] = [
   '축제', '생일', '휴가', '방학', '주말', '아침', '새벽', '퇴근', '출근', '장마',
 ];
 
-export type ScopeLevel = { name: string; scope: string; criteria: string };
+export type ScopeLevel = {
+  name: string;
+  scope: string;
+  criteria: string;
+  /** 이 단계에서 새로 하는 일. 화면에는 1단계부터 고른 단계까지 누적해 보여준다(업무로 저장하지는 않는다). */
+  checklist: readonly string[];
+};
 
 // 누적 단계: 템플릿 프로젝트와 같은 3단계(2026-11-09). 2단계를 고르면 핵심 기능·흐름 완성·사용자 검증까지 한다.
 export const SCOPE_LEVELS: readonly ScopeLevel[] = [
@@ -26,18 +32,21 @@ export const SCOPE_LEVELS: readonly ScopeLevel[] = [
     name: '핵심만',
     scope: '핵심 기능 1개가 처음부터 끝까지 동작한다',
     criteria: '핵심 기능 1개를 끊김 없이 시연할 수 있다',
+    checklist: ['핵심 기능 1개 고르기', '핵심 기능이 처음부터 끝까지 동작하게 만들기'],
   },
   {
     name: '검증까지',
     scope:
       '사용자가 목적을 이루는 흐름 하나를 완성하고, 팀 밖 사람 3명에게 써보게 하고 가장 큰 불편 하나를 고친다',
     criteria: '사용자 역할로 처음부터 끝까지 해낼 수 있고, 사용자 3명의 피드백과 고친 내용을 보여줄 수 있다',
+    checklist: ['들어와서 목적을 이루는 사용 흐름 완성', '팀 밖 사람 3명에게 써보게 하기', '가장 큰 불편 하나 고치기'],
   },
   {
     name: '확장까지',
     scope:
       '검증한 흐름을 배포해 누구나 주소로 써볼 수 있게 하고, 처음 보는 사람 앞에서 5분 안에 시연할 수 있게 다듬는다',
     criteria: '배포 주소에서 팀 밖의 사람이 직접 써볼 수 있고, 시연 영상이나 발표 자료로 전체 흐름을 보여줄 수 있다',
+    checklist: ['배포해서 누구나 주소로 써볼 수 있게 하기', '5분 시연 영상이나 발표 자료 만들기'],
   },
 ];
 
@@ -78,6 +87,10 @@ export type CreateBody = {
   /** 팀으로 시작하고 팀 찾기 공개에 동의했을 때만 true. */
   listed: boolean;
 };
+
+export function checklistFor(level: number) {
+  return SCOPE_LEVELS.slice(0, clampLevel(level)).flatMap((l) => l.checklist);
+}
 
 export function scopeText(level: number) {
   const l = SCOPE_LEVELS[clampLevel(level) - 1];

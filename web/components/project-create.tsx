@@ -2,7 +2,7 @@
 // 새 프로젝트 만들기: 주사위 단어 3개(잠금), 한 줄 아이디어(선택), 기능 범위 3단계(템플릿과 같음).
 // 설계: docs/superpowers/specs/2026-10-29-idea-dice-create-design.md
 import { useState } from 'react';
-import { Dices, Lock, LockOpen } from 'lucide-react';
+import { Check, Dices, Lock, LockOpen } from 'lucide-react';
 import { restrictionMessage, type RestrictionView } from '@/lib/score';
 import {
   DEFAULT_LEVEL,
@@ -10,6 +10,7 @@ import {
   createBody,
   roll,
   type CreateBody,
+  checklistFor,
 } from '@/lib/idea-dice';
 
 export function ScopeSlider({
@@ -128,6 +129,18 @@ export function ProjectCreate({
           <b>기능 범위</b>
           <ScopeSlider value={level} onChange={setLevel} />
           <p>{current.scope}</p>
+          <p className="hub-note">
+            {checklistFor(level).length}개 할 일 · 업무로 저장되지는 않아요. 만든
+            뒤 필요한 업무를 직접 추가하세요.
+          </p>
+          <ol className="hub-task-preview">
+            {checklistFor(level).map((item) => (
+              <li key={item}>
+                <Check size={14} />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ol>
           <p>
             <b>완료 기준</b> {current.criteria}
           </p>

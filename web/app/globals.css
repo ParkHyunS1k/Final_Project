@@ -1261,6 +1261,15 @@ textarea {
   align-items: center;
   margin: 12px 0;
 }
+/* 범위 체크리스트는 템플릿 미리보기와 같은 간격(.project-panel li 여백 제외). */
+.project-panel .hub-task-preview {
+  margin: 4px 0;
+  padding-left: 0;
+  list-style: none;
+}
+.project-panel .hub-task-preview li {
+  margin: 0;
+}
 /* 직접 만들기의 혼자/팀 선택은 템플릿(.hub-mode)과 같은 한 줄 배치. */
 .project-form .hub-mode label,
 .project-form .hub-check-label {

@@ -42,6 +42,10 @@ void test('만들기 화면: 단어 3개·잠금 3개·주사위, 3단계 슬라
   assert.match(html, /maxLength="100"|maxlength="100"/);
   assert.doesNotMatch(html, /name="deliverables"|필수 결과물/);
   // 템플릿처럼 혼자/팀을 고른다. 기본은 혼자, 공개 체크는 팀일 때만.
+  // 기본 단계(검증까지)의 누적 체크리스트와 항목 수를 보여준다.
+  assert.match(html, /<ol class="hub-task-preview">/);
+  assert.match(html, /팀 밖 사람 3명에게 써보게 하기/);
+  assert.match(html, /5(<!-- -->)?개 할 일/);
   assert.match(html, /어떻게 시작할까요\?/);
   assert.match(html, /<input[^>]*type="radio"[^>]*checked=""[^>]*\/>혼자 시작/);
   assert.match(html, /팀으로 시작/);
