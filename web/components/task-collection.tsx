@@ -20,7 +20,15 @@ import {
   NativeSelect,
   NativeSelectOption,
 } from '@/components/ui/native-select';
-import { Plus, Columns3, Table2, FileText, Clock3 } from 'lucide-react';
+import {
+  Plus,
+  Columns3,
+  Table2,
+  FileText,
+  Clock3,
+  CalendarClock,
+  Link2,
+} from 'lucide-react';
 import {
   people as samplePeople,
   type Sprint as ServerSprint,
@@ -82,7 +90,8 @@ export function TaskCollection({
   onEdit: (task: Task) => void;
   onAdd: () => void;
 }) {
-  const [view, setView] = useState('table');
+  // 보드가 기본이다(2026-11-09). 표는 날짜·예상 완료를 한눈에 볼 때 쓴다.
+  const [view, setView] = useState('board');
   const [selected, setSelected] = useState<number | null>(null);
   const people = sprint.people ?? samplePeople;
   const tasks = sprint.tasks.filter((t) => !mine || t.person === me.person);
@@ -120,12 +129,11 @@ export function TaskCollection({
           );
         }}
       >
-        {statuses
-          .map((s) => (
-            <NativeSelectOption key={s.id} value={s.id}>
-              {s.label}
-            </NativeSelectOption>
-          ))}
+        {statuses.map((s) => (
+          <NativeSelectOption key={s.id} value={s.id}>
+            {s.label}
+          </NativeSelectOption>
+        ))}
       </NativeSelect>
     );
   }
@@ -184,7 +192,10 @@ export function TaskCollection({
               </TableHeader>
               <TableBody>
                 {tasks.map((t) => (
-                  <TableRow key={t.id} className={blocked(t) ? 'is-blocked' : undefined}>
+                  <TableRow
+                    key={t.id}
+                    className={blocked(t) ? 'is-blocked' : undefined}
+                  >
                     <TableCell>
                       <button
                         className="task-title-button"
@@ -199,7 +210,9 @@ export function TaskCollection({
                         {t.dependsOn.length
                           ? ` · 선행 ${t.dependsOn.length}개`
                           : ''}
-                        {!t.done && t.dueAt && Date.parse(t.dueAt) < Date.parse(asOf)
+                        {!t.done &&
+                        t.dueAt &&
+                        Date.parse(t.dueAt) < Date.parse(asOf)
                           ? ' · 마감 지남'
                           : ''}
                       </span>
@@ -209,9 +222,7 @@ export function TaskCollection({
                       <NativeSelect
                         aria-label={`${t.title} 담당자`}
                         value={t.person}
-                        disabled={
-                          !owner || !writable(t) || t.done
-                        }
+                        disabled={!owner || !writable(t) || t.done}
                         onChange={(e) =>
                           void mutate(
                             'editTask',
@@ -259,11 +270,7 @@ export function TaskCollection({
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={
-                          blocked(t) ? 'schedule-warning' : ''
-                        }
-                      >
+                      <span className={blocked(t) ? 'schedule-warning' : ''}>
                         {t.done
                           ? '결과 확인 완료'
                           : plan.finishes[t.id]
@@ -281,59 +288,86 @@ export function TaskCollection({
         </TabsContent>
         <TabsContent value="board">
           <div className="task-board">
-            {statuses
-              .filter(
-                () => true,
-              )
-              .map((s) => (
-                <section
-                  className="board-column"
-                  key={s.id}
-                  aria-label={s.label}
-                >
-                  <h2>
-                    <span className={`status-dot status-${s.id}`} />
-                    {s.label}
-                    <span>
-                      {tasks.filter((t) => statusOf(t) === s.id).length}
-                    </span>
-                  </h2>
-                  {tasks
-                    .filter((t) => statusOf(t) === s.id)
-                    .map((t) => (
-                      <article
-                        className={'board-card' + (blocked(t) ? ' is-blocked' : '')}
-                        key={t.id}
+            {statuses.map((s) => (
+              <section
+                className={`board-column status-${s.id}`}
+                key={s.id}
+                aria-label={s.label}
+              >
+                <h2>
+                  <span className={`status-dot status-${s.id}`} />
+                  {s.label}
+                  <span>
+                    {tasks.filter((t) => statusOf(t) === s.id).length}
+                  </span>
+                </h2>
+                {tasks
+                  .filter((t) => statusOf(t) === s.id)
+                  .map((t) => (
+                    <article
+                      className={
+                        'board-card' + (blocked(t) ? ' is-blocked' : '')
+                      }
+                      key={t.id}
+                    >
+                      <button
+                        className="task-title-button"
+                        onClick={() => setSelected(t.id)}
                       >
+                        {t.title}
+                        {blocked(t) && <span className="race-tag">병목</span>}
+                      </button>
+                      <div className="board-card-meta">
+                        <span className="board-avatar" aria-hidden="true">
+                          {(people[t.person]?.name ?? '?').slice(0, 1)}
+                        </span>
+                        {people[t.person]?.name ?? '미배정'}
+                        {!!t.dependsOn.length && (
+                          <span className="board-card-dep">
+                            <Link2 size={12} />
+                            선행 {t.dependsOn.length}
+                          </span>
+                        )}
+                      </div>
+                      {!t.done && (
+                        <p
+                          className={
+                            'board-card-due' +
+                            (blocked(t) ||
+                            (t.dueAt && Date.parse(t.dueAt) < Date.parse(asOf))
+                              ? ' schedule-warning'
+                              : '')
+                          }
+                        >
+                          <CalendarClock size={13} />
+                          {t.dueAt
+                            ? `마감 ${seoulTime(t.dueAt).slice(5)}` +
+                              (Date.parse(t.dueAt) < Date.parse(asOf)
+                                ? ' · 지남'
+                                : '')
+                            : plan.finishes[t.id]
+                              ? `예상 완료 ${seoulTime(plan.finishes[t.id]).slice(5)}`
+                              : '마감 안에 배치 불가'}
+                        </p>
+                      )}
+                      <div className="board-card-bottom">
+                        {statusControl(t)}
                         <button
-                          className="task-title-button"
+                          className="hours-button"
+                          aria-label={`${t.title} 남은 시간 편집`}
                           onClick={() => setSelected(t.id)}
                         >
-                          {t.title}
-                          {blocked(t) && <span className="race-tag">병목</span>}
+                          <Clock3 size={13} />
+                          {t.remaining}h
                         </button>
-                        <p>
-                          {people[t.person]?.name ?? '미배정'} ·{' '}
-                          업무
-                        </p>
-                        <div className="board-card-bottom">
-                          {statusControl(t)}
-                          <button
-                            className="hours-button"
-                            aria-label={`${t.title} 남은 시간 편집`}
-                            onClick={() => setSelected(t.id)}
-                          >
-                            <Clock3 size={13} />
-                            {t.remaining}h
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  {!tasks.some((t) => statusOf(t) === s.id) && (
-                    <p className="board-empty">업무 없음</p>
-                  )}
-                </section>
-              ))}
+                      </div>
+                    </article>
+                  ))}
+                {!tasks.some((t) => statusOf(t) === s.id) && (
+                  <p className="board-empty">업무 없음</p>
+                )}
+              </section>
+            ))}
           </div>
         </TabsContent>
       </Tabs>
@@ -434,9 +468,7 @@ function TaskDetail({
     >
       <SheetContent className="task-detail-sheet">
         <SheetHeader>
-          <p className="work-kicker">
-            업무
-          </p>
+          <p className="work-kicker">업무</p>
           <SheetTitle>{task.title}</SheetTitle>
           <SheetDescription>
             설명과 진행 상황, 결과물을 함께 확인합니다.
