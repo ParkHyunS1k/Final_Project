@@ -692,3 +692,49 @@ export const githubLinkEvents = pgTable(
   },
   (t) => [index('idx_github_link_events_user').on(t.userId, t.createdAt)],
 ).enableRLS();
+
+// 프로젝트 GitHub 저장소(2026-11-09). 이슈 가져오기와 학습 확인 기본 저장소. 팀장만 바꾼다.
+// 업무 revision과 분리한다: 바꿔도 승인 대기 중인 AI 변경안이 무효가 되지 않게 자체 version을 둔다.
+export const projectRepos = pgTable('project_repos', {
+  projectId: text('project_id').primaryKey(),
+  repoOwner: text('repo_owner').notNull(),
+  repoName: text('repo_name').notNull(),
+  version: integer('version').notNull(),
+  updatedBy: text('updated_by').notNull(),
+  updatedAt: timestamp('updated_at', tz).notNull(),
+}).enableRLS();
+
+// 저장소 등록·변경 기록. action: set.
+export const projectRepoEvents = pgTable(
+  'project_repo_events',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id').notNull(),
+    userId: text('user_id').notNull(),
+    repoOwner: text('repo_owner').notNull(),
+    repoName: text('repo_name').notNull(),
+    action: text('action').notNull(),
+    createdAt: timestamp('created_at', tz).notNull(),
+  },
+  (t) => [index('idx_project_repo_events').on(t.projectId, t.createdAt)],
+).enableRLS();
+
+// 이슈로 만든 원문 안의 이슈별 위치. 팀원 아닌 작성자 경고와 다시 가져오기 중복 경고에 쓴다.
+// repo(owner/name)는 저장소를 바꾼 뒤 같은 번호를 다른 이슈로 오인하지 않게 둔다.
+export const sourceIssueSpans = pgTable(
+  'source_issue_spans',
+  {
+    sourceId: text('source_id').notNull(),
+    projectId: text('project_id').notNull(),
+    repo: text('repo').notNull(),
+    issueNumber: integer('issue_number').notNull(),
+    start: integer('start').notNull(),
+    end: integer('end').notNull(),
+    authorLogin: text('author_login').notNull(),
+    authorIsMember: boolean('author_is_member').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sourceId, t.issueNumber] }),
+    index('idx_source_issue_spans_repo').on(t.projectId, t.repo, t.issueNumber),
+  ],
+).enableRLS();
