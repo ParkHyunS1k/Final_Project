@@ -814,6 +814,8 @@
   background: transparent;
   margin: 0;
   min-width: 0;
+  /* 통합 앱에서는 SidebarInset(flex-1) 대신 section이라 내용 폭만큼만 줄어들었다. 남은 폭을 채운다. */
+  flex: 1;
 }
 .hub-workspace [data-sidebar='trigger'] {
   display: none;
