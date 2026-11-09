@@ -220,7 +220,12 @@ export async function POST(request: Request) {
         // GitHub 이슈로 만든 원문이면 팀원 아닌 작성자·다시 가져온 이슈 경고를 코드로 붙인다(승인은 막지 않음).
         const spans = await readIssueSpans(source.id);
         if (spans.length)
-          changes = issueWarnings(changes, spans, await importedIssueNumbers(projectId, spans[0].repo, source.id));
+          changes = issueWarnings(
+            changes,
+            spans,
+            await importedIssueNumbers(projectId, spans[0].repo, source.id),
+            source.body,
+          );
       } catch (e) {
         // 모델 오류·잘못된 구조는 검토 가능한 실패로 남기고 업무는 바꾸지 않는다.
         error = e instanceof Error ? e.message : '모델 응답을 처리하지 못했습니다.';

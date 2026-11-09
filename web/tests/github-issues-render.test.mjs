@@ -76,3 +76,12 @@ void test('배너: 팀원 아닌 작성자가 있으면 문구, 없으면 아무
   assert.match(html, /팀원이 아닌 사람이 쓴 이슈 3건이 포함되어 있습니다 \(@a, @b\)/);
   assert.equal(renderToString(createElement(NonMemberBanner, { spans: [{ authorLogin: 'alice', authorIsMember: true }] })), '');
 });
+
+void test('피커: 20개를 넘게 고르면 버튼이 꺼지고 한도를 알려준다', () => {
+  const issues = Array.from({ length: 21 }, (_, i) => item(i + 1));
+  const html = renderToString(
+    createElement(GithubIssuePicker, { issues, checked: initialChecked(issues), busy: false, onToggle: noop, onImport: noop }),
+  );
+  assert.match(html, /<button[^>]*disabled[^>]*>21개 가져오기<\/button>/);
+  assert.match(html, /한 번에 20개까지 가져올 수 있어요/);
+});

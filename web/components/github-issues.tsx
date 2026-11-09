@@ -17,6 +17,8 @@ export type PickerIssue = {
 type RepoView = { owner: string; name: string; version: number; url: string } | null;
 type Excluded = { number: number; reason: 'closed' | 'pull_request' | 'missing' };
 
+// 서버 한도와 같다(lib/github-issues.ts parseIssueNumbers).
+const MAX_PICK = 20;
 const REASON: Record<Excluded['reason'], string> = { closed: '닫힘', pull_request: 'PR', missing: '없음' };
 
 async function call<T>(path: string, body?: Record<string, unknown>): Promise<T> {
@@ -50,6 +52,7 @@ export function GithubIssuePicker({
   onImport: () => void;
 }) {
   const count = issues.filter((i) => checked[i.number]).length;
+  const tooMany = count > MAX_PICK;
   return (
     <div className="issue-picker">
       {issues.length === 0 ? (
@@ -76,7 +79,8 @@ export function GithubIssuePicker({
           ))}
         </ul>
       )}
-      <button className="btn primary" disabled={busy || count === 0} onClick={onImport}>
+      {tooMany && <p className="tiny muted">{`한 번에 ${MAX_PICK}개까지 가져올 수 있어요. 체크를 줄여주세요.`}</p>}
+      <button className="btn primary" disabled={busy || count === 0 || tooMany} onClick={onImport}>
         {`${count}개 가져오기`}
       </button>
     </div>

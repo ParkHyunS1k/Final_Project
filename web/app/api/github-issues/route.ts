@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       now,
     );
     if (!sourceId)
-      throw new PolicyError('저장하는 사이에 프로젝트가 종료되었거나 권한이 바뀌었습니다. 최신 상태를 확인해주세요.');
+      throw new PolicyError('저장하는 사이에 프로젝트가 종료되었거나 팀장 권한이 바뀌었습니다. 최신 상태를 확인해주세요.', 403);
     return reply({ sourceId, included: built.included, total: built.total, excluded }, 201);
   } catch (e) {
     return failure(e);

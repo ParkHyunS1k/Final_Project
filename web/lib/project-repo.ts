@@ -11,6 +11,9 @@ export type ProjectRepo = { owner: string; name: string; version: number };
 
 const OWNER_NOW =
   "EXISTS(SELECT 1 FROM project_members m WHERE m.project_id=? AND m.user_id=? AND m.role='owner' AND m.left_at IS NULL)";
+// 준비·진행 중이고 마감 전인 프로젝트(WRITABLE_PROJECT와 같은 상태 조건).
+const OPEN_NOW =
+  "EXISTS(SELECT 1 FROM project_policy p WHERE p.project_id=? AND p.lifecycle IN ('draft','active') AND (p.deadline_at IS NULL OR p.deadline_at > now()))";
 
 export async function readProjectRepo(projectId: string): Promise<ProjectRepo | null> {
   const r = await database()
@@ -35,14 +38,18 @@ export async function setProjectRepo(
     expectedVersion === 0
       ? 'INSERT INTO project_repos(project_id,repo_owner,repo_name,version,updated_by,updated_at) SELECT ?,?,?,1,?,? WHERE ' +
         OWNER_NOW +
+        ' AND ' +
+        OPEN_NOW +
         ' ON CONFLICT (project_id) DO NOTHING RETURNING project_id'
       : 'UPDATE project_repos SET repo_owner=?,repo_name=?,version=version+1,updated_by=?,updated_at=? WHERE project_id=? AND version=? AND ' +
         OWNER_NOW +
+        ' AND ' +
+        OPEN_NOW +
         ' RETURNING project_id';
   const args =
     expectedVersion === 0
-      ? [projectId, repo.owner, repo.name, userId, now, projectId, userId]
-      : [repo.owner, repo.name, userId, now, projectId, expectedVersion, projectId, userId];
+      ? [projectId, repo.owner, repo.name, userId, now, projectId, userId, projectId]
+      : [repo.owner, repo.name, userId, now, projectId, expectedVersion, projectId, userId, projectId];
   const written = await db
     .prepare(
       `WITH w AS (${write}) INSERT INTO project_repo_events(id,project_id,user_id,repo_owner,repo_name,action,created_at)` +
@@ -53,6 +60,8 @@ export async function setProjectRepo(
   if (written.meta.changes !== 1) {
     const owner = await db.prepare('SELECT ' + OWNER_NOW + ' AS ok').bind(projectId, userId).first();
     if (!owner?.ok) throw new PolicyError('팀장만 저장소를 등록·변경할 수 있습니다.', 403);
+    const open = await db.prepare('SELECT ' + OPEN_NOW + ' AS ok').bind(projectId).first();
+    if (!open?.ok) throw new PolicyError('종료되었거나 마감이 지난 프로젝트는 저장소를 바꿀 수 없습니다.', 409);
     throw new PolicyError('다른 사람이 먼저 저장소를 바꿨습니다. 새로고침 후 다시 시도해주세요.', 409);
   }
   return { owner: repo.owner, name: repo.name, version };
@@ -74,9 +83,12 @@ export async function createIssueSource(
       .prepare(
         'INSERT INTO source_documents(id,project_id,author_id,body,origin,captured_at,hash,supersedes,created_at)' +
           ' SELECT ?,p.project_id,?,?,?,?,?,NULL,?' +
-          WRITABLE_PROJECT,
+          WRITABLE_PROJECT +
+          // 이슈 가져오기는 팀장만: 저장 시점에도 현재 팀장인지 함께 건다.
+          ' AND ' +
+          OWNER_NOW,
       )
-      .bind(id, userId, input.body, input.origin, now.toISOString(), hash, now.toISOString(), projectId, userId),
+      .bind(id, userId, input.body, input.origin, now.toISOString(), hash, now.toISOString(), projectId, userId, projectId, userId),
     ...spans.map((s) =>
       db
         .prepare(
@@ -125,14 +137,15 @@ export async function importedIssueNumbers(
   const numbers = new Set<number>();
   if (!spans.results.length) return numbers;
   const apps = await db
-    .prepare(
-      'SELECT source_id,entries FROM ai_change_applications a WHERE a.project_id=? AND a.reverts IS NULL' +
-        ' AND NOT EXISTS(SELECT 1 FROM ai_change_applications r WHERE r.project_id=a.project_id AND r.reverts=a.id)',
-    )
+    .prepare('SELECT id,reverts,entries FROM ai_change_applications WHERE project_id=?')
     .bind(projectId)
-    .all<{ source_id: string | null; entries: AppliedEntry[] }>();
+    .all<{ id: string; reverts: string | null; entries: AppliedEntry[] }>();
+  // 되돌린 변경만 뺀다(일부 되돌리기면 남은 업무는 그대로 센다).
+  const reverted = new Set<string>();
+  for (const r of apps.results) if (r.reverts) for (const e of r.entries) reverted.add(`${r.reverts}:${e.changeId}`);
   for (const a of apps.results)
-    for (const e of a.entries) {
+    for (const e of a.reverts ? [] : a.entries) {
+      if (reverted.has(`${a.id}:${e.changeId}`)) continue;
       const m = e.kind === 'createTask' ? /^(.+)#(\d+)-(\d+)$/.exec(e.candidateKey ?? '') : null;
       if (!m) continue;
       const [, sourceId, start, end] = [m[0], m[1], Number(m[2]), Number(m[3])] as const;

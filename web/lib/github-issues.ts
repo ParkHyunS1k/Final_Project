@@ -163,14 +163,24 @@ export function buildIssueSource(
 
 const NON_MEMBER = '팀원이 아닌 사람이 쓴 이슈';
 
+// 인용문이 원문에 나오는 모든 위치. 같은 문장이 여러 이슈에 있으면 모두 본다.
+function occurrences(body: string, evidence: { start: number; end: number; quote?: string }) {
+  const at = [{ start: evidence.start, end: evidence.end }];
+  const quote = evidence.quote ?? '';
+  if (!quote) return at;
+  for (let i = body.indexOf(quote); i >= 0; i = body.indexOf(quote, i + 1))
+    if (i !== evidence.start) at.push({ start: i, end: i + quote.length });
+  return at;
+}
+
 /** 근거 위치로 이슈를 찾아 경고를 붙인다. 승인은 막지 않는다(표시만). */
 export function issueWarnings<
-  T extends { kind: string; evidence: { start: number; end: number } | null; needsReview: string },
->(changes: T[], spans: IssueSpan[], imported: Set<number>): T[] {
+  T extends { kind: string; evidence: { start: number; end: number; quote?: string } | null; needsReview: string },
+>(changes: T[], spans: IssueSpan[], imported: Set<number>, body: string): T[] {
   return changes.map((c) => {
     if (!c.evidence) return c;
-    const { start, end } = c.evidence;
-    const hit = spans.filter((s) => start < s.end && end > s.start);
+    const places = occurrences(body, c.evidence);
+    const hit = spans.filter((s) => places.some((p) => p.start < s.end && p.end > s.start));
     const notes = c.needsReview ? [c.needsReview] : [];
     if (hit.some((s) => !s.authorIsMember)) notes.push(NON_MEMBER);
     if (c.kind === 'createTask')

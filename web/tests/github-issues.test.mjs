@@ -256,12 +256,12 @@ test('issueWarnings: 팀원 아닌 이슈 근거, 이미 가져온 번호의 업
     { kind: 'createTask', evidence: { start: 120, end: 130 }, needsReview: '담당자 미정' },
     { kind: 'createTask', evidence: null, needsReview: '' },
   ];
-  const out = api.issueWarnings(changes, spans, new Set([1, 2]));
+  const out = api.issueWarnings(changes, spans, new Set([1, 2]), 'x'.repeat(200));
   assert.equal(out[0].needsReview, '이미 가져온 이슈일 수 있음 (#1)');
   assert.equal(out[1].needsReview, '팀원이 아닌 사람이 쓴 이슈');
   assert.equal(out[2].needsReview, '담당자 미정 · 팀원이 아닌 사람이 쓴 이슈 · 이미 가져온 이슈일 수 있음 (#2)');
   assert.equal(out[3].needsReview, '');
-  const none = api.issueWarnings(changes.slice(0, 1), spans, new Set());
+  const none = api.issueWarnings(changes.slice(0, 1), spans, new Set(), 'x'.repeat(200));
   assert.equal(none[0].needsReview, '');
 });
 
@@ -604,4 +604,74 @@ test('원문 단건 조회에 issueSpans가 포함된다', async () => {
   assert.equal(r.issueSpans.length, 1);
   assert.equal(r.issueSpans[0].authorLogin, 'stranger');
   assert.equal(r.issueSpans[0].authorIsMember, false);
+});
+
+// ---- Codex 리뷰 반영 ----
+test('같은 인용문이 팀원 이슈와 팀원 아닌 이슈에 모두 있으면, 팀원 쪽 좌표여도 경고한다', () => {
+  const built = api.buildIssueSource(
+    [ghIssue(1, { author: 'alice', body: '로그인 끝났음' }), ghIssue(2, { author: 'stranger', body: '로그인 끝났음' })],
+    [{ login: 'alice', displayName: '홍길동' }],
+  );
+  const quote = '로그인 끝났음';
+  const start = built.body.indexOf(quote);
+  assert.ok(start < built.spans[0].end, '첫 출현은 팀원 이슈 안');
+  const out = api.issueWarnings(
+    [{ kind: 'complete', evidence: { start, end: start + quote.length, quote }, needsReview: '' }],
+    built.spans,
+    new Set(),
+    built.body,
+  );
+  assert.equal(out[0].needsReview, '팀원이 아닌 사람이 쓴 이슈');
+});
+
+test('팀장이 아니면 이슈 원문을 저장하지 않는다(저장 시점 원자 검사)', async () => {
+  const projectId = await soloProject('own-check');
+  await addMate(projectId, 'own-mate');
+  const built = api.buildIssueSource([ghIssue(1)], []);
+  assert.equal(
+    await api.createIssueSource(projectId, 'own-mate', { body: built.body, origin: 'x', repo: 'team/app' }, built.spans, new Date()),
+    null,
+  );
+  assert.equal(await one('SELECT 1 FROM source_documents WHERE project_id=?', projectId), null);
+});
+
+test('일부만 되돌리면 남은 업무의 이슈는 계속 이미 가져옴이다', async () => {
+  const projectId = await soloProject('part-owner');
+  const built = api.buildIssueSource([ghIssue(1), ghIssue(2)], []);
+  const src = await api.createIssueSource(projectId, 'part-owner', { body: built.body, origin: 'x', repo: 'team/app' }, built.spans, new Date());
+  const [s1, s2] = built.spans;
+  const appId = 'app_part';
+  await run(
+    'INSERT INTO ai_change_applications(id,project_id,proposal_id,source_id,reverts,approved_by,approved_at,revision,entries) VALUES(?,?,NULL,?,NULL,?,now(),1,?)',
+    appId,
+    projectId,
+    src,
+    'part-owner',
+    JSON.stringify([
+      { changeId: 'c1', kind: 'createTask', taskId: 1, before: {}, after: {}, edited: false, candidateKey: `${src}#${s1.start + 1}-${s1.start + 4}` },
+      { changeId: 'c2', kind: 'createTask', taskId: 2, before: {}, after: {}, edited: false, candidateKey: `${src}#${s2.start + 1}-${s2.start + 4}` },
+    ]),
+  );
+  // #1 업무만 되돌렸다.
+  await run(
+    'INSERT INTO ai_change_applications(id,project_id,proposal_id,source_id,reverts,approved_by,approved_at,revision,entries) VALUES(?,?,NULL,?,?,?,now(),2,?)',
+    'rev_part',
+    projectId,
+    src,
+    appId,
+    'part-owner',
+    JSON.stringify([{ changeId: 'c1', kind: 'createTask', taskId: 1, before: {}, after: {}, edited: false }]),
+  );
+  assert.deepEqual([...(await api.importedIssueNumbers(projectId, 'team/app', null))], [2]);
+});
+
+test('저장소 등록 중 프로젝트가 종료되면 바꾸지 않는다', async () => {
+  const projectId = await soloProject('closed-owner');
+  await run("UPDATE project_policy SET lifecycle='completed' WHERE project_id=?", projectId);
+  await assert.rejects(
+    api.setProjectRepo(projectId, 'closed-owner', { owner: 'team', name: 'app' }, 0, new Date()),
+    (e) => e instanceof api.PolicyError && e.status === 409,
+  );
+  assert.equal(await api.readProjectRepo(projectId), null);
+  assert.equal(await one('SELECT 1 FROM project_repo_events WHERE project_id=?', projectId), null);
 });
