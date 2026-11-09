@@ -505,8 +505,8 @@ async function importIssues(owner, projectId, numbers, list) {
   return (await json(await issuesPost(owner, { action: 'import', projectId, numbers, repoVersion: 1 }), 201)).sourceId;
 }
 
-test('buildPrompt: 연결한 팀원은 @아이디, 안 한 팀원은 이름만, extract-v2', () => {
-  assert.equal(api.PROMPT_VERSION, 'extract-v2');
+test('buildPrompt: 연결한 팀원은 @아이디, 안 한 팀원은 이름만, extract-v3', () => {
+  assert.equal(api.PROMPT_VERSION, 'extract-v3');
   const prompt = api.buildPrompt({
     source: { id: 's', body: '본문' },
     tasks: [],

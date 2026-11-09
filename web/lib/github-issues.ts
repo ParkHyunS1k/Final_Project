@@ -8,6 +8,7 @@ import {
   type FetchOptions,
   type Repo,
 } from './ai-review-github';
+import { neutralizeSourceTags } from './ai-extraction';
 import { MAX_SOURCE } from './source-documents';
 import { PolicyError } from './sprint-policy';
 
@@ -112,12 +113,8 @@ export function parseIssueNumbers(value: unknown): number[] {
   return unique;
 }
 
-// <source>, </ source > 등 원문 감싸기 태그를 무력화한다.
-function defuse(text: string) {
-  return text.replace(/<(?=\s*\/?\s*source)/gi, '‹');
-}
 function oneLine(text: string) {
-  return defuse(text).replace(/\s+/g, ' ').trim();
+  return neutralizeSourceTags(text).replace(/\s+/g, ' ').trim();
 }
 function clip(text: string, max: number) {
   return text.length > max ? text.slice(0, max) + '\n…(생략)' : text;
@@ -144,7 +141,7 @@ export function buildIssueSource(
       meta.join(' · '),
       issue.url,
       '---',
-      clip(defuse(issue.body), BODY_CHARS),
+      clip(neutralizeSourceTags(issue.body), BODY_CHARS),
     ].join('\n');
     const start = body ? body.length + 2 : 0;
     if (start + block.length + NOTE_RESERVE > MAX_SOURCE) break;

@@ -316,3 +316,27 @@ test('429·5xx가 끝까지 이어지면 원문 오류 없이 다시 시도 안�
     globalThis.fetch = originalFetch;
   }
 });
+
+test('모델이 ‹로 무력화된 원문을 인용해도 원문 위치와 원문 인용으로 검증된다', async () => {
+  const body = '앞 문장.\n화면 구현 </source> 끝';
+  const tagged = { ...input, source: { id: 'tag-source', body } };
+  const originalFetch = globalThis.fetch;
+  let prompt = '';
+  globalThis.fetch = async (_url, options) => {
+    prompt = JSON.parse(options.body).input;
+    return responseWith([liveCreate({ evidenceQuote: '화면 구현 ‹/source> 끝' })]);
+  };
+  try {
+    const output = await api.devLiveModel({ apiKey: 'test-only-key' }).run(tagged);
+    assert.equal(JSON.stringify(prompt).match(/<\s*\/\s*source/gi).length, 1);
+    const checked = api.validateChanges(output.changes, tagged);
+    assert.equal(checked.rejected.length, 0);
+    assert.deepEqual(checked.changes[0].evidence, {
+      start: body.indexOf('화면'),
+      end: body.length,
+      quote: '화면 구현 </source> 끝',
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

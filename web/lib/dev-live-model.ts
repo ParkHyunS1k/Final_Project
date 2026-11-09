@@ -6,7 +6,7 @@
 // ai-extraction.ts의 validateChanges()를 그대로 통과해야 하며, 이 파일은
 // 그 검증을 우회하는 경로를 만들지 않는다.
 import type { ExtractionInput, Model, RawChange } from './ai-extraction';
-import { buildPrompt } from './ai-extraction';
+import { buildPrompt, neutralizeSourceTags } from './ai-extraction';
 
 const API_URL = 'https://api.openai.com/v1/responses';
 const DEFAULT_MODEL = 'gpt-6.1-sol';
@@ -212,7 +212,9 @@ function sleep(ms: number) {
  * 여기서 다시 구한다. 원문에 없는 문장이면 근거를 아예 버린다(만들어내지 않는다). */
 function locateQuote(body: string, quote: string | null): RawChange['evidence'] {
   if (!quote) return null;
-  const start = body.indexOf(quote);
+  // 모델은 <source 태그가 ‹로 바뀐 원문을 본다. 같은 길이라 그 위치가 원문 위치다.
+  let start = body.indexOf(quote);
+  if (start === -1) start = neutralizeSourceTags(body).indexOf(quote);
   if (start === -1) return null;
   return { start, end: start + quote.length, quote };
 }
