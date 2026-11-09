@@ -1,5 +1,5 @@
 'use client';
-// 새 프로젝트 만들기: 주사위 단어 3개(잠금), 한 줄 아이디어(선택), 기능 범위 5단계.
+// 새 프로젝트 만들기: 주사위 단어 3개(잠금), 한 줄 아이디어(선택), 기능 범위 3단계(템플릿과 같음).
 // 설계: docs/superpowers/specs/2026-10-29-idea-dice-create-design.md
 import { useState } from 'react';
 import { Dices, Lock, LockOpen } from 'lucide-react';
@@ -63,6 +63,8 @@ export function ProjectCreate({
   const [idea, setIdea] = useState('');
   const [level, setLevel] = useState(DEFAULT_LEVEL);
   const [agreed, setAgreed] = useState(false);
+  const [mode, setMode] = useState<'solo' | 'team'>('solo');
+  const [listed, setListed] = useState(false);
   const [busy, setBusy] = useState(false);
   const current = SCOPE_LEVELS[level - 1];
   return (
@@ -82,7 +84,7 @@ export function ProjectCreate({
           e.preventDefault();
           if (busy) return;
           setBusy(true);
-          void onSubmit(createBody({ words, idea, level, agreed })).then((ok) => {
+          void onSubmit(createBody({ words, idea, level, agreed, mode, listed })).then((ok) => {
             if (!ok) setBusy(false);
           });
         }}
@@ -130,6 +132,39 @@ export function ProjectCreate({
             <b>완료 기준</b> {current.criteria}
           </p>
         </div>
+        <fieldset className="hub-mode">
+          <legend>어떻게 시작할까요?</legend>
+          {(
+            [
+              ['solo', '혼자 시작'],
+              ['team', '팀으로 시작'],
+            ] as const
+          ).map(([value, label]) => (
+            <label key={value}>
+              <input
+                type="radio"
+                name="project-mode"
+                checked={mode === value}
+                onChange={() => setMode(value)}
+              />
+              {label}
+            </label>
+          ))}
+        </fieldset>
+        {mode === 'team' && (
+          <label className="hub-check-label">
+            <input
+              type="checkbox"
+              checked={listed}
+              onChange={(e) => setListed(e.target.checked)}
+            />
+            이름·목표·범위·완료 기준·인원을 팀 찾기에 공개하고 모집하기
+          </label>
+        )}
+        <p className="hub-note">
+          혼자 먼저 출발하고 나중에 초대해도 돼요. 공개 여부는 나중에 프로젝트
+          화면의 팀원 목록 아래에서도 바꿀 수 있어요.
+        </p>
         <label className="agreement">
           <input
             type="checkbox"

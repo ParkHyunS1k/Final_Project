@@ -9,6 +9,7 @@ import {
   scopeText,
   levelOf,
 } from '../lib/idea-dice.ts';
+import { SCOPE_LABELS } from '../lib/career/catalog.ts';
 
 function seeded(n: number) {
   return () => (n = (n * 1103515245 + 12345) % 2147483648) / 2147483648;
@@ -48,11 +49,12 @@ void test('모두 잠그면 그대로', () => {
   ]);
 });
 
-void test('단계는 핵심 기능·MVP·테스트·데모·배포', () => {
+void test('단계는 템플릿과 같은 핵심만·검증까지·확장까지 3단계', () => {
   assert.deepEqual(
     SCOPE_LEVELS.map((l) => l.name),
-    ['핵심 기능', 'MVP', '테스트', '데모', '배포'],
+    ['핵심만', '검증까지', '확장까지'],
   );
+  assert.deepEqual([...SCOPE_LABELS], SCOPE_LEVELS.map((l) => l.name));
   assert.equal(DEFAULT_LEVEL, 2);
 });
 
@@ -81,7 +83,7 @@ void test('아이디어를 적으면 그 한 줄이 이름과 목표, 100자 초
 });
 
 void test('범위·완료 기준은 단계 문장, 결과물은 보내지 않고 모든 단계가 서버 제한 안', () => {
-  for (let level = 1; level <= 5; level++) {
+  for (let level = 1; level <= 3; level++) {
     const b = createBody({ words: ['고양이', '영수증', '지도'], idea: '', level, agreed: true });
     const l = SCOPE_LEVELS[level - 1];
     assert.equal(b.scope, `[${l.name}] ${l.scope}`);
@@ -94,8 +96,23 @@ void test('범위·완료 기준은 단계 문장, 결과물은 보내지 않고
   }
 });
 
-void test('levelOf는 접두어로 단계를 찾고, 없거나 모르면 MVP', () => {
-  for (let level = 1; level <= 5; level++) assert.equal(levelOf(scopeText(level)), level);
+void test('팀으로 시작하고 공개를 고를 때만 팀 찾기에 공개한다', () => {
+  const base = { words: ['a', 'b', 'c'], idea: '', level: 2, agreed: true };
+  assert.equal(createBody({ ...base, mode: 'team', listed: true }).listed, true);
+  assert.equal(createBody({ ...base, mode: 'team', listed: false }).listed, false);
+  assert.equal(createBody({ ...base, mode: 'solo', listed: true }).listed, false);
+});
+
+void test('levelOf는 접두어로 단계를 찾고, 없거나 모르면 검증까지', () => {
+  for (let level = 1; level <= 3; level++) assert.equal(levelOf(scopeText(level)), level);
+  // 5단계 시절에 저장한 프로젝트도 가까운 단계로 읽는다.
+  assert.deepEqual(
+    ['[핵심 기능] a', '[MVP] a', '[테스트] a', '[데모] a', '[배포] a'].map(levelOf),
+    [1, 2, 2, 3, 3],
+  );
+  // 직접 쓴 범위의 접두어가 객체 기본 속성 이름이어도 기본 단계로 읽는다.
+  for (const name of ['__proto__', 'constructor', 'toString'])
+    assert.equal(levelOf(`[${name}] 문장`), 2);
   assert.equal(levelOf('직접 쓴 범위'), 2);
   assert.equal(levelOf('[없는단계] 문장'), 2);
 });

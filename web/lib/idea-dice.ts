@@ -1,4 +1,4 @@
-// 만들기 화면의 주사위 단어와 기능 범위 5단계. AI 없이 단어 조합으로 아이디어를 떠올리게 한다.
+// 만들기 화면의 주사위 단어와 기능 범위 3단계. AI 없이 단어 조합으로 아이디어를 떠올리게 한다.
 
 export const WORDS: readonly string[] = [
   '우산', '영수증', '지도', '냉장고', '자전거', '열쇠', '안경', '이어폰', '달력', '텀블러',
@@ -20,34 +20,29 @@ export const WORDS: readonly string[] = [
 
 export type ScopeLevel = { name: string; scope: string; criteria: string };
 
-// 누적 단계: 3단계를 고르면 핵심 기능·MVP·테스트까지 한다.
+// 누적 단계: 템플릿 프로젝트와 같은 3단계(2026-11-09). 2단계를 고르면 핵심 기능·흐름 완성·사용자 검증까지 한다.
 export const SCOPE_LEVELS: readonly ScopeLevel[] = [
   {
-    name: '핵심 기능',
+    name: '핵심만',
     scope: '핵심 기능 1개가 처음부터 끝까지 동작한다',
     criteria: '핵심 기능 1개를 끊김 없이 시연할 수 있다',
   },
   {
-    name: 'MVP',
-    scope: '사용자가 들어와서 목적을 이루고 나가는 흐름 하나를 완성한다',
-    criteria: '사용자 역할로 처음부터 끝까지 한 번에 해낼 수 있다',
+    name: '검증까지',
+    scope:
+      '사용자가 목적을 이루는 흐름 하나를 완성하고, 팀 밖 사람 3명에게 써보게 하고 가장 큰 불편 하나를 고친다',
+    criteria: '사용자 역할로 처음부터 끝까지 해낼 수 있고, 사용자 3명의 피드백과 고친 내용을 보여줄 수 있다',
   },
   {
-    name: '테스트',
-    scope: '팀 밖 사람 3명에게 써보게 하고 가장 큰 불편 하나를 고친다',
-    criteria: '사용자 3명의 피드백과 고친 내용을 보여줄 수 있다',
-  },
-  {
-    name: '데모',
-    scope: '처음 보는 사람 앞에서 5분 안에 시연할 수 있게 다듬는다',
-    criteria: '시연 영상이나 발표 자료로 전체 흐름을 보여줄 수 있다',
-  },
-  {
-    name: '배포',
-    scope: '배포해서 누구나 주소로 들어와 쓸 수 있게 한다',
-    criteria: '배포 주소에서 팀 밖의 사람이 직접 써볼 수 있다',
+    name: '확장까지',
+    scope:
+      '검증한 흐름을 배포해 누구나 주소로 써볼 수 있게 하고, 처음 보는 사람 앞에서 5분 안에 시연할 수 있게 다듬는다',
+    criteria: '배포 주소에서 팀 밖의 사람이 직접 써볼 수 있고, 시연 영상이나 발표 자료로 전체 흐름을 보여줄 수 있다',
   },
 ];
+
+// 5단계 시절(~2026-11-09)에 저장한 범위 접두어를 가까운 단계로 읽는다.
+const OLD_LEVELS: Record<string, number> = { '핵심 기능': 1, MVP: 2, 테스트: 2, 데모: 3, 배포: 3 };
 
 export const DEFAULT_LEVEL = 2;
 
@@ -80,6 +75,8 @@ export type CreateBody = {
   completionCriteria: string;
   duration: 7;
   agreed: boolean;
+  /** 팀으로 시작하고 팀 찾기 공개에 동의했을 때만 true. */
+  listed: boolean;
 };
 
 export function scopeText(level: number) {
@@ -90,7 +87,7 @@ export function scopeText(level: number) {
 export function levelOf(scope: string) {
   const name = /^\[([^\]]+)\]/.exec(scope)?.[1];
   const i = SCOPE_LEVELS.findIndex((l) => l.name === name);
-  return i < 0 ? DEFAULT_LEVEL : i + 1;
+  return i >= 0 ? i + 1 : name && Object.hasOwn(OLD_LEVELS, name) ? OLD_LEVELS[name] : DEFAULT_LEVEL;
 }
 
 export function createBody(input: {
@@ -98,6 +95,8 @@ export function createBody(input: {
   idea: string;
   level: number;
   agreed: boolean;
+  mode?: 'solo' | 'team';
+  listed?: boolean;
 }): CreateBody {
   const idea = input.idea.trim();
   const level = clampLevel(input.level);
@@ -109,5 +108,6 @@ export function createBody(input: {
     completionCriteria: SCOPE_LEVELS[level - 1].criteria,
     duration: 7,
     agreed: input.agreed,
+    listed: input.mode === 'team' && input.listed === true,
   };
 }
