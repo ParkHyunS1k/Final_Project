@@ -129,6 +129,12 @@ export function focusClock(msLeft: number) {
   return msLeft > 0 ? countdown(msLeft).text : `+${countdown(-msLeft).text}`;
 }
 
+/** 큰 카운트다운의 0.01초 두 자리(지금 초 안). 마감 초과면 지난 시간 기준. */
+export function focusCentis(msLeft: number) {
+  const ms = Number.isFinite(msLeft) ? Math.abs(msLeft) : 0;
+  return pad(Math.floor((ms % 1000) / 10));
+}
+
 // ponytail: 서버 상태의 checkins는 프로젝트 전체 최근 20건. 하루 20건을 넘으면 이른 보고가 빠진다. 필요하면 서버에서 멤버별 마지막 보고 시각을 내려준다.
 /** 오늘(KST) 이 사람이 담당한 업무에 진행 보고가 있는가. 팀장이 대신 보고한 경우도 담당자 기준으로 센다. */
 export function checkedInToday(

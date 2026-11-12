@@ -265,3 +265,17 @@ void test('시안 v7대로: 체크인 안내 문장과 캘린더의 마감 미�
   );
   assert.doesNotMatch(cal, /마감 미정/);
 });
+
+// 2026-11-12 피드백: 큰 카운트다운은 0.01초 단위까지 보인다.
+void test('카운트다운: 큰 숫자는 0.01초 단위까지 보인다', () => {
+  assert.match(text(focus([task(1, 0, 'DB 구축', NOW + 2 * H + 1500)])), /02:00:01\.50/);
+  const project = renderToString(
+    createElement(FocusCountdown, {
+      tasks: [],
+      person: 0,
+      now: NOW,
+      deadline: new Date(NOW + 3 * H).toISOString(),
+    }),
+  );
+  assert.match(text(project), /03:00:00\.00/);
+});

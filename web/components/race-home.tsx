@@ -2,11 +2,12 @@
 import { ArrowRight } from 'lucide-react';
 import { DeadlineCalendar } from '@/components/deadline-calendar';
 import type { ProjectMeta } from '@/components/project-workspace';
-import { useServerNow } from '@/hooks/use-server-now';
+import { useFineServerNow, useServerNow } from '@/hooks/use-server-now';
 import {
   checkedInToday,
   dueLabel,
   focusClock,
+  focusCentis,
   focusTask,
   laneTask,
   tension,
@@ -26,33 +27,56 @@ const WAIT_LABEL = {
   unassigned: '배정된 내 업무 없음 · 대기 중',
 };
 
+// 큰 숫자. 이 조각만 화면 새로고침마다 다시 그려 0.01초까지 흐르게 한다(2026-11-12 피드백).
+function BigClock({
+  target,
+  now,
+  asOf,
+  className,
+}: {
+  target: number;
+  now: number;
+  asOf: string | null;
+  className: string;
+}) {
+  const fine = useFineServerNow(asOf, now);
+  const left = target - fine;
+  const clock = focusClock(left);
+  return (
+    <div className={className} role="timer">
+      {clock.slice(0, -2)}
+      <span className="focus-sec" key={clock.slice(-2)}>
+        {clock.slice(-2)}
+      </span>
+      <span className="focus-cs">.{focusCentis(left)}</span>
+    </div>
+  );
+}
+
 // 내 업무 중 마감이 가장 가까운 업무를 크게 센다. now는 서버 기준 시각이다.
 export function FocusCountdown({
   tasks,
   person,
   now,
   deadline,
+  asOf = null,
 }: {
   tasks: Task[];
   person: number;
   now: number;
   /** 프로젝트 마감. 마감 정해진 내 업무가 없으면 이것을 센다(시안 v7·v9). 긴장 효과는 없다. */
   deadline?: string | null;
+  /** 있으면 숫자만 화면 새로고침마다 다시 그려 0.01초까지 흐르게 한다. */
+  asOf?: string | null;
 }) {
   const task = focusTask(tasks, person);
   if (!task && deadline) {
-    const clock = focusClock(Date.parse(deadline) - now);
     return (
       <section className="focus-hero" aria-label="프로젝트 마감">
         <p className="focus-label">
           <em>프로젝트 마감</em>까지
         </p>
-        <div className="focus-clock project" role="timer">
-          {clock.slice(0, -2)}
-          <span className="focus-sec" key={clock.slice(-2)}>
-            {clock.slice(-2)}
-          </span>
-        </div>
+        <BigClock target={Date.parse(deadline)} now={now} asOf={asOf} className="focus-clock project" />
       </section>
     );
   }
@@ -65,18 +89,12 @@ export function FocusCountdown({
     );
   const left = Date.parse(task.dueAt!) - now;
   const { stage } = tension(left);
-  const clock = focusClock(left);
   return (
     <section className="focus-hero" aria-label="내 업무 마감">
       <p className="focus-label">
         <em>{task.title}</em> {stage === 'over' ? '마감 초과' : '마감까지'}
       </p>
-      <div className={`focus-clock ${stage}`} role="timer">
-        {clock.slice(0, -2)}
-        <span className="focus-sec" key={clock.slice(-2)}>
-          {clock.slice(-2)}
-        </span>
-      </div>
+      <BigClock target={Date.parse(task.dueAt!)} now={now} asOf={asOf} className={`focus-clock ${stage}`} />
     </section>
   );
 }
@@ -169,7 +187,7 @@ export function RaceHome({
         </div>
       ) : (
         active && (
-          <FocusCountdown tasks={tasks} person={me.person} now={now} deadline={deadline} />
+          <FocusCountdown tasks={tasks} person={me.person} now={now} deadline={deadline} asOf={asOf} />
         )
       )}
       <DeadlineCalendar
