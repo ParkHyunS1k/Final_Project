@@ -14,6 +14,7 @@ import {
   tension,
   chipStage,
   focusClock,
+  focusCentis,
   checkedInToday,
   type RaceTask,
 } from '../lib/race.ts';
@@ -184,4 +185,12 @@ void test('checkedInToday: 담당자 기준, KST 날짜가 같을 때만', () =>
   assert.equal(checkedInToday(at(1, '2026-11-02T14:59:59.000Z'), tasks, 0, now), false); // KST 11/2 23:59
   assert.equal(checkedInToday(at(2, '2026-11-02T15:10:00.000Z'), tasks, 0, now), false); // 다른 사람 업무
   assert.equal(checkedInToday(at(9, '2026-11-02T15:10:00.000Z'), tasks, 0, now), false); // 없는 업무
+});
+
+void test('focusCentis: 지금 초 안의 0.01초 두 자리, 초과도 지난 시간 기준', () => {
+  assert.equal(focusCentis(2 * H), '00');
+  assert.equal(focusCentis(1500), '50');
+  assert.equal(focusCentis(1999), '99');
+  assert.equal(focusCentis(-1234), '23');
+  assert.equal(focusCentis(0), '00');
 });
