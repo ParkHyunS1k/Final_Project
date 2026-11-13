@@ -258,13 +258,18 @@ export function TaskCollection({
   const [view, setView] = useState('board');
   // PR 연결(2026-11-14): 화면을 열 때 한 번 읽는다. 실패하면 PR 표시만 빠진다.
   const [loadedPulls, setLoadedPulls] = useState<Record<number, Pull[]>>({});
+  // 멈춤 판정 시각. 저장소가 있으면 PR 목록을 읽은 서버 시각(그 뒤 PR 활동은 모르므로), 없으면 'live'(asOf).
+  // ponytail: PR 목록은 화면을 열 때 한 번 읽으므로 멈춤 배지도 그때 기준. 실시간이 필요하면 웹훅.
+  const [pullsClock, setPullsClock] = useState<string | null>(null);
   useEffect(() => {
     if (givenPulls || !projectId) return;
     let alive = true;
     apiFetch('/api/github-prs?project=' + encodeURIComponent(projectId))
       .then((r) => (r.ok ? r.json() : null))
       .then((body) => {
-        if (alive && body?.links) setLoadedPulls(body.links);
+        if (!alive || !body?.links) return;
+        setLoadedPulls(body.links);
+        setPullsClock(body.repo ? (body.asOf ?? null) : 'live');
       })
       .catch(() => {});
     return () => {
@@ -274,12 +279,12 @@ export function TaskCollection({
   const pulls = givenPulls ?? loadedPulls;
   const [selected, setSelected] = useState<number | null>(null);
   // 개발 현황(2026-11-14): GitHub 호출 한도 때문에 업무 상세를 열 때 그 업무의 최근 PR 3개만 읽는다.
+  // CI는 바뀌므로 상세를 열 때마다 다시 읽는다.
   const [details, setDetails] = useState<Record<number, PullDetail>>({});
   const [detailError, setDetailError] = useState('');
   const wantedPulls = (selected !== null ? (pulls[selected] ?? []) : [])
     .slice(0, DETAIL_MAX_PULLS)
     .map((p) => p.number)
-    .filter((n) => !details[n])
     .join(',');
   useEffect(() => {
     if (!wantedPulls || !projectId) return;
@@ -299,9 +304,10 @@ export function TaskCollection({
     return () => {
       alive = false;
     };
-  }, [projectId, wantedPulls]);
+  }, [projectId, selected, wantedPulls]);
+  const stallClock = givenPulls || !projectId || pullsClock === 'live' ? asOf : pullsClock;
   const stalledOf = (t: Task) =>
-    sprint.finished ? null : stalledHours(t, pulls[t.id] ?? [], asOf);
+    sprint.finished || !stallClock ? null : stalledHours(t, pulls[t.id] ?? [], stallClock);
   const people = sprint.people ?? samplePeople;
   const tasks = sprint.tasks.filter((t) => !mine || t.person === me.person);
   const owner = me.role === 'owner';

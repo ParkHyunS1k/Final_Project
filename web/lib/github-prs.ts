@@ -199,13 +199,16 @@ export async function pullDetail(repo: Repo, number: number, options: FetchOptio
     const value = await getJson(path, options);
     return Array.isArray(value) ? value : [];
   };
+  // 크기 초과(null)를 '체크 없음'으로 읽으면 실패한 CI가 통과로 보인다. 오류로 알린다.
+  const required = async (path: string) => {
+    const value = await getJson(path, options);
+    if (value === null)
+      throw new ReviewSourceError('CI 결과가 너무 커서 불러오지 못했습니다. GitHub에서 확인해주세요.', 502);
+    return value as Record<string, unknown>;
+  };
   const [runs, status, reviews, commits] = await Promise.all([
-    pull.sha
-      ? getJson(`${base}/commits/${pull.sha}/check-runs?per_page=100`, options).then(
-          (v) => ((v ?? {}) as Record<string, unknown>).check_runs,
-        )
-      : null,
-    pull.sha ? getJson(`${base}/commits/${pull.sha}/status`, options) : null,
+    pull.sha ? required(`${base}/commits/${pull.sha}/check-runs?per_page=100`).then((v) => v.check_runs) : null,
+    pull.sha ? required(`${base}/commits/${pull.sha}/status`) : null,
     list(`${base}/pulls/${number}/reviews?per_page=100`),
     // ponytail: 첫 100개 커밋 중 마지막 5개. 100개 넘는 PR은 최신 커밋을 놓친다, 필요하면 마지막 페이지를 받는다.
     list(`${base}/pulls/${number}/commits?per_page=100`),

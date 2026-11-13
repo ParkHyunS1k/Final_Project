@@ -264,7 +264,7 @@ test('업무를 바꾸면(체크인·상태 변경) 마지막 변경 시각이 �
   assert.equal(after.tasks.find((t) => t.id === 2).touchedAt.toISOString(), '2026-01-01T00:00:00.000Z');
 });
 
-function detailGithub() {
+function detailGithub({ hugeChecks = false } = {}) {
   const calls = [];
   const sha = 'b'.repeat(40);
   return {
@@ -276,6 +276,8 @@ function detailGithub() {
       if (path === '/repos/team/app') return Response.json({ private: false, visibility: 'public' });
       if (path === '/repos/team/app/pulls/10')
         return Response.json(pr(10, { title: 'PM-1 로그인', head: { ref: 'pm-1-login', sha }, updated_at: '2026-11-14T01:00:00Z' }));
+      if (path === `/repos/team/app/commits/${sha}/check-runs` && hugeChecks)
+        return new Response('{"check_runs":[' + '"x",'.repeat(300_000) + '"x"]}', { status: 200 });
       if (path === `/repos/team/app/commits/${sha}/check-runs`)
         return Response.json({ total_count: 1, check_runs: [{ status: 'completed', conclusion: 'failure' }] });
       if (path === `/repos/team/app/commits/${sha}/status`) return Response.json({ state: 'pending', total_count: 0 });
@@ -312,4 +314,20 @@ test('개발 현황: 고른 PR의 CI·리뷰·최근 커밋 5개를 돌려준다
   await json(await detail('stranger', projectId, '10'), 403);
   await json(await detail('p-detail', projectId, '1,2,3,4'), 400);
   await json(await detail('p-detail', projectId, 'abc'), 400);
+});
+
+test('개발 현황: CI 응답이 너무 커서 못 읽으면 통과로 보이지 않고 오류로 알린다', async () => {
+  const projectId = await project('p-huge');
+  await api.setProjectRepo(projectId, 'p-huge', { owner: 'team', name: 'app' }, 0, new Date());
+  api.useGithub({ fetchImpl: detailGithub({ hugeChecks: true }).fetchImpl });
+  const body = await json(await detail('p-huge', projectId, '10'), 502);
+  assert.match(body.error, /CI/);
+});
+
+test('PR 목록 응답에 서버 시각을 담는다(멈춤 판정은 PR을 읽은 시각 기준)', async () => {
+  const projectId = await project('p-clock');
+  await api.setProjectRepo(projectId, 'p-clock', { owner: 'team', name: 'app' }, 0, new Date());
+  api.useGithub({ fetchImpl: fakeGithub([]).fetchImpl });
+  const body = await json(await get('p-clock', projectId), 200);
+  assert.ok(!Number.isNaN(Date.parse(body.asOf)));
 });

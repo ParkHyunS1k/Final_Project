@@ -37,6 +37,8 @@ export async function GET(request: Request) {
     const sprint = await readSprint(projectId);
     const pulls = await listPulls(repo, github);
     return reply({
+      // PR 목록을 읽은 서버 시각. 화면은 멈춘 업무를 이 시각 기준으로 판정한다(이후 PR 활동은 모름).
+      asOf: new Date().toISOString(),
       repo: { owner: repo.owner, name: repo.name, url: `https://github.com/${repo.owner}/${repo.name}` },
       links: linkPulls(pulls, (sprint?.tasks ?? []).map((t) => t.id)),
     });
