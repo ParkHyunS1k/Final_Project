@@ -2881,3 +2881,88 @@ textarea {
   width: 100%;
   aspect-ratio: 16 / 9;
 }
+
+/* PR과 업무 연결 (2026-11-14) */
+.board-card-ref {
+  margin-left: auto;
+  font-size: 11px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  color: var(--gray-400);
+}
+.board-card-pr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+.pr-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+.pr-state.pr-open {
+  background: color-mix(in srgb, var(--good) 15%, transparent);
+  color: var(--good);
+}
+.pr-state.pr-merged {
+  background: color-mix(in srgb, #8b5cf6 18%, transparent);
+  color: #a78bfa;
+}
+.pr-ref {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  color: var(--gray-500);
+}
+.pr-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 10px;
+  font-size: 13px;
+}
+.pr-copy code {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+.pr-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--heat-500) 40%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--heat-500) 8%, transparent);
+  font-size: 13px;
+}
+.pr-suggest p {
+  margin: 0;
+}
+.pr-list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.pr-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}

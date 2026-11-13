@@ -694,6 +694,7 @@ function Dashboard({
                   />
                 ) : (
                   <TaskCollection
+                    projectId={projectId}
                     sprint={s}
                     plan={plan}
                     asOf={state!.asOf}
