@@ -122,3 +122,67 @@ test('PR 패널: 브랜치 이름 복사, 열린 PR이면 진행 중 제안, 모
   const none = renderToString(createElement(PrPanel, { task: t, pulls: [], canEdit: true, onStart: () => {}, onUseEvidence: () => {} }));
   assert.match(none, /연결된 PR이 없어요/);
 });
+
+// 2026-11-14 개발 현황: 멈춘 업무 배지, CI·리뷰·최근 커밋, CI 실패면 완료 대신 확인 필요.
+test('진행 중인데 12시간 넘게 활동이 없으면 보드 카드에 멈춤 배지가 보인다', () => {
+  const props = (touchedAt) => ({
+    sprint: {
+      revision: 1,
+      finished: false,
+      people: [{ name: '도윤' }],
+      tasks: [task(1, { status: 'in_progress', touchedAt })],
+    },
+    plan: { finishes: {}, unscheduled: [] },
+    asOf: '2026-11-14T13:00:00.000Z',
+    me: { person: 0, role: 'owner', agreedAt: '2026-11-08T00:00:00.000Z' },
+    members: [{ person: 0, display_name: '도윤' }],
+    checkins: [],
+    busy: false,
+    error: '',
+    mine: false,
+    mutate: async () => true,
+    onEdit: () => {},
+    onAdd: () => {},
+    pulls: {},
+  });
+  assert.match(renderToString(createElement(TaskCollection, props('2026-11-14T00:00:00.000Z'))), /멈춤 (<!-- -->)?13시간/);
+  assert.match(renderToString(createElement(TaskCollection, props('2026-11-12T00:00:00.000Z'))), /멈춤 (<!-- -->)?2일/);
+  assert.doesNotMatch(renderToString(createElement(TaskCollection, props('2026-11-14T02:00:00.000Z'))), /멈춤/);
+});
+
+test('개발 현황 패널: PR마다 CI·리뷰·최근 커밋, 머지된 PR의 CI가 실패면 완료 제안 대신 확인 필요', () => {
+  const t = { id: 1, title: 'Login', done: false, status: 'in_progress' };
+  const details = {
+    10: {
+      number: 10,
+      checks: 'failure',
+      review: 'approved',
+      commits: [{ sha: 'a'.repeat(40), message: '로그인 폼 추가', author: 'alice', date: '2026-11-14T01:00:00Z' }],
+    },
+  };
+  const html = renderToString(
+    createElement(PrPanel, { task: t, pulls: [pull(10, 'merged')], details, canEdit: true, onStart: () => {}, onUseEvidence: () => {} }),
+  );
+  assert.match(html, /CI 실패/);
+  assert.match(html, /승인/);
+  assert.match(html, /로그인 폼 추가/);
+  assert.match(html, /확인이 필요해요/);
+  assert.doesNotMatch(html, /완료 근거로 채우기/);
+  const passed = renderToString(
+    createElement(PrPanel, {
+      task: t,
+      pulls: [pull(10, 'merged')],
+      details: { 10: { ...details[10], checks: 'success', review: 'changes_requested' } },
+      canEdit: true,
+      onStart: () => {},
+      onUseEvidence: () => {},
+    }),
+  );
+  assert.match(passed, /CI 통과/);
+  assert.match(passed, /수정 요청/);
+  assert.match(passed, /완료 근거로 채우기/);
+  const stalled = renderToString(
+    createElement(PrPanel, { task: t, pulls: [], stalled: 15, canEdit: true, onStart: () => {}, onUseEvidence: () => {} }),
+  );
+  assert.match(stalled, /15시간째 활동이 없어요/);
+});

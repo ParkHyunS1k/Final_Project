@@ -14,7 +14,8 @@ const outfile = join(mkdtempSync(join(tmpdir(), 'projectmate-prs-test-')), 'rout
 await build({
   stdin: {
     contents: [
-      "export { taskRef, branchName, taskIdsIn, toPull, prSuggestion } from './lib/github-prs';",
+      "export { taskRef, branchName, taskIdsIn, toPull, prSuggestion, summarizeChecks, summarizeReviews, stalledHours } from './lib/github-prs';",
+      "export { readSprint, bumpTaskVersion } from './lib/sprint-store';",
       "export { setProjectRepo } from './lib/project-repo';",
       "export { POST as projectsPOST } from './app/api/projects/route';",
       "export { GET as prsGET } from './app/api/github-prs/route';",
@@ -90,6 +91,60 @@ test('제안: 시작 전 업무에 열린 PR이면 진행 중, 열린 PR 없이 
   assert.equal(api.prSuggestion(doing, [p('closed')]), null);
   assert.equal(api.prSuggestion({ done: true, status: 'done' }, [p('merged')]), null);
   assert.equal(api.prSuggestion(doing, []), null);
+});
+
+// ---- 2026-11-14 개발 현황: CI·리뷰·멈춘 업무 ----
+test('PR에 마지막 커밋 sha와 수정 시각을 담는다(sha 형식이 아니면 비운다)', () => {
+  const p = api.toPull(pr(4, { head: { ref: 'pm-1-x', sha: 'a'.repeat(40) }, updated_at: '2026-11-14T02:00:00Z' }));
+  assert.equal(p.sha, 'a'.repeat(40));
+  assert.equal(p.updatedAt, '2026-11-14T02:00:00Z');
+  assert.equal(api.toPull(pr(5, { head: { ref: 'x', sha: '../etc' } })).sha, '');
+});
+
+test('CI 요약: 실패가 하나라도 있으면 실패, 끝나지 않은 게 있으면 진행 중, 아무것도 없으면 CI 없음', () => {
+  const run = (status, conclusion) => ({ status, conclusion });
+  const none = { state: 'pending', total_count: 0 };
+  assert.equal(api.summarizeChecks([], none), 'none');
+  assert.equal(api.summarizeChecks([run('completed', 'success'), run('completed', 'skipped')], none), 'success');
+  assert.equal(api.summarizeChecks([run('completed', 'success'), run('completed', 'failure')], none), 'failure');
+  assert.equal(api.summarizeChecks([run('completed', 'timed_out')], none), 'failure');
+  assert.equal(api.summarizeChecks([run('in_progress', null)], none), 'pending');
+  assert.equal(api.summarizeChecks([run('in_progress', null), run('completed', 'failure')], none), 'failure');
+  // 커밋 상태(Vercel 등)도 본다.
+  assert.equal(api.summarizeChecks([], { state: 'success', total_count: 1 }), 'success');
+  assert.equal(api.summarizeChecks([run('completed', 'success')], { state: 'error', total_count: 1 }), 'failure');
+  assert.equal(api.summarizeChecks([run('completed', 'success')], { state: 'pending', total_count: 1 }), 'pending');
+});
+
+test('리뷰 요약: 사람마다 마지막 판단만 보고, 수정 요청이 남아 있으면 수정 요청', () => {
+  const r = (login, state) => ({ user: { login }, state });
+  assert.equal(api.summarizeReviews([]), 'none');
+  assert.equal(api.summarizeReviews([r('a', 'COMMENTED')]), 'none');
+  assert.equal(api.summarizeReviews([r('a', 'CHANGES_REQUESTED'), r('a', 'APPROVED')]), 'approved');
+  assert.equal(api.summarizeReviews([r('a', 'APPROVED'), r('b', 'CHANGES_REQUESTED')]), 'changes_requested');
+  // 의견만 남긴 리뷰는 앞선 판단을 지우지 않는다.
+  assert.equal(api.summarizeReviews([r('a', 'APPROVED'), r('a', 'COMMENTED')]), 'approved');
+});
+
+test('제안: 머지된 PR의 CI가 실패했으면 완료 대신 확인 필요', () => {
+  const p = (number, state) => ({ number, title: 't', state, branch: 'b', author: 'a', url: 'u', sha: '', updatedAt: '' });
+  const doing = { done: false, status: 'in_progress' };
+  assert.equal(api.prSuggestion(doing, [p(1, 'merged')], { 1: 'failure' }), 'ci_failed');
+  assert.equal(api.prSuggestion(doing, [p(1, 'merged')], { 1: 'success' }), 'complete');
+  assert.equal(api.prSuggestion(doing, [p(1, 'merged')], { 1: 'pending' }), 'complete');
+  assert.equal(api.prSuggestion(doing, [p(1, 'merged'), p(2, 'closed')], { 2: 'failure' }), 'complete');
+});
+
+test('멈춘 업무: 진행 중인데 업무 변경과 연결 PR 수정이 12시간 넘게 없으면 몇 시간째인지 돌려준다', () => {
+  const t = { done: false, status: 'in_progress', touchedAt: '2026-11-14T00:00:00.000Z' };
+  const pulls = [{ updatedAt: '2026-11-14T03:00:00Z' }];
+  assert.equal(api.stalledHours(t, pulls, '2026-11-14T15:00:00Z'), 12);
+  assert.equal(api.stalledHours(t, pulls, '2026-11-14T14:59:00Z'), null);
+  assert.equal(api.stalledHours(t, [], '2026-11-15T00:00:00Z'), 24);
+  assert.equal(api.stalledHours({ ...t, status: 'todo' }, [], '2026-11-16T00:00:00Z'), null);
+  assert.equal(api.stalledHours({ ...t, done: true }, [], '2026-11-16T00:00:00Z'), null);
+  // 마지막 활동 시각을 모르면 표시하지 않는다.
+  assert.equal(api.stalledHours({ ...t, touchedAt: null }, [], '2026-11-16T00:00:00Z'), null);
 });
 
 // ---- /api/github-prs ----
@@ -195,4 +250,66 @@ test('PR 목록은 나눠 받아 뒤쪽 페이지의 PR도 연결하고, 응답�
   api.useGithub({ fetchImpl: gh.fetchImpl });
   const failed = await json(await get('p-page', projectId), 502);
   assert.match(failed.error, /PR 목록/);
+});
+
+test('업무를 바꾸면(체크인·상태 변경) 마지막 변경 시각이 갱신되고, 새 업무는 만든 시각을 갖는다', async () => {
+  const projectId = await project('p-touch');
+  const before = await api.readSprint(projectId);
+  assert.ok(before.tasks[0].touchedAt instanceof Date);
+  await run("UPDATE sprint_tasks SET touched_at='2026-01-01T00:00:00Z' WHERE owner=?", projectId);
+  await run("UPDATE sprints SET mutation='m-touch' WHERE owner=?", projectId);
+  await globalThis.__TEST_DB.batch([api.bumpTaskVersion(projectId, 'm-touch', 1)]);
+  const after = await api.readSprint(projectId);
+  assert.ok(after.tasks.find((t) => t.id === 1).touchedAt.getTime() > Date.parse('2026-06-01'));
+  assert.equal(after.tasks.find((t) => t.id === 2).touchedAt.toISOString(), '2026-01-01T00:00:00.000Z');
+});
+
+function detailGithub() {
+  const calls = [];
+  const sha = 'b'.repeat(40);
+  return {
+    calls,
+    fetchImpl: async (url) => {
+      calls.push(String(url));
+      const u = new URL(String(url));
+      const path = u.pathname;
+      if (path === '/repos/team/app') return Response.json({ private: false, visibility: 'public' });
+      if (path === '/repos/team/app/pulls/10')
+        return Response.json(pr(10, { title: 'PM-1 로그인', head: { ref: 'pm-1-login', sha }, updated_at: '2026-11-14T01:00:00Z' }));
+      if (path === `/repos/team/app/commits/${sha}/check-runs`)
+        return Response.json({ total_count: 1, check_runs: [{ status: 'completed', conclusion: 'failure' }] });
+      if (path === `/repos/team/app/commits/${sha}/status`) return Response.json({ state: 'pending', total_count: 0 });
+      if (path === '/repos/team/app/pulls/10/reviews') return Response.json([{ user: { login: 'bob' }, state: 'APPROVED' }]);
+      if (path === '/repos/team/app/pulls/10/commits')
+        return Response.json(
+          Array.from({ length: 7 }, (_, i) => ({
+            sha: String(i).repeat(40),
+            author: { login: 'alice' },
+            commit: { message: `커밋 ${i}\n\n본문`, author: { name: 'Alice', date: `2026-11-14T0${i}:00:00Z` } },
+          })),
+        );
+      return new Response('{}', { status: 404 });
+    },
+  };
+}
+const detail = (user, projectId, pulls) =>
+  api.prsGET(
+    new Request(`https://test.local/api/github-prs?project=${encodeURIComponent(projectId)}&pulls=${pulls}`, { headers: headers(user) }),
+  );
+
+test('개발 현황: 고른 PR의 CI·리뷰·최근 커밋 5개를 돌려준다. 팀원만, PR은 3개까지', async () => {
+  const projectId = await project('p-detail');
+  await api.setProjectRepo(projectId, 'p-detail', { owner: 'team', name: 'app' }, 0, new Date());
+  const gh = detailGithub();
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  const body = await json(await detail('p-detail', projectId, '10'), 200);
+  const d = body.details['10'];
+  assert.equal(d.checks, 'failure');
+  assert.equal(d.review, 'approved');
+  assert.deepEqual(d.commits.map((c) => c.message), ['커밋 6', '커밋 5', '커밋 4', '커밋 3', '커밋 2']);
+  assert.equal(d.commits[0].author, 'alice');
+  assert.ok(!gh.calls.some((u) => u.includes('/pulls?')), 'PR 목록은 다시 받지 않는다');
+  await json(await detail('stranger', projectId, '10'), 403);
+  await json(await detail('p-detail', projectId, '1,2,3,4'), 400);
+  await json(await detail('p-detail', projectId, 'abc'), 400);
 });

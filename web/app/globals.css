@@ -2966,3 +2966,68 @@ textarea {
   gap: 6px;
   overflow-wrap: anywhere;
 }
+/* 개발 현황: 멈춘 업무·CI·리뷰·최근 커밋 (2026-11-14) */
+.race-tag.is-stalled {
+  background: var(--gray-600);
+}
+.pr-stalled {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--gray-600);
+}
+.pr-suggest.is-warning {
+  border-color: color-mix(in srgb, var(--red-500) 45%, transparent);
+  background: color-mix(in srgb, var(--red-500) 8%, transparent);
+}
+.pr-detail {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-left: 4px;
+}
+.pr-check,
+.pr-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+}
+.pr-check-success,
+.pr-review-approved {
+  color: var(--good);
+}
+.pr-check-failure,
+.pr-review-changes_requested {
+  color: var(--red-500);
+}
+.pr-check-pending {
+  color: var(--heat-500);
+}
+.pr-check-dot {
+  display: inline-flex;
+  margin-left: 2px;
+}
+.pr-commits {
+  flex-basis: 100%;
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0 0 0 10px;
+  border-left: 2px solid var(--gray-100);
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+}
+.pr-commits code {
+  color: var(--gray-400);
+  font-size: 11px;
+}
+.pr-commits small {
+  color: var(--gray-400);
+}

@@ -217,6 +217,8 @@ export const tasks = pgTable(
     deadlineVersion: integer('deadline_version').notNull().default(0),
     // 업무 단위 변경 버전. 생성 이후 수정 여부를 업무별로 판단한다.
     changeVersion: integer('change_version').notNull().default(0),
+    // 마지막으로 업무를 바꾼 시각(체크인·상태·상세 등, change_version과 함께 갱신). 멈춘 업무 표시용(2026-11-14).
+    touchedAt: timestamp('touched_at', tz).notNull().defaultNow(),
     optional: boolean('optional').notNull().default(false),
     deferred: boolean('deferred').notNull().default(false),
     done: boolean('done').notNull().default(false),
