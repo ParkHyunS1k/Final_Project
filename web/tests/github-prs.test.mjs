@@ -264,7 +264,7 @@ test('업무를 바꾸면(체크인·상태 변경) 마지막 변경 시각이 �
   assert.equal(after.tasks.find((t) => t.id === 2).touchedAt.toISOString(), '2026-01-01T00:00:00.000Z');
 });
 
-function detailGithub({ hugeChecks = false } = {}) {
+function detailGithub({ hugeChecks = false, many = false } = {}) {
   const calls = [];
   const sha = 'b'.repeat(40);
   return {
@@ -276,6 +276,16 @@ function detailGithub({ hugeChecks = false } = {}) {
       if (path === '/repos/team/app') return Response.json({ private: false, visibility: 'public' });
       if (path === '/repos/team/app/pulls/10')
         return Response.json(pr(10, { title: 'PM-1 로그인', head: { ref: 'pm-1-login', sha }, updated_at: '2026-11-14T01:00:00Z' }));
+      const page = Number(u.searchParams.get('page') ?? 1);
+      if (many && path === `/repos/team/app/commits/${sha}/check-runs`)
+        return Response.json({
+          total_count: 101,
+          check_runs: page === 1 ? Array.from({ length: 100 }, () => ({ status: 'completed', conclusion: 'success' })) : [{ status: 'completed', conclusion: 'failure' }],
+        });
+      if (many && path === '/repos/team/app/pulls/10/reviews')
+        return Response.json(
+          page === 1 ? Array.from({ length: 100 }, () => ({ user: { login: 'bob' }, state: 'APPROVED' })) : [{ user: { login: 'bob' }, state: 'CHANGES_REQUESTED' }],
+        );
       if (path === `/repos/team/app/commits/${sha}/check-runs` && hugeChecks)
         return new Response('{"check_runs":[' + '"x",'.repeat(300_000) + '"x"]}', { status: 200 });
       if (path === `/repos/team/app/commits/${sha}/check-runs`)
@@ -330,4 +340,16 @@ test('PR 목록 응답에 서버 시각을 담는다(멈춤 판정은 PR을 읽�
   api.useGithub({ fetchImpl: fakeGithub([]).fetchImpl });
   const body = await json(await get('p-clock', projectId), 200);
   assert.ok(!Number.isNaN(Date.parse(body.asOf)));
+});
+
+test('개발 현황: 체크·리뷰가 100개를 넘으면 다음 페이지까지 읽어 뒤쪽 실패·수정 요청을 놓치지 않는다', async () => {
+  const projectId = await project('p-many');
+  await api.setProjectRepo(projectId, 'p-many', { owner: 'team', name: 'app' }, 0, new Date());
+  const gh = detailGithub({ many: true });
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  const body = await json(await detail('p-many', projectId, '10'), 200);
+  assert.equal(body.details['10'].checks, 'failure');
+  assert.equal(body.details['10'].review, 'changes_requested');
+  assert.ok(gh.calls.some((u) => u.includes('check-runs') && u.includes('page=2')));
+  assert.ok(gh.calls.some((u) => u.includes('/reviews') && u.includes('page=2')));
 });

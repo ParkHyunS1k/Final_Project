@@ -153,7 +153,10 @@ export function PrPanel({
   const branch = branchName(task.id, task.title);
   const known = pulls.map((p) => details[p.number]).filter((d): d is PullDetail => !!d);
   const checks = Object.fromEntries(known.map((d) => [d.number, d.checks]));
-  const suggestion = canEdit ? prSuggestion(task, pulls, checks) : null;
+  // 완료는 CI를 확인한 뒤에만 제안한다(확인 중·실패면 지난 결과나 모름으로 권하지 않는다).
+  const ciUnknown = !!detailError || pulls.slice(0, DETAIL_MAX_PULLS).some((p) => !details[p.number]);
+  const raw = canEdit ? prSuggestion(task, pulls, checks) : null;
+  const suggestion = raw === 'complete' && ciUnknown ? null : raw;
   const open = pulls.find((p) => p.state === 'open');
   const merged = pulls.filter((p) => p.state === 'merged');
   const ci = overallChecks(known.map((d) => d.checks));
@@ -215,6 +218,7 @@ export function PrPanel({
             <dd>
               {ci ? <CheckIcon checks={ci} size={14} /> : null}
               <b>{ci ? CHECK_LABEL[ci].replace('CI ', '') : '…'}</b>
+              {ci && known.length < pulls.length && <small>{`${known.length}/${pulls.length}개 기준`}</small>}
             </dd>
           </div>
           <div className={review ? `is-review-${review}` : undefined}>

@@ -3044,14 +3044,14 @@ textarea {
 }
 .dev-summary .is-success dd,
 .dev-summary .is-review-approved dd {
-  color: var(--good);
+  color: color-mix(in srgb, var(--good) 80%, var(--gray-900));
 }
 .dev-summary .is-failure dd,
 .dev-summary .is-review-changes_requested dd {
-  color: var(--red-500);
+  color: color-mix(in srgb, var(--red-500) 80%, var(--gray-900));
 }
 .dev-summary .is-pending dd {
-  color: var(--heat-600);
+  color: color-mix(in srgb, var(--heat-600) 80%, var(--gray-900));
 }
 .dev-callout {
   --tone: var(--gray-500);
@@ -3207,6 +3207,8 @@ textarea {
   gap: 4px;
 }
 .dev-signal {
+  /* 작은 글자라 상태색을 글자색 쪽으로 진하게 섞어 대비를 맞춘다(라이트 4.5:1 이상). */
+  color: color-mix(in srgb, currentColor 68%, var(--gray-900));
   display: inline-flex;
   align-items: center;
   gap: 4px;

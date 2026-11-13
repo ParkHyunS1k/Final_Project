@@ -143,6 +143,15 @@ export function TaskCollection({
   useEffect(() => {
     if (!wantedPulls || !projectId) return;
     let alive = true;
+    // 다시 읽지 못하면 예전 CI 결과를 지운다(지난 '통과'로 완료를 제안하지 않게).
+    const fail = (message?: string) => {
+      setDetailError(message ?? 'CI·커밋 정보를 불러오지 못했어요.');
+      setDetails((d) => {
+        const next = { ...d };
+        for (const n of wantedPulls.split(',')) delete next[Number(n)];
+        return next;
+      });
+    };
     apiFetch(
       `/api/github-prs?project=${encodeURIComponent(projectId)}&pulls=${wantedPulls}`,
     )
@@ -152,9 +161,11 @@ export function TaskCollection({
         if (r.ok && body?.details) {
           setDetailError('');
           setDetails((d) => ({ ...d, ...body.details }));
-        } else setDetailError(body?.error ?? 'CI·커밋 정보를 불러오지 못했어요.');
+          return;
+        }
+        fail(body?.error);
       })
-      .catch(() => alive && setDetailError('CI·커밋 정보를 불러오지 못했어요.'));
+      .catch(() => alive && fail());
     return () => {
       alive = false;
     };

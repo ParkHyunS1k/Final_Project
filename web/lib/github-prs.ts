@@ -36,6 +36,7 @@ const SHA = /^[0-9a-f]{40}$/i;
 export const STALL_HOURS = 12;
 /** 업무 상세에서 한 번에 개발 현황을 읽는 PR 수. GitHub 호출 한도 때문에 작게 둔다. */
 export const DETAIL_MAX_PULLS = 3;
+const MAX_DETAIL_PAGES = 5;
 
 /** 업무 번호 표시. 프로젝트 안의 업무 id를 쓴다. */
 export function taskRef(id: number) {
@@ -204,18 +205,34 @@ export async function pullDetail(repo: Repo, number: number, options: FetchOptio
     const value = await getJson(path, options);
     if (value === null)
       throw new ReviewSourceError('CI 결과가 너무 커서 불러오지 못했습니다. GitHub에서 확인해주세요.', 502);
-    return value as Record<string, unknown>;
+    return value;
+  };
+  // 체크·리뷰는 뒤쪽에 실패·수정 요청이 있을 수 있어 끝까지 읽는다(최대 MAX_DETAIL_PAGES쪽, 넘으면 오류).
+  const allPages = async (path: string, pick: (v: unknown) => { rows: unknown[]; total?: number }) => {
+    const rows: unknown[] = [];
+    for (let page = 1; page <= MAX_DETAIL_PAGES; page++) {
+      const got = pick(await required(`${path}${path.includes('?') ? '&' : '?'}per_page=100&page=${page}`));
+      rows.push(...got.rows);
+      const done = got.total !== undefined ? rows.length >= got.total : got.rows.length < 100;
+      if (done || !got.rows.length) return rows;
+    }
+    throw new ReviewSourceError('CI·리뷰 기록이 너무 많아 불러오지 못했습니다. GitHub에서 확인해주세요.', 502);
   };
   const [runs, status, reviews, commits] = await Promise.all([
-    pull.sha ? required(`${base}/commits/${pull.sha}/check-runs?per_page=100`).then((v) => v.check_runs) : null,
+    pull.sha
+      ? allPages(`${base}/commits/${pull.sha}/check-runs`, (v) => {
+          const o = (v ?? {}) as Record<string, unknown>;
+          return { rows: Array.isArray(o.check_runs) ? o.check_runs : [], total: Number(o.total_count ?? 0) };
+        })
+      : [],
     pull.sha ? required(`${base}/commits/${pull.sha}/status`) : null,
-    list(`${base}/pulls/${number}/reviews?per_page=100`),
+    allPages(`${base}/pulls/${number}/reviews`, (v) => ({ rows: Array.isArray(v) ? v : [] })),
     // ponytail: 첫 100개 커밋 중 마지막 5개. 100개 넘는 PR은 최신 커밋을 놓친다, 필요하면 마지막 페이지를 받는다.
     list(`${base}/pulls/${number}/commits?per_page=100`),
   ]);
   return {
     number,
-    checks: summarizeChecks(Array.isArray(runs) ? runs : [], status),
+    checks: summarizeChecks(runs, status),
     review: summarizeReviews(reviews),
     commits: commits
       .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')

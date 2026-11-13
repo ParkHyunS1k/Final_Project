@@ -110,8 +110,9 @@ test('PR 패널: 브랜치 이름 복사, 열린 PR이면 진행 중 제안, 모
   const start = renderToString(createElement(PrPanel, { task: t, pulls: [pull(10, 'open')], canEdit: true, onStart: () => {}, onUseEvidence: () => {} }));
   assert.match(start, /pm-1-login/);
   assert.match(start, /진행 중으로 바꿀까요/);
+  const ok = { 10: { number: 10, checks: 'success', review: 'none', commits: [] } };
   const done = renderToString(
-    createElement(PrPanel, { task: { ...t, status: 'in_progress' }, pulls: [pull(10, 'merged')], canEdit: true, onStart: () => {}, onUseEvidence: () => {} }),
+    createElement(PrPanel, { task: { ...t, status: 'in_progress' }, pulls: [pull(10, 'merged')], details: ok, canEdit: true, onStart: () => {}, onUseEvidence: () => {} }),
   );
   assert.match(done, /머지됐어요/);
   assert.doesNotMatch(done, /진행 중으로 바꿀까요/);
@@ -200,4 +201,30 @@ test('개발 현황 요약의 마지막 활동은 멈춤과 같은 기준(업무
   );
   assert.match(html, /마지막 활동/);
   assert.match(html, /<b>1시간 전<\/b>/);
+});
+
+test('개발 현황 요약: 일부 PR만 확인했으면 몇 개 기준인지 밝힌다', () => {
+  const d = (number) => ({ number, checks: 'success', review: 'none', commits: [] });
+  const html = renderToString(
+    createElement(PrPanel, {
+      task: { id: 1, title: 'Login', done: false, status: 'in_progress' },
+      pulls: [pull(1, 'merged'), pull(2, 'merged'), pull(3, 'merged'), pull(4, 'merged')],
+      details: { 1: d(1), 2: d(2), 3: d(3) },
+      canEdit: true,
+      onStart: () => {},
+      onUseEvidence: () => {},
+    }),
+  );
+  assert.match(html, /3\/4개 기준/);
+});
+
+test('완료 제안은 CI를 확인한 뒤에만: 확인 중이거나 다시 읽기에 실패하면 띄우지 않는다', () => {
+  const t = { id: 1, title: 'Login', done: false, status: 'in_progress' };
+  const base = { task: t, pulls: [pull(10, 'merged')], canEdit: true, onStart: () => {}, onUseEvidence: () => {} };
+  const waiting = renderToString(createElement(PrPanel, base));
+  assert.doesNotMatch(waiting, /완료 근거로 채우기/);
+  assert.match(waiting, /불러오는 중/);
+  const failed = renderToString(createElement(PrPanel, { ...base, detailError: 'GitHub 호출 한도에 걸렸습니다.' }));
+  assert.doesNotMatch(failed, /완료 근거로 채우기/);
+  assert.match(failed, /호출 한도/);
 });
