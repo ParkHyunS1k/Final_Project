@@ -1,6 +1,13 @@
 // PR과 업무 연결(2026-11-14). 프로젝트에 등록된 공개 저장소의 PR 중 제목·브랜치에 'PM-번호'가 있는 것을 그 업무에 붙인다.
 // 연결은 저장하지 않고 화면을 열 때 계산한다. 상태를 자동으로 바꾸지 않고 '진행 중'·'완료' 제안만 만든다.
-import { assertPublicRepo, getJson, repoPath, type FetchOptions, type Repo } from './ai-review-github';
+import {
+  assertPublicRepo,
+  getJson,
+  repoPath,
+  ReviewSourceError,
+  type FetchOptions,
+  type Repo,
+} from './ai-review-github';
 
 export type PullState = 'open' | 'merged' | 'closed';
 export type Pull = {
@@ -12,8 +19,10 @@ export type Pull = {
   url: string;
 };
 
-const LIST_SIZE = 100;
-const REF = /(?<![A-Za-z0-9])pm-(\d{1,6})(?![0-9])/gi;
+// PR 목록 응답에는 본문이 들어 있어 커질 수 있다. 작게 나눠 받는다(최근 수정 100개까지).
+const PAGE_SIZE = 25;
+const MAX_PAGES = 4;
+const REF = /(?<![A-Za-z0-9])pm-(\d{1,6})(?![A-Za-z0-9])/gi;
 const LOGIN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
 
 /** 업무 번호 표시. 프로젝트 안의 업무 id를 쓴다. */
@@ -59,14 +68,29 @@ export function toPull(raw: Record<string, unknown>): Pull | null {
   };
 }
 
-/** 최근 수정된 PR 100개(열림·닫힘 모두). */
+/** 최근 수정된 PR 100개까지(열림·닫힘 모두). 응답이 너무 크면 빈 목록으로 숨기지 않고 오류로 알린다. */
 export async function listPulls(repo: Repo, options: FetchOptions): Promise<Pull[]> {
   await assertPublicRepo(repo, options);
-  const query = new URLSearchParams({ state: 'all', sort: 'updated', direction: 'desc', per_page: String(LIST_SIZE) });
-  const list = await getJson(`${repoPath(repo)}/pulls?${query}`, options);
-  return (Array.isArray(list) ? list : [])
-    .map((r) => (r && typeof r === 'object' ? toPull(r as Record<string, unknown>) : null))
-    .filter((p): p is Pull => p !== null);
+  const pulls: Pull[] = [];
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const query = new URLSearchParams({
+      state: 'all',
+      sort: 'updated',
+      direction: 'desc',
+      per_page: String(PAGE_SIZE),
+      page: String(page),
+    });
+    const list = await getJson(`${repoPath(repo)}/pulls?${query}`, options);
+    if (list === null)
+      throw new ReviewSourceError('PR 목록이 너무 커서 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 502);
+    const rows = Array.isArray(list) ? list : [];
+    for (const r of rows) {
+      const p = r && typeof r === 'object' ? toPull(r as Record<string, unknown>) : null;
+      if (p) pulls.push(p);
+    }
+    if (rows.length < PAGE_SIZE) break;
+  }
+  return pulls;
 }
 
 /** 업무 id별 연결 PR. 프로젝트에 없는 업무 번호는 버린다. */

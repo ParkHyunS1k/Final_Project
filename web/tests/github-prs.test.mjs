@@ -55,6 +55,8 @@ test('PR 제목·브랜치에서 PM-번호를 대소문자 없이 찾고, 다른
   assert.deepEqual(api.taskIdsIn('apm-12 테스트', 'feature/xpm-5'), []);
   assert.deepEqual(api.taskIdsIn('PM-123', ''), [123]);
   assert.deepEqual(api.taskIdsIn('정리', 'PM-4_cleanup'), [4]);
+  // 번호 바로 뒤에 영문자가 붙으면 다른 낱말이다.
+  assert.deepEqual(api.taskIdsIn('PM-12abc', 'feature/pm-34fix'), []);
 });
 
 const pr = (number, over = {}) => ({
@@ -125,15 +127,19 @@ async function project(owner) {
     await run('INSERT INTO sprint_tasks(owner,id,title,person,remaining) VALUES(?,?,?,0,2)', projectId, id, title);
   return projectId;
 }
-function fakeGithub(pulls) {
+function fakeGithub(pulls, { pageSize = 25, huge = false } = {}) {
   const calls = [];
   return {
     calls,
     fetchImpl: async (url) => {
       calls.push(String(url));
-      const path = new URL(String(url)).pathname;
-      if (path === '/repos/team/app') return Response.json({ private: false, visibility: 'public' });
-      if (path === '/repos/team/app/pulls') return Response.json(pulls);
+      const u = new URL(String(url));
+      if (u.pathname === '/repos/team/app') return Response.json({ private: false, visibility: 'public' });
+      if (u.pathname === '/repos/team/app/pulls') {
+        if (huge) return new Response('[' + '"x",'.repeat(300_000) + '"x"]', { status: 200 });
+        const page = Number(u.searchParams.get('page') ?? 1);
+        return Response.json(pulls.slice((page - 1) * pageSize, page * pageSize));
+      }
       return new Response('{}', { status: 404 });
     },
   };
@@ -173,4 +179,20 @@ test('팀원은 업무별 연결 PR을 보고, 없는 업무 번호는 버린다
   assert.deepEqual(body.links['2'].map((p) => [p.number, p.state]), [[11, 'merged']]);
   assert.ok(gh.calls.some((u) => u.includes('/pulls?') && u.includes('state=all')));
   await json(await get('stranger', projectId), 403);
+});
+
+test('PR 목록은 나눠 받아 뒤쪽 페이지의 PR도 연결하고, 응답이 너무 크면 빈 목록이 아니라 오류로 알린다', async () => {
+  const projectId = await project('p-page');
+  await api.setProjectRepo(projectId, 'p-page', { owner: 'team', name: 'app' }, 0, new Date());
+  const many = Array.from({ length: 30 }, (_, i) => pr(100 + i, { title: '기타', head: { ref: 'main' } }));
+  many.push(pr(200, { title: 'PM-2 검색' }));
+  let gh = fakeGithub(many);
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  const body = await json(await get('p-page', projectId), 200);
+  assert.deepEqual(body.links['2'].map((p) => p.number), [200]);
+  assert.ok(gh.calls.some((u) => u.includes('page=2')));
+  gh = fakeGithub([], { huge: true });
+  api.useGithub({ fetchImpl: gh.fetchImpl });
+  const failed = await json(await get('p-page', projectId), 502);
+  assert.match(failed.error, /PR 목록/);
 });
