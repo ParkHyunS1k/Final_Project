@@ -2924,80 +2924,9 @@ textarea {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   color: var(--gray-500);
 }
-.pr-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 6px 0 10px;
-  font-size: 13px;
-}
-.pr-copy code {
-  font-size: 12px;
-  color: var(--gray-500);
-}
-.pr-suggest {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 8px 0 12px;
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--heat-500) 40%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--heat-500) 8%, transparent);
-  font-size: 13px;
-}
-.pr-suggest p {
-  margin: 0;
-}
-.pr-list {
-  list-style: none;
-  padding: 0;
-  margin: 6px 0 0;
-  display: grid;
-  gap: 6px;
-  font-size: 13px;
-}
-.pr-list li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  overflow-wrap: anywhere;
-}
-/* 개발 현황: 멈춘 업무·CI·리뷰·최근 커밋 (2026-11-14) */
+/* 개발 현황 (2026-11-14). 벤치마킹: Jira 개발 패널 요약 줄, Linear PR 한 줄 신호, GitHub 머지 박스·커밋 타임라인 */
 .race-tag.is-stalled {
   background: var(--gray-600);
-}
-.pr-stalled {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 4px 0 8px;
-  font-size: 13px;
-  color: var(--gray-600);
-}
-.pr-suggest.is-warning {
-  border-color: color-mix(in srgb, var(--red-500) 45%, transparent);
-  background: color-mix(in srgb, var(--red-500) 8%, transparent);
-}
-.pr-detail {
-  flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding-left: 4px;
-}
-.pr-check,
-.pr-review {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--gray-500);
 }
 .pr-check-success,
 .pr-review-approved {
@@ -3008,26 +2937,382 @@ textarea {
   color: var(--red-500);
 }
 .pr-check-pending {
-  color: var(--heat-500);
+  color: var(--heat-600);
+}
+.pr-check-none,
+.pr-review-none {
+  color: var(--gray-500);
 }
 .pr-check-dot {
   display: inline-flex;
   margin-left: 2px;
 }
-.pr-commits {
-  flex-basis: 100%;
+.dev-panel {
+  --merged: #8250df;
+}
+.dark .dev-panel {
+  --merged: #a78bfa;
+}
+.dev-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.detail-section .dev-head h3 {
+  margin: 0;
+}
+.dev-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 3px 3px 3px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 7px;
+  background: var(--gray-25);
+  color: var(--gray-600);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.dev-branch:hover {
+  border-color: var(--heat-400);
+}
+.dev-branch:focus-visible {
+  outline: 2px solid var(--heat-500);
+  outline-offset: 2px;
+}
+.dev-branch code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dev-branch-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--gray-0);
+  border: 1px solid var(--gray-200);
+  color: var(--gray-800);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.detail-section .dev-hint {
+  margin: 8px 0 16px;
+}
+.dev-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 0 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--gray-200);
+}
+.dev-summary > div {
+  padding: 10px 12px;
+  background: var(--gray-0);
+  min-width: 0;
+}
+.dev-summary dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--gray-500);
+}
+.dev-summary dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  margin: 3px 0 0;
+  color: var(--gray-900);
+}
+.dev-summary dd b {
+  font-size: 15px;
+  font-weight: 650;
+}
+.dev-summary dd small {
+  font-size: 11px;
+  color: var(--gray-500);
+}
+.dev-summary .is-success dd,
+.dev-summary .is-review-approved dd {
+  color: var(--good);
+}
+.dev-summary .is-failure dd,
+.dev-summary .is-review-changes_requested dd {
+  color: var(--red-500);
+}
+.dev-summary .is-pending dd {
+  color: var(--heat-600);
+}
+.dev-callout {
+  --tone: var(--gray-500);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 11px 12px 11px 14px;
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+  border-left: 3px solid var(--tone);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--tone) 7%, var(--gray-0));
+}
+.dev-callout.is-go {
+  --tone: var(--good);
+}
+.dev-callout.is-done {
+  --tone: var(--merged);
+}
+.dev-callout.is-warn {
+  --tone: var(--red-500);
+}
+.dev-callout-icon {
+  display: inline-flex;
+  color: var(--tone);
+}
+.dev-callout-text {
+  display: grid;
+  gap: 2px;
+}
+.dev-callout-text strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+.dev-callout-text span {
+  font-size: 12.5px;
+  color: var(--gray-500);
+}
+.dev-callout .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.detail-section .dev-prs {
   list-style: none;
-  margin: 2px 0 0;
-  padding: 0 0 0 10px;
-  border-left: 2px solid var(--gray-100);
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--gray-200);
+  border-radius: 9px;
+  overflow: hidden;
+  white-space: normal;
+}
+.dev-pr + .dev-pr {
+  border-top: 1px solid var(--gray-200);
+}
+.dev-pr summary {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto 14px;
+  align-items: start;
+  gap: 10px;
+  padding: 12px 14px;
+  list-style: none;
+  cursor: pointer;
+}
+.dev-pr summary::-webkit-details-marker {
+  display: none;
+}
+.dev-pr summary:hover {
+  background: var(--gray-25);
+}
+.dev-pr summary:focus-visible {
+  outline: 2px solid var(--heat-500);
+  outline-offset: -2px;
+}
+.dev-pr-icon {
+  display: inline-flex;
+  padding-top: 2px;
+}
+.dev-pr-icon.pr-open {
+  color: var(--good);
+}
+.dev-pr-icon.pr-merged {
+  color: var(--merged);
+}
+.dev-pr-icon.pr-closed {
+  color: var(--red-500);
+}
+.dev-pr-main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.dev-pr-title {
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.dev-pr-title a {
+  font-weight: 600;
+  color: var(--gray-900);
+  text-decoration: none;
+}
+.dev-pr-title a:hover {
+  text-decoration: underline;
+}
+.dev-pr-num {
+  margin-left: 6px;
+  color: var(--gray-400);
+}
+.dev-pr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+.dev-pr-meta code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--gray-50);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11.5px;
+  color: var(--gray-600);
+}
+.dev-pr.is-merged .pr-state.pr-merged {
+  color: var(--merged);
+}
+.dev-who {
+  display: inline-flex;
+  align-items: center;
+}
+.dev-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: hsl(var(--hue) 55% 45%);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.dev-pr-signals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.dev-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dev-signal.is-loading {
+  color: var(--gray-400);
+  font-weight: 500;
+}
+.dev-chevron {
+  margin-top: 3px;
+  color: var(--gray-400);
+  transition: transform 0.15s;
+}
+.dev-pr details[open] .dev-chevron {
+  transform: rotate(90deg);
+}
+.detail-section .dev-commits {
+  list-style: none;
+  margin: -2px 14px 12px 22px;
+  padding: 0 0 0 20px;
+  border-left: 1.5px solid var(--gray-200);
+  white-space: normal;
+}
+.dev-commits li {
+  position: relative;
+  padding: 5px 0;
+}
+.dev-commits li::before {
+  content: '';
+  position: absolute;
+  left: -25px;
+  top: 11px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gray-400);
+  background: var(--gray-0);
+}
+.dev-commits li:first-child::before {
+  border-color: var(--heat-500);
+  background: var(--heat-500);
+}
+.dev-commit-msg {
+  display: block;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--gray-800);
+  overflow-wrap: anywhere;
+}
+.dev-commit-meta {
+  font-size: 11.5px;
+  color: var(--gray-500);
+}
+.dev-commit-meta code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  color: var(--gray-400);
+}
+.dev-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed var(--gray-300);
+  border-radius: 9px;
+  color: var(--gray-500);
+}
+.dev-empty div {
   display: grid;
   gap: 3px;
-  font-size: 12px;
 }
-.pr-commits code {
-  color: var(--gray-400);
-  font-size: 11px;
+.dev-empty strong {
+  font-size: 13.5px;
+  color: var(--gray-800);
 }
-.pr-commits small {
-  color: var(--gray-400);
+.dev-empty span {
+  font-size: 12.5px;
+}
+.detail-section .dev-error {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--red-500);
+}
+@media (max-width: 560px) {
+  .dev-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dev-pr summary {
+    grid-template-columns: 18px minmax(0, 1fr) 14px;
+  }
+  .dev-pr-signals {
+    grid-column: 2;
+    grid-row: 2;
+    flex-direction: row;
+    align-items: center;
+  }
+  .dev-callout {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .dev-callout .btn {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
 }

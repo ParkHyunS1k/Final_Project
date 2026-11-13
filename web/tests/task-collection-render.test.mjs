@@ -186,3 +186,18 @@ test('개발 현황 패널: PR마다 CI·리뷰·최근 커밋, 머지된 PR의 
   );
   assert.match(stalled, /15시간째 활동이 없어요/);
 });
+
+test('개발 현황 요약의 마지막 활동은 멈춤과 같은 기준(업무 변경·PR 수정 중 최근)이다', () => {
+  const html = renderToString(
+    createElement(PrPanel, {
+      task: { id: 1, title: 'Login', done: false, status: 'in_progress', touchedAt: '2026-11-14T11:00:00.000Z' },
+      pulls: [{ ...pull(10, 'merged'), updatedAt: '2026-11-13T16:00:00.000Z' }],
+      asOf: '2026-11-14T12:00:00.000Z',
+      canEdit: true,
+      onStart: () => {},
+      onUseEvidence: () => {},
+    }),
+  );
+  assert.match(html, /마지막 활동/);
+  assert.match(html, /<b>1시간 전<\/b>/);
+});
