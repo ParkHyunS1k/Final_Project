@@ -15,6 +15,8 @@ export type Task = {
   dueAt?: Date | null;
   deadlineVersion?: number;
   changeVersion?: number;
+  /** 마지막으로 업무를 바꾼 시각. 멈춘 업무 표시용. */
+  touchedAt?: Date | null;
 };
 export type Capacity = { person: number; date: string; hours: number };
 export type Sprint = {

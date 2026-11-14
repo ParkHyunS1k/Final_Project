@@ -654,7 +654,7 @@ export async function applyRoles(
             statements.push(
               db()
                 .prepare(
-                  'UPDATE sprint_tasks SET person=?,change_version=change_version+1 WHERE owner=? AND id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
+                  'UPDATE sprint_tasks SET person=?,change_version=change_version+1,touched_at=now() WHERE owner=? AND id=? AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
                 )
                 .bind(person, projectId, id, projectId, mutation),
             );

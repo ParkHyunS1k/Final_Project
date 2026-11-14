@@ -29,10 +29,16 @@ import {
   CalendarClock,
   Link2,
   GitPullRequest,
-  Copy,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/supabase-browser';
-import { branchName, prSuggestion, taskRef, type Pull } from '@/lib/github-prs';
+import {
+  DETAIL_MAX_PULLS,
+  stalledHours,
+  taskRef,
+  type Pull,
+  type PullDetail,
+} from '@/lib/github-prs';
+import { CHECK_LABEL, CheckIcon, PR_LABEL, PrPanel, stallText } from './dev-panel';
 import {
   people as samplePeople,
   type Sprint as ServerSprint,
@@ -63,89 +69,7 @@ const statuses = [
   { id: 'in_progress', label: '진행 중' },
   { id: 'done', label: '완료' },
 ];
-const PR_LABEL = { open: '열림', merged: '머지됨', closed: '닫힘' } as const;
-
-/** 업무 상세의 GitHub PR 영역. 연결 PR, 브랜치 이름 복사, '진행 중'·'완료' 제안. 상태는 사람이 바꾼다. */
-export function PrPanel({
-  task,
-  pulls,
-  canEdit,
-  onStart,
-  onUseEvidence,
-}: {
-  task: { id: number; title: string; done: boolean; status?: string | null };
-  pulls: Pull[];
-  canEdit: boolean;
-  onStart: () => void;
-  onUseEvidence: (text: string) => void;
-}) {
-  const [copied, setCopied] = useState(false);
-  const branch = branchName(task.id, task.title);
-  const suggestion = canEdit ? prSuggestion(task, pulls) : null;
-  const open = pulls.find((p) => p.state === 'open');
-  const merged = pulls.filter((p) => p.state === 'merged');
-  return (
-    <section className="detail-section pr-panel">
-      <h3>
-        GitHub PR <span className="pr-ref">{taskRef(task.id)}</span>
-      </h3>
-      <p className="detail-caption">
-        PR 제목이나 브랜치 이름에 이 번호({taskRef(task.id)})를 넣으면 이 업무에 연결돼요.
-      </p>
-      <button
-        type="button"
-        className="btn pr-copy"
-        onClick={() =>
-          void navigator.clipboard?.writeText(branch).then(() => setCopied(true))
-        }
-      >
-        <Copy size={14} /> {copied ? '복사했어요' : '브랜치 이름 복사'} <code>{branch}</code>
-      </button>
-      {suggestion === 'start' && open && (
-        <div className="pr-suggest">
-          <p>
-            열린 PR #{open.number}이 있어요. 진행 중으로 바꿀까요?
-          </p>
-          <button type="button" className="btn" onClick={onStart}>
-            진행 중으로 바꾸기
-          </button>
-        </div>
-      )}
-      {suggestion === 'complete' && (
-        <div className="pr-suggest">
-          <p>
-            PR {merged.map((p) => `#${p.number}`).join(', ')}이(가) 머지됐어요. 이걸 근거로
-            완료할까요?
-          </p>
-          <button
-            type="button"
-            className="btn primary"
-            onClick={() =>
-              onUseEvidence(merged.map((p) => `PR #${p.number} ${p.title} ${p.url}`).join('\n'))
-            }
-          >
-            완료 근거로 채우기
-          </button>
-        </div>
-      )}
-      {pulls.length ? (
-        <ul className="pr-list">
-          {pulls.map((p) => (
-            <li key={p.number}>
-              <span className={`pr-state pr-${p.state}`}>{PR_LABEL[p.state]}</span>
-              <a href={p.url} target="_blank" rel="noreferrer">
-                #{p.number} {p.title}
-              </a>
-              {p.author && <small> · @{p.author}</small>}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="muted">연결된 PR이 없어요.</p>
-      )}
-    </section>
-  );
-}
+export { PrPanel };
 
 function statusOf(t: Task) {
   return t.done ? 'done' : (t.status ?? 'todo');
@@ -188,13 +112,18 @@ export function TaskCollection({
   const [view, setView] = useState('board');
   // PR 연결(2026-11-14): 화면을 열 때 한 번 읽는다. 실패하면 PR 표시만 빠진다.
   const [loadedPulls, setLoadedPulls] = useState<Record<number, Pull[]>>({});
+  // 멈춤 판정 시각. 저장소가 있으면 PR 목록을 읽은 서버 시각(그 뒤 PR 활동은 모르므로), 없으면 'live'(asOf).
+  // ponytail: PR 목록은 화면을 열 때 한 번 읽으므로 멈춤 배지도 그때 기준. 실시간이 필요하면 웹훅.
+  const [pullsClock, setPullsClock] = useState<string | null>(null);
   useEffect(() => {
     if (givenPulls || !projectId) return;
     let alive = true;
     apiFetch('/api/github-prs?project=' + encodeURIComponent(projectId))
       .then((r) => (r.ok ? r.json() : null))
       .then((body) => {
-        if (alive && body?.links) setLoadedPulls(body.links);
+        if (!alive || !body?.links) return;
+        setLoadedPulls(body.links);
+        setPullsClock(body.repo ? (body.asOf ?? null) : 'live');
       })
       .catch(() => {});
     return () => {
@@ -203,6 +132,47 @@ export function TaskCollection({
   }, [projectId, givenPulls]);
   const pulls = givenPulls ?? loadedPulls;
   const [selected, setSelected] = useState<number | null>(null);
+  // 개발 현황(2026-11-14): GitHub 호출 한도 때문에 업무 상세를 열 때 그 업무의 최근 PR 3개만 읽는다.
+  // CI는 바뀌므로 상세를 열 때마다 다시 읽는다.
+  const [details, setDetails] = useState<Record<number, PullDetail>>({});
+  const [detailError, setDetailError] = useState('');
+  const wantedPulls = (selected !== null ? (pulls[selected] ?? []) : [])
+    .slice(0, DETAIL_MAX_PULLS)
+    .map((p) => p.number)
+    .join(',');
+  useEffect(() => {
+    if (!wantedPulls || !projectId) return;
+    let alive = true;
+    // 다시 읽지 못하면 예전 CI 결과를 지운다(지난 '통과'로 완료를 제안하지 않게).
+    const fail = (message?: string) => {
+      setDetailError(message ?? 'CI·커밋 정보를 불러오지 못했어요.');
+      setDetails((d) => {
+        const next = { ...d };
+        for (const n of wantedPulls.split(',')) delete next[Number(n)];
+        return next;
+      });
+    };
+    apiFetch(
+      `/api/github-prs?project=${encodeURIComponent(projectId)}&pulls=${wantedPulls}`,
+    )
+      .then(async (r) => {
+        const body = await r.json().catch(() => null);
+        if (!alive) return;
+        if (r.ok && body?.details) {
+          setDetailError('');
+          setDetails((d) => ({ ...d, ...body.details }));
+          return;
+        }
+        fail(body?.error);
+      })
+      .catch(() => alive && fail());
+    return () => {
+      alive = false;
+    };
+  }, [projectId, selected, wantedPulls]);
+  const stallClock = givenPulls || !projectId || pullsClock === 'live' ? asOf : pullsClock;
+  const stalledOf = (t: Task) =>
+    sprint.finished || !stallClock ? null : stalledHours(t, pulls[t.id] ?? [], stallClock);
   const people = sprint.people ?? samplePeople;
   const tasks = sprint.tasks.filter((t) => !mine || t.person === me.person);
   const owner = me.role === 'owner';
@@ -314,6 +284,11 @@ export function TaskCollection({
                         <FileText size={16} />
                         <span>{t.title}</span>
                         {blocked(t) && <span className="race-tag">병목</span>}
+                        {stalledOf(t) !== null && (
+                          <span className="race-tag is-stalled">
+                            {`멈춤 ${stallText(stalledOf(t)!)}`}
+                          </span>
+                        )}
                       </button>
                       <span className="task-subline">
                         {taskRef(t.id)}
@@ -427,6 +402,11 @@ export function TaskCollection({
                       >
                         {t.title}
                         {blocked(t) && <span className="race-tag">병목</span>}
+                        {stalledOf(t) !== null && (
+                          <span className="race-tag is-stalled">
+                            {`멈춤 ${stallText(stalledOf(t)!)}`}
+                          </span>
+                        )}
                       </button>
                       <div className="board-card-meta">
                         <span className="board-avatar" aria-hidden="true">
@@ -447,6 +427,15 @@ export function TaskCollection({
                           {pulls[t.id].slice(0, 2).map((p) => (
                             <span key={p.number} className={`pr-state pr-${p.state}`}>
                               #{p.number} {PR_LABEL[p.state]}
+                              {details[p.number] && (
+                                <span
+                                  className={`pr-check-dot pr-check-${details[p.number].checks}`}
+                                  title={CHECK_LABEL[details[p.number].checks]}
+                                  aria-label={CHECK_LABEL[details[p.number].checks]}
+                                >
+                                  <CheckIcon checks={details[p.number].checks} />
+                                </span>
+                              )}
                             </span>
                           ))}
                           {pulls[t.id].length > 2 && <span>+{pulls[t.id].length - 2}</span>}
@@ -507,6 +496,9 @@ export function TaskCollection({
           error={error}
           mutate={mutate}
           pulls={pulls[task.id] ?? []}
+          details={details}
+          detailError={detailError}
+          stalled={stalledOf(task)}
           onClose={() => setSelected(null)}
           onEdit={() => {
             setSelected(null);
@@ -528,6 +520,9 @@ function TaskDetail({
   error,
   mutate,
   pulls,
+  details,
+  detailError,
+  stalled,
   onClose,
   onEdit,
 }: {
@@ -541,6 +536,9 @@ function TaskDetail({
   error: string;
   mutate: Mutate;
   pulls: Pull[];
+  details: Record<number, PullDetail>;
+  detailError: string;
+  stalled: number | null;
   onClose: () => void;
   onEdit: () => void;
 }) {
@@ -702,6 +700,10 @@ function TaskDetail({
           <PrPanel
             task={task}
             pulls={pulls}
+            details={details}
+            detailError={detailError}
+            stalled={stalled}
+            asOf={asOf}
             canEdit={canEdit && !busy}
             onStart={() =>
               void mutate(

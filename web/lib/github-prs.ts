@@ -17,13 +17,26 @@ export type Pull = {
   branch: string;
   author: string;
   url: string;
+  /** 마지막 커밋. CI 결과를 찾을 때 쓴다. */
+  sha: string;
+  updatedAt: string;
 };
+export type Checks = 'success' | 'failure' | 'pending' | 'none';
+export type Review = 'approved' | 'changes_requested' | 'none';
+export type PullCommit = { sha: string; message: string; author: string; date: string };
+export type PullDetail = { number: number; checks: Checks; review: Review; commits: PullCommit[] };
 
 // PR 목록 응답에는 본문이 들어 있어 커질 수 있다. 작게 나눠 받는다(최근 수정 100개까지).
 const PAGE_SIZE = 25;
 const MAX_PAGES = 4;
 const REF = /(?<![A-Za-z0-9])pm-(\d{1,6})(?![A-Za-z0-9])/gi;
 const LOGIN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+const SHA = /^[0-9a-f]{40}$/i;
+/** 진행 중 업무가 이 시간 넘게 아무 활동이 없으면 '멈춤'(사용자 결정 2026-11-14). */
+export const STALL_HOURS = 12;
+/** 업무 상세에서 한 번에 개발 현황을 읽는 PR 수. GitHub 호출 한도 때문에 작게 둔다. */
+export const DETAIL_MAX_PULLS = 3;
+const MAX_DETAIL_PAGES = 5;
 
 /** 업무 번호 표시. 프로젝트 안의 업무 id를 쓴다. */
 export function taskRef(id: number) {
@@ -65,6 +78,8 @@ export function toPull(raw: Record<string, unknown>): Pull | null {
     branch: typeof head.ref === 'string' ? head.ref.slice(0, 200) : '',
     author: login,
     url: typeof raw.html_url === 'string' && raw.html_url.startsWith('https://github.com/') ? raw.html_url : '',
+    sha: typeof head.sha === 'string' && SHA.test(head.sha) ? head.sha : '',
+    updatedAt: typeof raw.updated_at === 'string' && !Number.isNaN(Date.parse(raw.updated_at)) ? raw.updated_at : '',
   };
 }
 
@@ -107,10 +122,132 @@ export function linkPulls(pulls: Pull[], taskIds: number[]) {
  * 제안 규칙. 상태를 바꾸지 않고 사람이 누르게 한다.
  * - start: 시작 전 업무에 열린 PR이 있다.
  * - complete: 열린 PR이 하나도 없고 머지된 PR이 있다(모든 PR이 머지돼야 완료).
+ * - ci_failed: complete 조건이지만 머지된 PR 중 CI가 실패한 것이 있다(아직 모르면 complete).
  */
-export function prSuggestion(task: { done: boolean; status?: string | null }, pulls: Pull[]) {
+export function prSuggestion(
+  task: { done: boolean; status?: string | null },
+  pulls: Pull[],
+  checks: Record<number, Checks> = {},
+) {
   if (task.done || !pulls.length) return null;
   const open = pulls.some((p) => p.state === 'open');
   if (open) return (task.status ?? 'todo') === 'todo' ? ('start' as const) : null;
-  return pulls.some((p) => p.state === 'merged') ? ('complete' as const) : null;
+  const merged = pulls.filter((p) => p.state === 'merged');
+  if (!merged.length) return null;
+  return merged.some((p) => checks[p.number] === 'failure') ? ('ci_failed' as const) : ('complete' as const);
+}
+
+const FAILED = new Set(['failure', 'timed_out', 'cancelled', 'action_required', 'startup_failure', 'stale']);
+/** GitHub 체크(Actions 등)와 커밋 상태(Vercel 등)를 하나로 요약한다. 실패 > 진행 중 > 통과. */
+export function summarizeChecks(runs: unknown[], status: unknown): Checks {
+  const combined = (status ?? {}) as Record<string, unknown>;
+  const hasStatus = Number(combined.total_count ?? 0) > 0;
+  const rows = runs.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object');
+  if (!rows.length && !hasStatus) return 'none';
+  if (rows.some((r) => FAILED.has(String(r.conclusion))) || (hasStatus && ['failure', 'error'].includes(String(combined.state))))
+    return 'failure';
+  if (rows.some((r) => r.status !== 'completed') || (hasStatus && combined.state !== 'success')) return 'pending';
+  return 'success';
+}
+
+/** 사람마다 마지막 승인·수정 요청만 본다. 의견(COMMENTED)은 판단을 바꾸지 않는다. */
+export function summarizeReviews(reviews: unknown[]): Review {
+  const last = new Map<string, string>();
+  for (const r of reviews) {
+    if (!r || typeof r !== 'object') continue;
+    const row = r as Record<string, unknown>;
+    const login = field(row.user, 'login');
+    const state = String(row.state);
+    if (state === 'APPROVED' || state === 'CHANGES_REQUESTED' || state === 'DISMISSED') last.set(login, state);
+  }
+  const states = [...last.values()];
+  if (states.includes('CHANGES_REQUESTED')) return 'changes_requested';
+  return states.includes('APPROVED') ? 'approved' : 'none';
+}
+
+/**
+ * 멈춘 업무. 진행 중인데 업무 변경(체크인·상태·상세)과 연결 PR 수정 중 가장 최근 것이
+ * STALL_HOURS 넘게 지났으면 지난 시간(시)을, 아니면 null. 마지막 활동을 모르면 null.
+ */
+export function stalledHours(
+  task: { done: boolean; status?: string | null; touchedAt?: string | Date | null },
+  pulls: { updatedAt?: string }[],
+  now: string | Date,
+) {
+  if (task.done || task.status !== 'in_progress') return null;
+  const times = [task.touchedAt, ...pulls.map((p) => p.updatedAt)]
+    .map((v) => (v ? new Date(v).getTime() : NaN))
+    .filter((v) => !Number.isNaN(v));
+  if (!times.length) return null;
+  const hours = Math.floor((new Date(now).getTime() - Math.max(...times)) / 3_600_000);
+  return hours >= STALL_HOURS ? hours : null;
+}
+
+const str = (v: unknown) => (typeof v === 'string' ? v : '');
+const field = (v: unknown, key: string) => str(((v ?? {}) as Record<string, unknown>)[key]);
+
+function firstLine(text: unknown) {
+  return (typeof text === 'string' ? text.split('\n')[0] : '').slice(0, 120);
+}
+
+/** 업무 상세를 열 때 PR 하나의 CI·리뷰·최근 커밋 5개를 읽는다(GitHub 호출 5번). */
+export async function pullDetail(repo: Repo, number: number, options: FetchOptions): Promise<PullDetail> {
+  const base = repoPath(repo);
+  const raw = (await getJson(`${base}/pulls/${number}`, options)) as Record<string, unknown> | null;
+  const pull = raw && typeof raw === 'object' ? toPull(raw) : null;
+  if (!pull) throw new ReviewSourceError('PR을 찾을 수 없습니다.', 404);
+  const list = async (path: string) => {
+    const value = await getJson(path, options);
+    return Array.isArray(value) ? value : [];
+  };
+  // 크기 초과(null)를 '체크 없음'으로 읽으면 실패한 CI가 통과로 보인다. 오류로 알린다.
+  const required = async (path: string) => {
+    const value = await getJson(path, options);
+    if (value === null)
+      throw new ReviewSourceError('CI 결과가 너무 커서 불러오지 못했습니다. GitHub에서 확인해주세요.', 502);
+    return value;
+  };
+  // 체크·리뷰는 뒤쪽에 실패·수정 요청이 있을 수 있어 끝까지 읽는다(최대 MAX_DETAIL_PAGES쪽, 넘으면 오류).
+  const allPages = async (path: string, pick: (v: unknown) => { rows: unknown[]; total?: number }) => {
+    const rows: unknown[] = [];
+    for (let page = 1; page <= MAX_DETAIL_PAGES; page++) {
+      const got = pick(await required(`${path}${path.includes('?') ? '&' : '?'}per_page=100&page=${page}`));
+      rows.push(...got.rows);
+      const done = got.total !== undefined ? rows.length >= got.total : got.rows.length < 100;
+      if (done || !got.rows.length) return rows;
+    }
+    throw new ReviewSourceError('CI·리뷰 기록이 너무 많아 불러오지 못했습니다. GitHub에서 확인해주세요.', 502);
+  };
+  const [runs, status, reviews, commits] = await Promise.all([
+    pull.sha
+      ? allPages(`${base}/commits/${pull.sha}/check-runs`, (v) => {
+          const o = (v ?? {}) as Record<string, unknown>;
+          return { rows: Array.isArray(o.check_runs) ? o.check_runs : [], total: Number(o.total_count ?? 0) };
+        })
+      : [],
+    pull.sha ? required(`${base}/commits/${pull.sha}/status`) : null,
+    allPages(`${base}/pulls/${number}/reviews`, (v) => ({ rows: Array.isArray(v) ? v : [] })),
+    // ponytail: 첫 100개 커밋 중 마지막 5개. 100개 넘는 PR은 최신 커밋을 놓친다, 필요하면 마지막 페이지를 받는다.
+    list(`${base}/pulls/${number}/commits?per_page=100`),
+  ]);
+  return {
+    number,
+    checks: summarizeChecks(runs, status),
+    review: summarizeReviews(reviews),
+    commits: commits
+      .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
+      .slice(-5)
+      .reverse()
+      .map((c) => {
+        const commit = (c.commit ?? {}) as Record<string, unknown>;
+        const login = field(c.author, 'login');
+        const date = field(commit.author, 'date');
+        return {
+          sha: typeof c.sha === 'string' && SHA.test(c.sha) ? c.sha : '',
+          message: firstLine(commit.message),
+          author: LOGIN.test(login) ? login : '',
+          date: Number.isNaN(Date.parse(date)) ? '' : date,
+        };
+      }),
+  };
 }

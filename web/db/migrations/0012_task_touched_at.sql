@@ -1,0 +1,1 @@
+ALTER TABLE "sprint_tasks" ADD COLUMN "touched_at" timestamp with time zone DEFAULT now() NOT NULL;

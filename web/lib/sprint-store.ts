@@ -87,6 +87,7 @@ export async function readSprint(owner: string): Promise<Sprint | null> {
       dueAt: (t.due_at as Date | null) ?? null,
       deadlineVersion: Number(t.deadline_version ?? 0),
       changeVersion: Number(t.change_version ?? 0),
+      touchedAt: (t.touched_at as Date | null) ?? null,
       dependsOn: results[2].results
         .filter((d) => d.task_id === t.id)
         .map((d) => Number(d.depends_on)),
@@ -149,7 +150,7 @@ export function bumpTaskVersion(
 ) {
   return database()
     .prepare(
-      'UPDATE sprint_tasks SET change_version=change_version+1 WHERE owner=? AND id=?' +
+      'UPDATE sprint_tasks SET change_version=change_version+1,touched_at=now() WHERE owner=? AND id=?' +
         ' AND EXISTS(SELECT 1 FROM sprints WHERE owner=? AND mutation=?)',
     )
     .bind(projectId, taskId, projectId, mutation);

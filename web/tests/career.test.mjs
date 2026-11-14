@@ -481,12 +481,25 @@ test('역할안을 검토·반영하면 실제 업무와 의존관계가 생기�
       .n,
     after.tasks.length,
   );
+  await db.run(
+    "UPDATE sprint_tasks SET touched_at='2026-01-01T00:00:00Z' WHERE owner=?",
+    t.id,
+  );
   const next = await proposal(t);
   await json(await post(t.owner, applyBody(t, next, 1)));
   assert.equal(
     (await db.one('SELECT count(*) AS n FROM sprint_tasks WHERE owner=?', t.id))
       .n,
     after.tasks.length,
+  );
+  // 담당자가 바뀐 업무는 마지막 변경 시각도 갱신된다(멈춘 업무 표시, 2026-11-14).
+  assert.ok(
+    (
+      await db.one(
+        "SELECT count(*) AS n FROM sprint_tasks WHERE owner=? AND touched_at > '2026-06-01'",
+        t.id,
+      )
+    ).n > 0,
   );
 });
 test('공유 철회는 오래된 추천 근거를 숨기고 그 역할안의 반영을 차단한다', async () => {
